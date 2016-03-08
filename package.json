@@ -1,8 +1,8 @@
 {
   "name": "assets.gallery",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "",
-  "main": "index.js",
+  "main": "lib/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,5 +22,6 @@
     "blazy": "^1.5.4",
     "views": "git+https://github.com/kildevaeld/views.git",
     "collection": "git+https://github.com/kildevaeld/collectionjs.git"
-  }
+  },
+  "typings": "lib/index"
 }
