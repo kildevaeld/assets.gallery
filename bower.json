@@ -1,0 +1,22 @@
+{
+  "name": "assets.gallery",
+  "description": "",
+  "main": "index.js",
+  "authors": [
+    "Softshag & Me <admin@softshag.dk>"
+  ],
+  "license": "ISC",
+  "moduleType": [
+    "amd",
+    "globals",
+    "node"
+  ],
+  "homepage": "",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}

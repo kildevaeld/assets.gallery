@@ -1,0 +1,214 @@
+.assets-list {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+.assets-list .assets-list-item {
+  width: 100%;
+}
+.assets-list.collection-mode .assets-list-item {
+  cursor: pointer;
+  width: 22%;
+  float: left;
+  margin: 5px;
+  word-wrap: break-word;
+  text-align: center;
+}
+.assets-preview {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+.assets-preview .preview-region {
+  height: 60%;
+}
+.assets-preview .preview-region .preview {
+  height: 100%;
+  width: 100%;
+  text-align: center;
+}
+.assets-preview .preview-region .preview img,
+.assets-preview .preview-region .preview video,
+.assets-preview .preview-region .preview audio {
+  max-width: 100%;
+  max-height: 100%;
+  -webkit-box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.5);
+  box-shadow: 1px 1px 2px 0px rgba(0,0,0,0.5);
+}
+.assets-preview .info-region {
+  margin-top: 5px;
+  padding-top: 5px;
+  border-top: 1px solid #eee;
+}
+.assets-preview .info-region .info {
+  table-layout: fixed;
+  width: 100%;
+}
+.assets-preview .info-region .info td:first-child {
+  font-weight: bold;
+  vertical-align: baseline;
+  width: 35%;
+}
+.assets-preview .info-region .info td:last-child {
+  word-wrap: break-word;
+}
+.mime-type {
+  background-image: url("mimetypes.png");
+  background-repeat: no-repeat;
+  display: block;
+}
+.mime-application-pdf {
+  width: 96px;
+  height: 96px;
+  background-position: -5px -5px;
+}
+.mime-application-text {
+  width: 96px;
+  height: 96px;
+  background-position: -111px -5px;
+}
+.mime-application-vnd-ms-excel {
+  width: 96px;
+  height: 96px;
+  background-position: -217px -5px;
+}
+.mime-application-x-gzip {
+  width: 96px;
+  height: 96px;
+  background-position: -323px -5px;
+}
+.mime-application-x-javascript {
+  width: 96px;
+  height: 96px;
+  background-position: -5px -111px;
+}
+.mime-application-x-tar {
+  width: 96px;
+  height: 96px;
+  background-position: -111px -111px;
+}
+.mime-application-xml {
+  width: 96px;
+  height: 96px;
+  background-position: -217px -111px;
+}
+.mime-application-zip {
+  width: 96px;
+  height: 96px;
+  background-position: -323px -111px;
+}
+.mime-audio-generic {
+  width: 96px;
+  height: 96px;
+  background-position: -5px -217px;
+}
+.mime-binary {
+  width: 96px;
+  height: 96px;
+  background-position: -111px -217px;
+}
+.mime-document {
+  width: 96px;
+  height: 96px;
+  background-position: -217px -217px;
+}
+.mime-text-x-sql {
+  width: 96px;
+  height: 96px;
+  background-position: -323px -217px;
+}
+.mime-unknown {
+  width: 96px;
+  height: 96px;
+  background-position: -5px -323px;
+}
+.mime-video-generic {
+  width: 96px;
+  height: 96px;
+  background-position: -111px -323px;
+}
+.mime-www {
+  width: 96px;
+  height: 96px;
+  background-position: -217px -323px;
+}
+.mime-x-office-document {
+  width: 96px;
+  height: 96px;
+  background-position: -323px -323px;
+}
+.mime-x-office-drawing {
+  width: 96px;
+  height: 96px;
+  background-position: -429px -5px;
+}
+.mime-x-office-presentation {
+  width: 96px;
+  height: 96px;
+  background-position: -429px -111px;
+}
+.mime-x-office-spreadsheet {
+  width: 96px;
+  height: 96px;
+  background-position: -429px -217px;
+}
+.assets-list {
+  border-right: 1px solid #eee;
+}
+.assets-list .assets-list-item {
+  width: 100%;
+}
+.assets-list.collection-mode .assets-list-item {
+  position: relative;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  cursor: pointer;
+  width: 96px;
+  height: 128px;
+  padding: 5px;
+  float: left;
+  word-wrap: break-word;
+  text-align: center;
+}
+.assets-list.collection-mode .assets-list-item img {
+  max-width: 86px;
+  max-height: 86px;
+}
+.assets-list.collection-mode .assets-list-item:hover {
+  background-color: #eee;
+}
+.assets-list.collection-mode .assets-list-item.active {
+  background-color: #ccc;
+}
+.assets-list.collection-mode .assets-list-item .name {
+  margin-top: 5px;
+}
+.assets-preview {
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+}
+.assets-preview .preview {
+  width: 100%;
+  text-align: center;
+}
+.assets-preview .preview img,
+.assets-preview .preview video,
+.assets-preview .preview audio {
+  max-width: 100%;
+  max-height: 250px;
+}
+.assets-preview .info {
+  font-size: 0.8rem;
+  table-layout: fixed;
+  width: 100%;
+}
+.assets-preview .info td:first-child {
+  font-weight: bold;
+  vertical-align: baseline;
+}
+.assets-preview .info td:last-child {
+  word-wrap: break-word;
+}
