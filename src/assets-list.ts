@@ -48,7 +48,7 @@ export const AssetsListItem = View.extend({
 			html.removeClass(this.ui.mime, 'mime-unknown')
 		}
 
-		this.ui.name.innerText = truncate(model.get('name'), 25)
+		this.ui.name.textContent = truncate(model.get('name'), 25)
 
 		let img = new Image();
 		img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI="

@@ -34,7 +34,7 @@ class MessageView extends View<HTMLParagraphElement> implements IMessageView {
   hide () { this.el.style.display = 'none'; }
 
   setMessage (msg: string) {
-    this.el.innerText = msg;
+    this.el.textContent = msg;
   }
 }
 
@@ -43,7 +43,7 @@ class ProgressView extends View<HTMLDivElement> implements IProgressView {
   hide () { this.el.style.display = 'none'; }
   setProgress (progress: number, total: number, percent: number) {
     percent = Math.floor(percent*100) / 100;
-    this.el.innerText = `${percent}/100`;
+    this.el.textContent = `${percent}/100`;
   }
 }
 

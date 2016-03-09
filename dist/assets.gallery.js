@@ -150,7 +150,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.triggerMethod('destroy');
 	        debug("%s destroy", this);
 	        if (typeof Object.freeze) {
-	            Object.freeze(this);
 	        }
 	        return this;
 	    };
@@ -2783,27 +2782,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	    setModel: function (model) {
 	        if (model == null)
 	            return;
-	        this.ui.name.innerText = model.get('name');
-	        this.ui.mime.innerText = model.get('mime');
-	        this.ui.size.innerText = utilities_1.humanFileSize(model.get('size'), true);
+	        this.ui.name.textContent = model.get('name');
+	        this.ui.mime.textContent = model.get('mime');
+	        this.ui.size.textContent = utilities_1.humanFileSize(model.get('size'), true);
 	        var link = this.ui.download.querySelector('a');
 	        views_1.View.prototype.setModel.call(this, model);
-	        link.innerText = model.get('url');
+	        link.textContent = model.get('url');
 	        link.href = model.get('url') + '?download=true';
 	    },
 	    clear: function () {
 	        if (this.ui.name) {
-	            this.ui.name.innerText = "";
+	            this.ui.name.textContent = "";
 	        }
 	        if (this.ui.mime) {
-	            this.ui.mime.innerText = "";
+	            this.ui.mime.textContent = "";
 	        }
 	        if (this.ui.size) {
-	            this.ui.size.innerText = "";
+	            this.ui.size.textContent = "";
 	        }
 	        if (this.ui.download) {
 	            var link = this.ui.download.querySelector('a');
-	            link.innerText = this.model.get('url');
+	            link.textContent = this.model.get('url');
 	            link.href = this.model.get('url') + '?download=true';
 	        }
 	    },
@@ -3245,7 +3244,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    MessageView.prototype.show = function () { this.el.style.display = 'block'; };
 	    MessageView.prototype.hide = function () { this.el.style.display = 'none'; };
 	    MessageView.prototype.setMessage = function (msg) {
-	        this.el.innerText = msg;
+	        this.el.textContent = msg;
 	    };
 	    return MessageView;
 	}(views_1.View));
@@ -3258,7 +3257,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    ProgressView.prototype.hide = function () { this.el.style.display = 'none'; };
 	    ProgressView.prototype.setProgress = function (progress, total, percent) {
 	        percent = Math.floor(percent * 100) / 100;
-	        this.el.innerText = percent + "/100";
+	        this.el.textContent = percent + "/100";
 	    };
 	    return ProgressView;
 	}(views_1.View));
@@ -4791,7 +4790,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            html.addClass(this.ui.mime, 'mime-' + mime);
 	            html.removeClass(this.ui.mime, 'mime-unknown');
 	        }
-	        this.ui.name.innerText = utilities_1.truncate(model.get('name'), 25);
+	        this.ui.name.textContent = utilities_1.truncate(model.get('name'), 25);
 	        var img = new Image();
 	        img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
 	        img.setAttribute('data-src', "/files/" + model.get('path') + "?thumbnail=true");

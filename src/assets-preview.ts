@@ -23,33 +23,33 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
     template: PreviewInfoTemplate,
     setModel(model) {
         if (model == null) return
-        this.ui.name.innerText = model.get('name')
-        this.ui.mime.innerText = model.get('mime')
-        this.ui.size.innerText = humanFileSize(model.get('size'), true);
+        this.ui.name.textContent = model.get('name')
+        this.ui.mime.textContent = model.get('mime')
+        this.ui.size.textContent = humanFileSize(model.get('size'), true);
         let link = this.ui.download.querySelector('a');
         
         View.prototype.setModel.call(this, model);
-        link.innerText = model.get('url');
+        link.textContent = model.get('url');
         link.href = model.get('url') + '?download=true';
 
     },
 
     clear() {
         if (this.ui.name) {
-            this.ui.name.innerText = ""
+            this.ui.name.textContent = ""
         }
 
         if (this.ui.mime) {
-            this.ui.mime.innerText = "";
+            this.ui.mime.textContent = "";
         }
 
         if (this.ui.size) {
-            this.ui.size.innerText = "";
+            this.ui.size.textContent = "";
         }
 
         if (this.ui.download) {
             let link = this.ui.download.querySelector('a')
-            link.innerText = this.model.get('url');
+            link.textContent = this.model.get('url');
             link.href = this.model.get('url') + '?download=true';
         }
 
