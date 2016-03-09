@@ -3287,6 +3287,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.uploader = options.uploader || new fileuploader_1.default(options);
 	        this.options = options;
 	    }
+	    Object.defineProperty(UploadButton.prototype, "url", {
+	        get: function () {
+	            return this.uploader.options.url;
+	        },
+	        set: function (url) {
+	            this.uploader.options.url = url;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
 	    UploadButton.prototype._onChange = function (e) {
 	        this.hideErrorView();
 	        var files = this.el.files;

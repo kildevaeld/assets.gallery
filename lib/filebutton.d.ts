@@ -25,6 +25,7 @@ export declare class UploadButton extends View<HTMLInputElement> {
     progressView: IProgressView;
     errorView: IMessageView;
     private uploader;
+    url: string;
     constructor(options: UploadButtonOptions);
     private _onChange(e);
     private upload(file);
