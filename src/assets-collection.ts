@@ -10,9 +10,9 @@ export interface AssetsCollectionFetchOption { }
 
 export class AssetsModel extends Model {
 	idAttribute = 'path';
-    
+	collection: AssetsCollection;
     getURL (): string {
-        return this.collection.url + "/" this.get('path');
+        return this.collection.url + "/"  + encodeURIComponent(this.get('path'));
     }
 }
 
@@ -37,10 +37,10 @@ export class AssetsCollection extends Collection<AssetsModel> {
 			if (!Array.isArray(result)) {
 				throw new Error('invalid format: expected json array');
 			}
-           
+
 			this.reset(result);
 			return this.models;
-            
+
 		});
 	}
 

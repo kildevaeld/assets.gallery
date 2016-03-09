@@ -1,0 +1,17 @@
+{
+  "name": "assets.gallery.example",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "jade": "^1.11.0",
+    "jaffamvc-koa": "https://github.com/Softshag/jaffamvc-koa",
+    "jaffamvc-koa-assets": "https://github.com/Softshag/jaffamvc-koa-assets",
+    "jaffamvc-koa-stack": "https://github.com/Softshag/jaffamvc-koa-stack"
+  }
+}

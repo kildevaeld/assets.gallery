@@ -7,6 +7,8 @@ export interface AssetsCollectionFetchOption {
 }
 export declare class AssetsModel extends Model {
     idAttribute: string;
+    collection: AssetsCollection;
+    getURL(): string;
 }
 export declare class AssetsCollection extends Collection<AssetsModel> {
     Model: typeof AssetsModel;
