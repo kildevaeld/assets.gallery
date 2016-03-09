@@ -49,10 +49,12 @@ export const AssetsListItem = View.extend({
 		}
 
 		this.ui.name.textContent = truncate(model.get('name'), 25)
+        
+        let url = model.getURL();
 
 		let img = new Image();
 		img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI="
-		img.setAttribute('data-src', `/files/${model.get('path')}?thumbnail=true`)
+		img.setAttribute('data-src', `${url}?thumbnail=true`)
 
 		this.ui.mime.parentNode.insertBefore(img, this.ui.mime);
 		this.ui.mime.style.display = 'none'

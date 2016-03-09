@@ -10,6 +10,10 @@ export interface AssetsCollectionFetchOption { }
 
 export class AssetsModel extends Model {
 	idAttribute = 'path';
+    
+    getURL (): string {
+        return this.collection.url + "/" this.get('path');
+    }
 }
 
 export class AssetsCollection extends Collection<AssetsModel> {
