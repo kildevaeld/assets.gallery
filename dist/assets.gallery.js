@@ -64,13 +64,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
 	var views = __webpack_require__(1);
-	__webpack_require__(22);
-	__export(__webpack_require__(28));
-	__export(__webpack_require__(29));
+	__webpack_require__(24);
 	__export(__webpack_require__(30));
-	__export(__webpack_require__(40));
-	__export(__webpack_require__(23));
-	__export(__webpack_require__(41));
+	__export(__webpack_require__(31));
+	__export(__webpack_require__(32));
+	__export(__webpack_require__(42));
+	__export(__webpack_require__(25));
+	__export(__webpack_require__(43));
 	var View = (function (_super) {
 	    __extends(View, _super);
 	    function View() {
@@ -89,16 +89,26 @@ return /******/ (function(modules) { // webpackBootstrap
 	function __export(m) {
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
+	var baseview_1 = __webpack_require__(2);
+	__export(__webpack_require__(6));
 	__export(__webpack_require__(2));
-	__export(__webpack_require__(14));
-	__export(__webpack_require__(16));
-	__export(__webpack_require__(17));
 	__export(__webpack_require__(18));
 	__export(__webpack_require__(19));
 	__export(__webpack_require__(20));
 	__export(__webpack_require__(21));
-	__export(__webpack_require__(13));
-	//export {Collection, ICollection,IModel,Model} from 'collection' 
+	__export(__webpack_require__(22));
+	__export(__webpack_require__(23));
+	function debug(debug) {
+	    if (window.localStorage) {
+	        window.localStorage['debug'] = debug ? "views:*" : '';
+	    }
+	}
+	exports.debug = debug;
+	//export {Collection, ICollection,IModel,Model} from 'collection'
+	function isView(a) {
+	    return a instanceof baseview_1.BaseView;
+	}
+	exports.isView = isView;
 
 
 /***/ },
@@ -111,10 +121,864 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var eventsjs_1 = __webpack_require__(3);
-	var utilities_1 = __webpack_require__(4);
-	var debug_1 = __webpack_require__(13);
-	var debug = debug_1.logger('object');
+	var debug = __webpack_require__(3)('views:baseview');
+	var object_1 = __webpack_require__(6);
+	var utils = __webpack_require__(8);
+	var util_1 = __webpack_require__(17);
+	var paddedLt = /^\s*</;
+	var unbubblebles = 'focus blur change'.split(' ');
+	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events'];
+	var BaseView = (function (_super) {
+	    __extends(BaseView, _super);
+	    /**
+	     * BaseView
+	     * @param {BaseViewOptions} options
+	     * @extends BaseObject
+	     */
+	    function BaseView(options) {
+	        if (options === void 0) { options = {}; }
+	        _super.call(this);
+	        this._cid = utils.uniqueId('view');
+	        utils.extend(this, utils.pick(options, viewOptions));
+	        this._domEvents = [];
+	        if (this.el == null) {
+	            this._ensureElement();
+	        }
+	        else {
+	            this.delegateEvents();
+	        }
+	    }
+	    BaseView.find = function (selector, context) {
+	        return context.querySelectorAll(selector);
+	    };
+	    Object.defineProperty(BaseView.prototype, "cid", {
+	        get: function () {
+	            return this._cid;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    /**
+	     * Delegate events
+	     * @param {EventsMap} events
+	     */
+	    BaseView.prototype.delegateEvents = function (events) {
+	        var _this = this;
+	        this._bindUIElements();
+	        events = events || utils.result(this, 'events');
+	        events = util_1.normalizeUIKeys(events, this._ui);
+	        var triggers = this._configureTriggers();
+	        events = utils.extend({}, events, triggers);
+	        debug('%s delegate events %j', this.cid, events);
+	        if (!events)
+	            return this;
+	        //if (!(events || (events = utils.result(this, 'events')))) return this;
+	        this.undelegateEvents();
+	        var dels = [];
+	        for (var key in events) {
+	            var method = events[key];
+	            if (typeof method !== 'function')
+	                method = this[method];
+	            var match = key.match(/^(\S+)\s*(.*)$/);
+	            // Set delegates immediately and defer event on this.el
+	            var boundFn = utils.bind(method, this);
+	            if (match[2]) {
+	                this.delegate(match[1], match[2], boundFn);
+	            }
+	            else {
+	                dels.push([match[1], boundFn]);
+	            }
+	        }
+	        dels.forEach(function (d) { _this.delegate(d[0], d[1]); });
+	        return this;
+	    };
+	    /**
+	     * Undelegate events
+	     */
+	    BaseView.prototype.undelegateEvents = function () {
+	        this._unbindUIElements();
+	        debug('%s undelegate events', this.cid);
+	        if (this.el) {
+	            for (var i = 0, len = this._domEvents.length; i < len; i++) {
+	                var item = this._domEvents[i];
+	                utils.removeEventListener(this.el, item.eventName, item.handler);
+	            }
+	            this._domEvents.length = 0;
+	        }
+	        return this;
+	    };
+	    BaseView.prototype.delegate = function (eventName, selector, listener) {
+	        if (typeof selector === 'function') {
+	            listener = selector;
+	            selector = null;
+	        }
+	        var root = this.el;
+	        var handler = selector ? function (e) {
+	            var node = e.target || e.srcElement;
+	            // Already handled
+	            if (e.delegateTarget)
+	                return;
+	            for (; node && node != root; node = node.parentNode) {
+	                if (utils.matches(node, selector)) {
+	                    e.delegateTarget = node;
+	                    listener(e);
+	                }
+	            }
+	        } : function (e) {
+	            if (e.delegateTarget)
+	                return;
+	            listener(e);
+	        };
+	        /*jshint bitwise: false*/
+	        var useCap = !!~unbubblebles.indexOf(eventName) && selector != null;
+	        debug('%s delegate event %s ', this.cid, eventName);
+	        utils.addEventListener(this.el, eventName, handler, useCap);
+	        this._domEvents.push({ eventName: eventName, handler: handler, listener: listener, selector: selector });
+	        return handler;
+	    };
+	    BaseView.prototype.undelegate = function (eventName, selector, listener) {
+	        if (typeof selector === 'function') {
+	            listener = selector;
+	            selector = null;
+	        }
+	        if (this.el) {
+	            var handlers = this._domEvents.slice();
+	            for (var i = 0, len = handlers.length; i < len; i++) {
+	                var item = handlers[i];
+	                var match = item.eventName === eventName &&
+	                    (listener ? item.listener === listener : true) &&
+	                    (selector ? item.selector === selector : true);
+	                if (!match)
+	                    continue;
+	                utils.removeEventListener(this.el, item.eventName, item.handler);
+	                this._domEvents.splice(utils.indexOf(handlers, item), 1);
+	            }
+	        }
+	        return this;
+	    };
+	    BaseView.prototype.render = function (options) {
+	        return this;
+	    };
+	    /**
+	     * Append the view to a HTMLElement
+	     * @param {HTMLElement|string} elm A html element or a selector string
+	     * @return {this} for chaining
+	     */
+	    BaseView.prototype.appendTo = function (elm) {
+	        if (elm instanceof HTMLElement) {
+	            elm.appendChild(this.el);
+	        }
+	        else {
+	            var el = document.querySelector(elm);
+	            el ? el.appendChild(this.el) : void 0;
+	        }
+	        return this;
+	    };
+	    /**
+	     * Append a element the view
+	     * @param {HTMLElement} elm
+	     * @param {String} toSelector
+	     * @return {this} for chaining
+	     */
+	    BaseView.prototype.append = function (elm, toSelector) {
+	        if (toSelector != null) {
+	            var ret = this.$(toSelector);
+	            if (ret instanceof NodeList && ret.length > 0) {
+	                ret[0].appendChild(elm);
+	            }
+	            else if (ret instanceof HTMLElement) {
+	                ret.appendChild(elm);
+	            }
+	        }
+	        else {
+	            this.el.appendChild(elm);
+	        }
+	        return this;
+	    };
+	    /**
+	     * Convience for view.el.querySelectorAll()
+	     * @param {string|HTMLElement} selector
+	     */
+	    BaseView.prototype.$ = function (selector) {
+	        if (selector instanceof HTMLElement) {
+	            return selector;
+	        }
+	        else {
+	            return BaseView.find(selector, this.el);
+	        }
+	    };
+	    BaseView.prototype.setElement = function (elm) {
+	        this.undelegateEvents();
+	        this._setElement(elm);
+	        this.delegateEvents();
+	    };
+	    BaseView.prototype.remove = function () {
+	        this._removeElement();
+	        return this;
+	    };
+	    BaseView.prototype.destroy = function () {
+	        if (this.isDestroyed)
+	            return;
+	        this.remove();
+	        _super.prototype.destroy.call(this);
+	        return this;
+	    };
+	    // PRIVATES
+	    /**
+	     * Bind ui elements
+	     * @private
+	     */
+	    BaseView.prototype._bindUIElements = function () {
+	        var _this = this;
+	        var ui = this.getOption('ui'); //this.options.ui||this.ui
+	        if (!ui)
+	            return;
+	        if (!this._ui) {
+	            this._ui = ui;
+	        }
+	        ui = utils.result(this, '_ui');
+	        this.ui = {};
+	        Object.keys(ui).forEach(function (k) {
+	            var elm = _this.$(ui[k]);
+	            if (elm && elm.length) {
+	                // unwrap if it's a nodelist.
+	                if (elm instanceof NodeList) {
+	                    elm = elm[0];
+	                }
+	                debug('added ui element %s %s', k, ui[k]);
+	                _this.ui[k] = elm;
+	            }
+	            else {
+	                debug('view ', _this.cid, ': ui element not found ', k, ui[k]);
+	            }
+	        });
+	    };
+	    /**
+	     * Unbind ui elements
+	     * @private
+	     */
+	    BaseView.prototype._unbindUIElements = function () {
+	    };
+	    /**
+	     * Configure triggers
+	     * @return {Object} events object
+	     * @private
+	     */
+	    BaseView.prototype._configureTriggers = function () {
+	        var triggers = this.getOption('triggers') || {};
+	        if (typeof triggers === 'function') {
+	            triggers = triggers.call(this);
+	        }
+	        // Allow `triggers` to be configured as a function
+	        triggers = util_1.normalizeUIKeys(triggers, this._ui);
+	        // Configure the triggers, prevent default
+	        // action and stop propagation of DOM events
+	        var events = {}, val, key;
+	        for (key in triggers) {
+	            val = triggers[key];
+	            debug('added trigger %s %s', key, val);
+	            events[key] = this._buildViewTrigger(val);
+	        }
+	        return events;
+	    };
+	    /**
+	     * builder trigger function
+	     * @param  {Object|String} triggerDef Trigger definition
+	     * @return {Function}
+	     * @private
+	     */
+	    BaseView.prototype._buildViewTrigger = function (triggerDef) {
+	        if (typeof triggerDef === 'string')
+	            triggerDef = { event: triggerDef };
+	        var options = utils.extend({
+	            preventDefault: true,
+	            stopPropagation: true
+	        }, triggerDef);
+	        return function (e) {
+	            if (e) {
+	                if (e.preventDefault && options.preventDefault) {
+	                    e.preventDefault();
+	                }
+	                if (e.stopPropagation && options.stopPropagation) {
+	                    e.stopPropagation();
+	                }
+	            }
+	            this.triggerMethod(options.event, {
+	                view: this,
+	                model: this.model,
+	                collection: this.collection
+	            });
+	        };
+	    };
+	    BaseView.prototype._createElement = function (tagName) {
+	        return document.createElement(tagName);
+	    };
+	    BaseView.prototype._ensureElement = function () {
+	        if (!this.el) {
+	            var attrs = utils.extend({}, utils.result(this, 'attributes'));
+	            if (this.id)
+	                attrs.id = utils.result(this, 'id');
+	            if (this.className)
+	                attrs['class'] = utils.result(this, 'className');
+	            debug('%s created element: %s', this.cid, utils.result(this, 'tagName') || 'div');
+	            this.setElement(this._createElement(utils.result(this, 'tagName') || 'div'));
+	            this._setAttributes(attrs);
+	        }
+	        else {
+	            this.setElement(utils.result(this, 'el'));
+	        }
+	    };
+	    BaseView.prototype._removeElement = function () {
+	        this.undelegateEvents();
+	        if (this.el.parentNode)
+	            this.el.parentNode.removeChild(this.el);
+	    };
+	    BaseView.prototype._setElement = function (element) {
+	        if (typeof element === 'string') {
+	            if (paddedLt.test(element)) {
+	                var el = document.createElement('div');
+	                el.innerHTML = element;
+	                this.el = el.firstElementChild;
+	            }
+	            else {
+	                this.el = document.querySelector(element);
+	            }
+	        }
+	        else {
+	            this.el = element;
+	        }
+	    };
+	    BaseView.prototype._setAttributes = function (attrs) {
+	        for (var attr in attrs) {
+	            attr in this.el ? this.el[attr] = attrs[attr] : this.el.setAttribute(attr, attrs[attr]);
+	        }
+	    };
+	    return BaseView;
+	}(object_1.BaseObject));
+	exports.BaseView = BaseView;
+
+
+/***/ },
+/* 3 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * This is the web browser implementation of `debug()`.
+	 *
+	 * Expose `debug()` as the module.
+	 */
+
+	exports = module.exports = __webpack_require__(4);
+	exports.log = log;
+	exports.formatArgs = formatArgs;
+	exports.save = save;
+	exports.load = load;
+	exports.useColors = useColors;
+	exports.storage = 'undefined' != typeof chrome
+	               && 'undefined' != typeof chrome.storage
+	                  ? chrome.storage.local
+	                  : localstorage();
+
+	/**
+	 * Colors.
+	 */
+
+	exports.colors = [
+	  'lightseagreen',
+	  'forestgreen',
+	  'goldenrod',
+	  'dodgerblue',
+	  'darkorchid',
+	  'crimson'
+	];
+
+	/**
+	 * Currently only WebKit-based Web Inspectors, Firefox >= v31,
+	 * and the Firebug extension (any Firefox version) are known
+	 * to support "%c" CSS customizations.
+	 *
+	 * TODO: add a `localStorage` variable to explicitly enable/disable colors
+	 */
+
+	function useColors() {
+	  // is webkit? http://stackoverflow.com/a/16459606/376773
+	  return ('WebkitAppearance' in document.documentElement.style) ||
+	    // is firebug? http://stackoverflow.com/a/398120/376773
+	    (window.console && (console.firebug || (console.exception && console.table))) ||
+	    // is firefox >= v31?
+	    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+	    (navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31);
+	}
+
+	/**
+	 * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
+	 */
+
+	exports.formatters.j = function(v) {
+	  return JSON.stringify(v);
+	};
+
+
+	/**
+	 * Colorize log arguments if enabled.
+	 *
+	 * @api public
+	 */
+
+	function formatArgs() {
+	  var args = arguments;
+	  var useColors = this.useColors;
+
+	  args[0] = (useColors ? '%c' : '')
+	    + this.namespace
+	    + (useColors ? ' %c' : ' ')
+	    + args[0]
+	    + (useColors ? '%c ' : ' ')
+	    + '+' + exports.humanize(this.diff);
+
+	  if (!useColors) return args;
+
+	  var c = 'color: ' + this.color;
+	  args = [args[0], c, 'color: inherit'].concat(Array.prototype.slice.call(args, 1));
+
+	  // the final "%c" is somewhat tricky, because there could be other
+	  // arguments passed either before or after the %c, so we need to
+	  // figure out the correct index to insert the CSS into
+	  var index = 0;
+	  var lastC = 0;
+	  args[0].replace(/%[a-z%]/g, function(match) {
+	    if ('%%' === match) return;
+	    index++;
+	    if ('%c' === match) {
+	      // we only are interested in the *last* %c
+	      // (the user may have provided their own)
+	      lastC = index;
+	    }
+	  });
+
+	  args.splice(lastC, 0, c);
+	  return args;
+	}
+
+	/**
+	 * Invokes `console.log()` when available.
+	 * No-op when `console.log` is not a "function".
+	 *
+	 * @api public
+	 */
+
+	function log() {
+	  // this hackery is required for IE8/9, where
+	  // the `console.log` function doesn't have 'apply'
+	  return 'object' === typeof console
+	    && console.log
+	    && Function.prototype.apply.call(console.log, console, arguments);
+	}
+
+	/**
+	 * Save `namespaces`.
+	 *
+	 * @param {String} namespaces
+	 * @api private
+	 */
+
+	function save(namespaces) {
+	  try {
+	    if (null == namespaces) {
+	      exports.storage.removeItem('debug');
+	    } else {
+	      exports.storage.debug = namespaces;
+	    }
+	  } catch(e) {}
+	}
+
+	/**
+	 * Load `namespaces`.
+	 *
+	 * @return {String} returns the previously persisted debug modes
+	 * @api private
+	 */
+
+	function load() {
+	  var r;
+	  try {
+	    r = exports.storage.debug;
+	  } catch(e) {}
+	  return r;
+	}
+
+	/**
+	 * Enable namespaces listed in `localStorage.debug` initially.
+	 */
+
+	exports.enable(load());
+
+	/**
+	 * Localstorage attempts to return the localstorage.
+	 *
+	 * This is necessary because safari throws
+	 * when a user disables cookies/localstorage
+	 * and you attempt to access it.
+	 *
+	 * @return {LocalStorage}
+	 * @api private
+	 */
+
+	function localstorage(){
+	  try {
+	    return window.localStorage;
+	  } catch (e) {}
+	}
+
+
+/***/ },
+/* 4 */
+/***/ function(module, exports, __webpack_require__) {
+
+	
+	/**
+	 * This is the common logic for both the Node.js and web browser
+	 * implementations of `debug()`.
+	 *
+	 * Expose `debug()` as the module.
+	 */
+
+	exports = module.exports = debug;
+	exports.coerce = coerce;
+	exports.disable = disable;
+	exports.enable = enable;
+	exports.enabled = enabled;
+	exports.humanize = __webpack_require__(5);
+
+	/**
+	 * The currently active debug mode names, and names to skip.
+	 */
+
+	exports.names = [];
+	exports.skips = [];
+
+	/**
+	 * Map of special "%n" handling functions, for the debug "format" argument.
+	 *
+	 * Valid key names are a single, lowercased letter, i.e. "n".
+	 */
+
+	exports.formatters = {};
+
+	/**
+	 * Previously assigned color.
+	 */
+
+	var prevColor = 0;
+
+	/**
+	 * Previous log timestamp.
+	 */
+
+	var prevTime;
+
+	/**
+	 * Select a color.
+	 *
+	 * @return {Number}
+	 * @api private
+	 */
+
+	function selectColor() {
+	  return exports.colors[prevColor++ % exports.colors.length];
+	}
+
+	/**
+	 * Create a debugger with the given `namespace`.
+	 *
+	 * @param {String} namespace
+	 * @return {Function}
+	 * @api public
+	 */
+
+	function debug(namespace) {
+
+	  // define the `disabled` version
+	  function disabled() {
+	  }
+	  disabled.enabled = false;
+
+	  // define the `enabled` version
+	  function enabled() {
+
+	    var self = enabled;
+
+	    // set `diff` timestamp
+	    var curr = +new Date();
+	    var ms = curr - (prevTime || curr);
+	    self.diff = ms;
+	    self.prev = prevTime;
+	    self.curr = curr;
+	    prevTime = curr;
+
+	    // add the `color` if not set
+	    if (null == self.useColors) self.useColors = exports.useColors();
+	    if (null == self.color && self.useColors) self.color = selectColor();
+
+	    var args = Array.prototype.slice.call(arguments);
+
+	    args[0] = exports.coerce(args[0]);
+
+	    if ('string' !== typeof args[0]) {
+	      // anything else let's inspect with %o
+	      args = ['%o'].concat(args);
+	    }
+
+	    // apply any `formatters` transformations
+	    var index = 0;
+	    args[0] = args[0].replace(/%([a-z%])/g, function(match, format) {
+	      // if we encounter an escaped % then don't increase the array index
+	      if (match === '%%') return match;
+	      index++;
+	      var formatter = exports.formatters[format];
+	      if ('function' === typeof formatter) {
+	        var val = args[index];
+	        match = formatter.call(self, val);
+
+	        // now we need to remove `args[index]` since it's inlined in the `format`
+	        args.splice(index, 1);
+	        index--;
+	      }
+	      return match;
+	    });
+
+	    if ('function' === typeof exports.formatArgs) {
+	      args = exports.formatArgs.apply(self, args);
+	    }
+	    var logFn = enabled.log || exports.log || console.log.bind(console);
+	    logFn.apply(self, args);
+	  }
+	  enabled.enabled = true;
+
+	  var fn = exports.enabled(namespace) ? enabled : disabled;
+
+	  fn.namespace = namespace;
+
+	  return fn;
+	}
+
+	/**
+	 * Enables a debug mode by namespaces. This can include modes
+	 * separated by a colon and wildcards.
+	 *
+	 * @param {String} namespaces
+	 * @api public
+	 */
+
+	function enable(namespaces) {
+	  exports.save(namespaces);
+
+	  var split = (namespaces || '').split(/[\s,]+/);
+	  var len = split.length;
+
+	  for (var i = 0; i < len; i++) {
+	    if (!split[i]) continue; // ignore empty strings
+	    namespaces = split[i].replace(/\*/g, '.*?');
+	    if (namespaces[0] === '-') {
+	      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+	    } else {
+	      exports.names.push(new RegExp('^' + namespaces + '$'));
+	    }
+	  }
+	}
+
+	/**
+	 * Disable debug output.
+	 *
+	 * @api public
+	 */
+
+	function disable() {
+	  exports.enable('');
+	}
+
+	/**
+	 * Returns true if the given mode name is enabled, false otherwise.
+	 *
+	 * @param {String} name
+	 * @return {Boolean}
+	 * @api public
+	 */
+
+	function enabled(name) {
+	  var i, len;
+	  for (i = 0, len = exports.skips.length; i < len; i++) {
+	    if (exports.skips[i].test(name)) {
+	      return false;
+	    }
+	  }
+	  for (i = 0, len = exports.names.length; i < len; i++) {
+	    if (exports.names[i].test(name)) {
+	      return true;
+	    }
+	  }
+	  return false;
+	}
+
+	/**
+	 * Coerce `val`.
+	 *
+	 * @param {Mixed} val
+	 * @return {Mixed}
+	 * @api private
+	 */
+
+	function coerce(val) {
+	  if (val instanceof Error) return val.stack || val.message;
+	  return val;
+	}
+
+
+/***/ },
+/* 5 */
+/***/ function(module, exports) {
+
+	/**
+	 * Helpers.
+	 */
+
+	var s = 1000;
+	var m = s * 60;
+	var h = m * 60;
+	var d = h * 24;
+	var y = d * 365.25;
+
+	/**
+	 * Parse or format the given `val`.
+	 *
+	 * Options:
+	 *
+	 *  - `long` verbose formatting [false]
+	 *
+	 * @param {String|Number} val
+	 * @param {Object} options
+	 * @return {String|Number}
+	 * @api public
+	 */
+
+	module.exports = function(val, options){
+	  options = options || {};
+	  if ('string' == typeof val) return parse(val);
+	  return options.long
+	    ? long(val)
+	    : short(val);
+	};
+
+	/**
+	 * Parse the given `str` and return milliseconds.
+	 *
+	 * @param {String} str
+	 * @return {Number}
+	 * @api private
+	 */
+
+	function parse(str) {
+	  str = '' + str;
+	  if (str.length > 10000) return;
+	  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str);
+	  if (!match) return;
+	  var n = parseFloat(match[1]);
+	  var type = (match[2] || 'ms').toLowerCase();
+	  switch (type) {
+	    case 'years':
+	    case 'year':
+	    case 'yrs':
+	    case 'yr':
+	    case 'y':
+	      return n * y;
+	    case 'days':
+	    case 'day':
+	    case 'd':
+	      return n * d;
+	    case 'hours':
+	    case 'hour':
+	    case 'hrs':
+	    case 'hr':
+	    case 'h':
+	      return n * h;
+	    case 'minutes':
+	    case 'minute':
+	    case 'mins':
+	    case 'min':
+	    case 'm':
+	      return n * m;
+	    case 'seconds':
+	    case 'second':
+	    case 'secs':
+	    case 'sec':
+	    case 's':
+	      return n * s;
+	    case 'milliseconds':
+	    case 'millisecond':
+	    case 'msecs':
+	    case 'msec':
+	    case 'ms':
+	      return n;
+	  }
+	}
+
+	/**
+	 * Short format for `ms`.
+	 *
+	 * @param {Number} ms
+	 * @return {String}
+	 * @api private
+	 */
+
+	function short(ms) {
+	  if (ms >= d) return Math.round(ms / d) + 'd';
+	  if (ms >= h) return Math.round(ms / h) + 'h';
+	  if (ms >= m) return Math.round(ms / m) + 'm';
+	  if (ms >= s) return Math.round(ms / s) + 's';
+	  return ms + 'ms';
+	}
+
+	/**
+	 * Long format for `ms`.
+	 *
+	 * @param {Number} ms
+	 * @return {String}
+	 * @api private
+	 */
+
+	function long(ms) {
+	  return plural(ms, d, 'day')
+	    || plural(ms, h, 'hour')
+	    || plural(ms, m, 'minute')
+	    || plural(ms, s, 'second')
+	    || ms + ' ms';
+	}
+
+	/**
+	 * Pluralization helper.
+	 */
+
+	function plural(ms, n, name) {
+	  if (ms < n) return;
+	  if (ms < n * 1.5) return Math.floor(ms / n) + ' ' + name;
+	  return Math.ceil(ms / n) + ' ' + name + 's';
+	}
+
+
+/***/ },
+/* 6 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var debug = __webpack_require__(3)('views:object');
+	var eventsjs_1 = __webpack_require__(7);
+	var utilities_1 = __webpack_require__(8);
 	/** Base object */
 	var BaseObject = (function (_super) {
 	    __extends(BaseObject, _super);
@@ -184,7 +1048,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 3 */
+/* 7 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -223,6 +1087,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	}
 	exports.callFunc = callFunc;
+	function isFunction(a) {
+	    return typeof a === 'function';
+	}
+	exports.isFunction = isFunction;
+	function isEventEmitter(a) {
+	    return a instanceof EventEmitter || (isFunction(a.on) && isFunction(a.off) && isFunction(a.trigger));
+	}
+	exports.isEventEmitter = isEventEmitter;
 	var EventEmitter = (function () {
 	    function EventEmitter() {
 	    }
@@ -344,27 +1216,27 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 4 */
+/* 8 */
 /***/ function(module, exports, __webpack_require__) {
 
 	function __export(m) {
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
-	__export(__webpack_require__(5));
-	__export(__webpack_require__(7));
 	__export(__webpack_require__(9));
-	__export(__webpack_require__(6));
-	__export(__webpack_require__(8));
-	__export(__webpack_require__(10));
 	__export(__webpack_require__(11));
+	__export(__webpack_require__(13));
+	__export(__webpack_require__(10));
 	__export(__webpack_require__(12));
+	__export(__webpack_require__(14));
+	__export(__webpack_require__(15));
+	__export(__webpack_require__(16));
 
 
 /***/ },
-/* 5 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var utils_1 = __webpack_require__(6);
+	var utils_1 = __webpack_require__(10);
 	function unique(array) {
 	    return array.filter(function (e, i) {
 	        for (i += 1; i < array.length; i += 1) {
@@ -438,12 +1310,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 10 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var objects_1 = __webpack_require__(7);
-	var arrays_1 = __webpack_require__(5);
-	var strings_1 = __webpack_require__(8);
+	var objects_1 = __webpack_require__(11);
+	var arrays_1 = __webpack_require__(9);
+	var strings_1 = __webpack_require__(12);
 	var idCounter = 0;
 	var nativeBind = Function.prototype.bind;
 	function ajax() {
@@ -670,11 +1542,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var utils_1 = __webpack_require__(6);
-	var arrays_1 = __webpack_require__(5);
+	var utils_1 = __webpack_require__(10);
+	var arrays_1 = __webpack_require__(9);
 	function objToPaths(obj, separator) {
 	    if (separator === void 0) { separator = "."; }
 	    var ret = {};
@@ -823,7 +1695,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 8 */
+/* 12 */
 /***/ function(module, exports) {
 
 	function isString(a) {
@@ -862,12 +1734,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 9 */
+/* 13 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* WEBPACK VAR INJECTION */(function(global) {var objects_1 = __webpack_require__(7);
-	var arrays_1 = __webpack_require__(5);
-	var utils_1 = __webpack_require__(6);
+	/* WEBPACK VAR INJECTION */(function(global) {var objects_1 = __webpack_require__(11);
+	var arrays_1 = __webpack_require__(9);
+	var utils_1 = __webpack_require__(10);
 	exports.Promise = (typeof window === 'undefined') ? global.Promise : window.Promise;
 	function isPromise(obj) {
 	    return obj && typeof obj.then === 'function';
@@ -1005,10 +1877,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 10 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var arrays_1 = __webpack_require__(5);
+	var arrays_1 = __webpack_require__(9);
 	var ElementProto = (typeof Element !== 'undefined' && Element.prototype) || {};
 	var matchesSelector = ElementProto.matches ||
 	    ElementProto.webkitMatchesSelector ||
@@ -1197,13 +2069,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 11 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var utils_1 = __webpack_require__(6);
-	var strings_1 = __webpack_require__(8);
-	var objects_1 = __webpack_require__(7);
-	var promises_1 = __webpack_require__(9);
+	var utils_1 = __webpack_require__(10);
+	var strings_1 = __webpack_require__(12);
+	var objects_1 = __webpack_require__(11);
+	var promises_1 = __webpack_require__(13);
 	var xmlRe = /^(?:application|text)\/xml/, jsonRe = /^application\/json/, fileProto = /^file:/;
 	function queryStringToParams(qs) {
 	    var kvp, k, v, ls, params = {}, decode = decodeURIComponent;
@@ -1338,10 +2210,10 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 12 */
+/* 16 */
 /***/ function(module, exports, __webpack_require__) {
 
-	var utils_1 = __webpack_require__(6);
+	var utils_1 = __webpack_require__(10);
 	var Debug = (function () {
 	    function Debug(namespace) {
 	        this.enabled = false;
@@ -1431,426 +2303,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 13 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var utilities_1 = __webpack_require__(4);
-	function _log() {
-	    // this hackery is required for IE8/9, where
-	    // the `console.log` function doesn't have 'apply'
-	    return 'object' === typeof console
-	        && console.log
-	        && Function.prototype.apply.call(console.log, console, arguments);
-	}
-	var _debug = false;
-	function debug(should) {
-	    _debug = should;
-	}
-	exports.debug = debug;
-	var formatters = {
-	    j: function (v) {
-	        return JSON.stringify(v);
-	    }
-	};
-	function coerce(val) {
-	    if (val instanceof Error)
-	        return val.stack || val.message;
-	    return val;
-	}
-	function logger(namespace) {
-	    var fn = function () {
-	        var args = [];
-	        for (var _i = 0; _i < arguments.length; _i++) {
-	            args[_i - 0] = arguments[_i];
-	        }
-	        if (!_debug)
-	            return;
-	        args[0] = coerce(args[0]);
-	        if ('string' !== typeof args[0]) {
-	            // anything else let's inspect with %o
-	            args = ['%o'].concat(args);
-	        }
-	        // apply any `formatters` transformations
-	        var index = 0;
-	        args[0] = args[0].replace(/%([a-z%])/g, function (match, format) {
-	            // if we encounter an escaped % then don't increase the array index
-	            if (match === '%%')
-	                return match;
-	            index++;
-	            var formatter = formatters[format];
-	            if ('function' === typeof formatter) {
-	                var val = args[index];
-	                match = formatter.call(self, val);
-	                // now we need to remove `args[index]` since it's inlined in the `format`
-	                args.splice(index, 1);
-	                index--;
-	            }
-	            return match;
-	        });
-	        args = formatArgs(namespace, args);
-	        utilities_1.callFunc(_log, null, args);
-	    };
-	    return fn;
-	}
-	exports.logger = logger;
-	function formatArgs(namespace, args) {
-	    //var args = arguments;
-	    args[0] = '[views:' + namespace + '] ' + args[0];
-	    return args;
-	}
-
-
-/***/ },
-/* 14 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var object_1 = __webpack_require__(2);
-	var utils = __webpack_require__(4);
-	var debug_1 = __webpack_require__(13);
-	var util_1 = __webpack_require__(15);
-	var debug = debug_1.logger('baseview');
-	var paddedLt = /^\s*</;
-	var unbubblebles = 'focus blur change'.split(' ');
-	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events'];
-	var BaseView = (function (_super) {
-	    __extends(BaseView, _super);
-	    /**
-	     * BaseView
-	     * @param {BaseViewOptions} options
-	     * @extends BaseObject
-	     */
-	    function BaseView(options) {
-	        if (options === void 0) { options = {}; }
-	        _super.call(this);
-	        this._cid = utils.uniqueId('view');
-	        utils.extend(this, utils.pick(options, viewOptions));
-	        this._domEvents = [];
-	        if (this.el == null) {
-	            this._ensureElement();
-	        }
-	        else {
-	            this.delegateEvents();
-	        }
-	    }
-	    BaseView.find = function (selector, context) {
-	        return context.querySelectorAll(selector);
-	    };
-	    Object.defineProperty(BaseView.prototype, "cid", {
-	        get: function () {
-	            return this._cid;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    /**
-	     * Delegate events
-	     * @param {EventsMap} events
-	     */
-	    BaseView.prototype.delegateEvents = function (events) {
-	        var _this = this;
-	        this._bindUIElements();
-	        events = events || utils.result(this, 'events');
-	        events = util_1.normalizeUIKeys(events, this._ui);
-	        var triggers = this._configureTriggers();
-	        events = utils.extend({}, events, triggers);
-	        debug('%s delegate events %j', this.cid, events);
-	        if (!events)
-	            return this;
-	        //if (!(events || (events = utils.result(this, 'events')))) return this;
-	        this.undelegateEvents();
-	        var dels = [];
-	        for (var key in events) {
-	            var method = events[key];
-	            if (typeof method !== 'function')
-	                method = this[method];
-	            var match = key.match(/^(\S+)\s*(.*)$/);
-	            // Set delegates immediately and defer event on this.el
-	            var boundFn = utils.bind(method, this);
-	            if (match[2]) {
-	                this.delegate(match[1], match[2], boundFn);
-	            }
-	            else {
-	                dels.push([match[1], boundFn]);
-	            }
-	        }
-	        dels.forEach(function (d) { _this.delegate(d[0], d[1]); });
-	        return this;
-	    };
-	    /**
-	     * Undelegate events
-	     */
-	    BaseView.prototype.undelegateEvents = function () {
-	        this._unbindUIElements();
-	        debug('%s undelegate events', this.cid);
-	        if (this.el) {
-	            for (var i = 0, len = this._domEvents.length; i < len; i++) {
-	                var item = this._domEvents[i];
-	                utils.removeEventListener(this.el, item.eventName, item.handler);
-	            }
-	            this._domEvents.length = 0;
-	        }
-	        return this;
-	    };
-	    BaseView.prototype.delegate = function (eventName, selector, listener) {
-	        if (typeof selector === 'function') {
-	            listener = selector;
-	            selector = null;
-	        }
-	        var root = this.el;
-	        var handler = selector ? function (e) {
-	            var node = e.target || e.srcElement;
-	            // Already handled
-	            if (e.delegateTarget)
-	                return;
-	            for (; node && node != root; node = node.parentNode) {
-	                if (utils.matches(node, selector)) {
-	                    e.delegateTarget = node;
-	                    listener(e);
-	                }
-	            }
-	        } : function (e) {
-	            if (e.delegateTarget)
-	                return;
-	            listener(e);
-	        };
-	        /*jshint bitwise: false*/
-	        var useCap = !!~unbubblebles.indexOf(eventName) && selector != null;
-	        debug('%s delegate event %s ', this.cid, eventName);
-	        utils.addEventListener(this.el, eventName, handler, useCap);
-	        this._domEvents.push({ eventName: eventName, handler: handler, listener: listener, selector: selector });
-	        return handler;
-	    };
-	    BaseView.prototype.undelegate = function (eventName, selector, listener) {
-	        if (typeof selector === 'function') {
-	            listener = selector;
-	            selector = null;
-	        }
-	        if (this.el) {
-	            var handlers = this._domEvents.slice();
-	            for (var i = 0, len = handlers.length; i < len; i++) {
-	                var item = handlers[i];
-	                var match = item.eventName === eventName &&
-	                    (listener ? item.listener === listener : true) &&
-	                    (selector ? item.selector === selector : true);
-	                if (!match)
-	                    continue;
-	                utils.removeEventListener(this.el, item.eventName, item.handler);
-	                this._domEvents.splice(utils.indexOf(handlers, item), 1);
-	            }
-	        }
-	        return this;
-	    };
-	    BaseView.prototype.render = function (options) {
-	        return this;
-	    };
-	    /**
-	     * Append the view to a HTMLElement
-	     * @param {HTMLElement|string} elm A html element or a selector string
-	     * @return {this} for chaining
-	     */
-	    BaseView.prototype.appendTo = function (elm) {
-	        if (elm instanceof HTMLElement) {
-	            elm.appendChild(this.el);
-	        }
-	        else {
-	            var el = document.querySelector(elm);
-	            el ? el.appendChild(this.el) : void 0;
-	        }
-	        return this;
-	    };
-	    /**
-	     * Append a element the view
-	     * @param {HTMLElement} elm
-	     * @param {String} toSelector
-	     * @return {this} for chaining
-	     */
-	    BaseView.prototype.append = function (elm, toSelector) {
-	        if (toSelector != null) {
-	            var ret = this.$(toSelector);
-	            if (ret instanceof NodeList && ret.length > 0) {
-	                ret[0].appendChild(elm);
-	            }
-	            else if (ret instanceof HTMLElement) {
-	                ret.appendChild(elm);
-	            }
-	        }
-	        else {
-	            this.el.appendChild(elm);
-	        }
-	        return this;
-	    };
-	    /**
-	     * Convience for view.el.querySelectorAll()
-	     * @param {string|HTMLElement} selector
-	     */
-	    BaseView.prototype.$ = function (selector) {
-	        if (selector instanceof HTMLElement) {
-	            return selector;
-	        }
-	        else {
-	            return BaseView.find(selector, this.el);
-	        }
-	    };
-	    BaseView.prototype.setElement = function (elm) {
-	        this.undelegateEvents();
-	        this._setElement(elm);
-	        this.delegateEvents();
-	    };
-	    BaseView.prototype.remove = function () {
-	        this._removeElement();
-	        return this;
-	    };
-	    BaseView.prototype.destroy = function () {
-	        if (this.isDestroyed)
-	            return;
-	        this.remove();
-	        _super.prototype.destroy.call(this);
-	        return this;
-	    };
-	    // PRIVATES
-	    /**
-	     * Bind ui elements
-	     * @private
-	     */
-	    BaseView.prototype._bindUIElements = function () {
-	        var _this = this;
-	        var ui = this.getOption('ui'); //this.options.ui||this.ui
-	        if (!ui)
-	            return;
-	        if (!this._ui) {
-	            this._ui = ui;
-	        }
-	        ui = utils.result(this, '_ui');
-	        this.ui = {};
-	        Object.keys(ui).forEach(function (k) {
-	            var elm = _this.$(ui[k]);
-	            if (elm && elm.length) {
-	                // unwrap if it's a nodelist.
-	                if (elm instanceof NodeList) {
-	                    elm = elm[0];
-	                }
-	                debug('added ui element %s %s', k, ui[k]);
-	                _this.ui[k] = elm;
-	            }
-	            else {
-	                console.warn('view ', _this.cid, ': ui element not found ', k, ui[k]);
-	            }
-	        });
-	    };
-	    /**
-	     * Unbind ui elements
-	     * @private
-	     */
-	    BaseView.prototype._unbindUIElements = function () {
-	    };
-	    /**
-	     * Configure triggers
-	     * @return {Object} events object
-	     * @private
-	     */
-	    BaseView.prototype._configureTriggers = function () {
-	        var triggers = this.getOption('triggers') || {};
-	        if (typeof triggers === 'function') {
-	            triggers = triggers.call(this);
-	        }
-	        // Allow `triggers` to be configured as a function
-	        triggers = util_1.normalizeUIKeys(triggers, this._ui);
-	        // Configure the triggers, prevent default
-	        // action and stop propagation of DOM events
-	        var events = {}, val, key;
-	        for (key in triggers) {
-	            val = triggers[key];
-	            debug('added trigger %s %s', key, val);
-	            events[key] = this._buildViewTrigger(val);
-	        }
-	        return events;
-	    };
-	    /**
-	     * builder trigger function
-	     * @param  {Object|String} triggerDef Trigger definition
-	     * @return {Function}
-	     * @private
-	     */
-	    BaseView.prototype._buildViewTrigger = function (triggerDef) {
-	        if (typeof triggerDef === 'string')
-	            triggerDef = { event: triggerDef };
-	        var options = utils.extend({
-	            preventDefault: true,
-	            stopPropagation: true
-	        }, triggerDef);
-	        return function (e) {
-	            if (e) {
-	                if (e.preventDefault && options.preventDefault) {
-	                    e.preventDefault();
-	                }
-	                if (e.stopPropagation && options.stopPropagation) {
-	                    e.stopPropagation();
-	                }
-	            }
-	            this.triggerMethod(options.event, {
-	                view: this,
-	                model: this.model,
-	                collection: this.collection
-	            });
-	        };
-	    };
-	    BaseView.prototype._createElement = function (tagName) {
-	        return document.createElement(tagName);
-	    };
-	    BaseView.prototype._ensureElement = function () {
-	        if (!this.el) {
-	            var attrs = utils.extend({}, utils.result(this, 'attributes'));
-	            if (this.id)
-	                attrs.id = utils.result(this, 'id');
-	            if (this.className)
-	                attrs['class'] = utils.result(this, 'className');
-	            debug('%s created element: %s', this.cid, utils.result(this, 'tagName') || 'div');
-	            this.setElement(this._createElement(utils.result(this, 'tagName') || 'div'));
-	            this._setAttributes(attrs);
-	        }
-	        else {
-	            this.setElement(utils.result(this, 'el'));
-	        }
-	    };
-	    BaseView.prototype._removeElement = function () {
-	        this.undelegateEvents();
-	        if (this.el.parentNode)
-	            this.el.parentNode.removeChild(this.el);
-	    };
-	    BaseView.prototype._setElement = function (element) {
-	        if (typeof element === 'string') {
-	            if (paddedLt.test(element)) {
-	                var el = document.createElement('div');
-	                el.innerHTML = element;
-	                this.el = el.firstElementChild;
-	            }
-	            else {
-	                this.el = document.querySelector(element);
-	            }
-	        }
-	        else {
-	            this.el = element;
-	        }
-	    };
-	    BaseView.prototype._setAttributes = function (attrs) {
-	        for (var attr in attrs) {
-	            attr in this.el ? this.el[attr] = attrs[attr] : this.el.setAttribute(attr, attrs[attr]);
-	        }
-	    };
-	    return BaseView;
-	}(object_1.BaseObject));
-	exports.BaseView = BaseView;
-
-
-/***/ },
-/* 15 */
+/* 17 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1874,7 +2327,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 16 */
+/* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* global BaseClass */
@@ -1885,8 +2338,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var object_1 = __webpack_require__(2);
-	var utilities_1 = __webpack_require__(4);
+	var object_1 = __webpack_require__(6);
+	var utilities_1 = __webpack_require__(8);
 	/** Region  */
 	var Region = (function (_super) {
 	    __extends(Region, _super);
@@ -2023,7 +2476,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 17 */
+/* 19 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* global BaseClass, __has */
@@ -2033,9 +2486,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var object_1 = __webpack_require__(2);
-	var region_1 = __webpack_require__(16);
-	var utils = __webpack_require__(4);
+	var object_1 = __webpack_require__(6);
+	var region_1 = __webpack_require__(18);
+	var utils = __webpack_require__(8);
 	var RegionManager = (function (_super) {
 	    __extends(RegionManager, _super);
 	    /** Region manager
@@ -2128,7 +2581,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 18 */
+/* 20 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2138,10 +2591,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	/*global View, RegionManager, Region*/
-	var view_1 = __webpack_require__(19);
-	var region_manager_1 = __webpack_require__(17);
-	var utilities_1 = __webpack_require__(4);
-	var region_1 = __webpack_require__(16);
+	var view_1 = __webpack_require__(21);
+	var region_manager_1 = __webpack_require__(19);
+	var utilities_1 = __webpack_require__(8);
+	var region_1 = __webpack_require__(18);
 	var LayoutView = (function (_super) {
 	    __extends(LayoutView, _super);
 	    /**
@@ -2208,7 +2661,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 19 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2217,10 +2670,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var baseview_1 = __webpack_require__(14);
-	var utilities_1 = __webpack_require__(4);
-	var debug_1 = __webpack_require__(13);
-	var debug = debug_1.logger('view');
+	var debug = __webpack_require__(3)('views:view');
+	var baseview_1 = __webpack_require__(2);
+	var utilities_1 = __webpack_require__(8);
 	var View = (function (_super) {
 	    __extends(View, _super);
 	    /**
@@ -2376,7 +2828,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 20 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2385,11 +2837,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var view_1 = __webpack_require__(19);
-	var utilities_1 = __webpack_require__(4);
-	var eventsjs_1 = __webpack_require__(3);
-	var debug_1 = __webpack_require__(13);
-	var debug = debug_1.logger('collectionview');
+	var debug = __webpack_require__(3)('views:collectionview');
+	var view_1 = __webpack_require__(21);
+	var utilities_1 = __webpack_require__(8);
+	var eventsjs_1 = __webpack_require__(7);
 	var Buffer = (function () {
 	    function Buffer() {
 	        this.children = [];
@@ -2591,7 +3042,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            view._index = index;
 	        this.children.forEach(function (lView) {
 	            if (lView._index >= view._index) {
-	                console.log(lView);
 	                increment ? lView._index++ : lView._index--;
 	            }
 	        });
@@ -2651,7 +3101,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @private
 	     */
 	    CollectionView.prototype._delegateCollectionEvents = function () {
-	        if (this.collection && this.collection instanceof eventsjs_1.EventEmitter) {
+	        if (this.collection && eventsjs_1.isEventEmitter(this.collection)) {
 	            this.listenTo(this.collection, 'add', this._onCollectionAdd);
 	            this.listenTo(this.collection, 'remove', this._onCollectionRemove);
 	            this.listenTo(this.collection, 'reset', this.render);
@@ -2702,11 +3152,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 21 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var utilities_1 = __webpack_require__(4);
+	var utilities_1 = __webpack_require__(8);
 	function attributes(attrs) {
 	    return function (target) {
 	        utilities_1.extend(target.prototype, attrs);
@@ -2728,12 +3178,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 22 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	var views_1 = __webpack_require__(1);
-	var assets_preview_1 = __webpack_require__(23);
+	var assets_preview_1 = __webpack_require__(25);
 	assets_preview_1.setPreviewHandler('image/*', views_1.View.extend({
 	    template: function (data) {
 	        return "<img src=\"" + data.url + "\"/>";
@@ -2752,7 +3202,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 23 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2762,10 +3212,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var views_1 = __webpack_require__(1);
-	var utilities_1 = __webpack_require__(24);
-	var html = __webpack_require__(10);
-	var templates_1 = __webpack_require__(25);
-	var thumbnailer_1 = __webpack_require__(26);
+	var utilities_1 = __webpack_require__(26);
+	var html = __webpack_require__(14);
+	var templates_1 = __webpack_require__(27);
+	var thumbnailer_1 = __webpack_require__(28);
 	exports.AssetsInfoPreview = views_1.View.extend({
 	    ui: {
 	        name: '.name',
@@ -2889,7 +3339,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 24 */
+/* 26 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2945,22 +3395,22 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 25 */
+/* 27 */
 /***/ function(module, exports) {
 
 	"use strict";
 	exports.PreviewTemplate = "\n<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>\n";
 	exports.PreviewInfoTemplate = "\n<table>\n\t\t<tr>\n\t\t\t<td>Name</td>\n\t\t\t<td class=\"name\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Mime</td>\n\t\t\t<td class=\"mime\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Size</td>\n\t\t\t<td class=\"size\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Download</td>\n\t\t\t<td class=\"download\"><a></a></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Slet</td>\n\t\t\t<td class=\"remove\"><a class=\"remove\">&times;</a></td>\n\t\t</tr>\n\t</table>\n";
-	exports.AssetListItemTemplate = "\n<div class=\"thumbnail-container\">\n\t<i class=\"mime-type mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>\n";
+	exports.AssetListItemTemplate = "\n<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">\n\t<i class=\"mime-type mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>\n";
 	exports.gallery = "\n<div class=\"gallery-list\">\n    \n</div>\n<div class=\"gallery-preview\"></div>\n<div class=\"gallery-upload\"></div>";
 
 
 /***/ },
-/* 26 */
+/* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var request_1 = __webpack_require__(27);
+	var request_1 = __webpack_require__(29);
 	exports.MimeList = {
 	    'audio/mpeg': 'audio-generic',
 	    'audio/ogg': 'audio-generic',
@@ -2997,12 +3447,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 27 */
+/* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var utilities_1 = __webpack_require__(24);
-	var utilities_2 = __webpack_require__(4);
+	var utilities_1 = __webpack_require__(26);
+	var utilities_2 = __webpack_require__(8);
 	var xmlRe = /^(?:application|text)\/xml/, jsonRe = /^application\/json/, fileProto = /^file:/;
 	function queryParam(obj) {
 	    return '?' + Object.keys(obj).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(obj[k])); return a; }, []).join('&');
@@ -3108,7 +3558,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 28 */
+/* 30 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3117,9 +3567,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var eventsjs_1 = __webpack_require__(3);
-	var request_1 = __webpack_require__(27);
-	var utils = __webpack_require__(4);
+	var eventsjs_1 = __webpack_require__(7);
+	var request_1 = __webpack_require__(29);
+	var utils = __webpack_require__(8);
 	(function (HttpMethod) {
 	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
 	    HttpMethod[HttpMethod["POST"] = 1] = "POST";
@@ -3214,7 +3664,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 29 */
+/* 31 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3232,9 +3682,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	var __metadata = (this && this.__metadata) || function (k, v) {
 	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
-	var fileuploader_1 = __webpack_require__(28);
+	var fileuploader_1 = __webpack_require__(30);
 	var views_1 = __webpack_require__(1);
-	var utils = __webpack_require__(4);
+	var utils = __webpack_require__(8);
 	var defaults = { maxSize: 2048, mimeType: '*', autoUpload: false };
 	var MessageView = (function (_super) {
 	    __extends(MessageView, _super);
@@ -3379,7 +3829,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 30 */
+/* 32 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3388,8 +3838,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var collection_1 = __webpack_require__(31);
-	var request_1 = __webpack_require__(27);
+	var collection_1 = __webpack_require__(33);
+	var request_1 = __webpack_require__(29);
 	var AssetsModel = (function (_super) {
 	    __extends(AssetsModel, _super);
 	    function AssetsModel() {
@@ -3431,23 +3881,23 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 31 */
+/* 33 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	function __export(m) {
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
-	__export(__webpack_require__(32));
 	__export(__webpack_require__(34));
-	__export(__webpack_require__(35));
 	__export(__webpack_require__(36));
 	__export(__webpack_require__(37));
+	__export(__webpack_require__(38));
 	__export(__webpack_require__(39));
+	__export(__webpack_require__(41));
 
 
 /***/ },
-/* 32 */
+/* 34 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3456,11 +3906,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var object_1 = __webpack_require__(33);
-	var model_1 = __webpack_require__(34);
-	var objects_1 = __webpack_require__(7);
-	var arrays_1 = __webpack_require__(5);
-	var utils_1 = __webpack_require__(6);
+	var object_1 = __webpack_require__(35);
+	var model_1 = __webpack_require__(36);
+	var objects_1 = __webpack_require__(11);
+	var arrays_1 = __webpack_require__(9);
+	var utils_1 = __webpack_require__(10);
 	var setOptions = { add: true, remove: true, merge: true };
 	var addOptions = { add: true, remove: false };
 	var Collection = (function (_super) {
@@ -3745,7 +4195,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 33 */
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3754,8 +4204,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var eventsjs_1 = __webpack_require__(3);
-	var utils_1 = __webpack_require__(6);
+	var eventsjs_1 = __webpack_require__(7);
+	var utils_1 = __webpack_require__(10);
 	var BaseObject = (function (_super) {
 	    __extends(BaseObject, _super);
 	    function BaseObject() {
@@ -3770,7 +4220,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 34 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3779,9 +4229,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var object_1 = __webpack_require__(33);
-	var utils_1 = __webpack_require__(6);
-	var objects_1 = __webpack_require__(7);
+	var object_1 = __webpack_require__(35);
+	var utils_1 = __webpack_require__(10);
+	var objects_1 = __webpack_require__(11);
 	var Model = (function (_super) {
 	    __extends(Model, _super);
 	    function Model(attributes, options) {
@@ -3941,7 +4391,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 35 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3950,9 +4400,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var utils_1 = __webpack_require__(6);
-	var objects_1 = __webpack_require__(7);
-	var model_1 = __webpack_require__(34);
+	var utils_1 = __webpack_require__(10);
+	var objects_1 = __webpack_require__(11);
+	var model_1 = __webpack_require__(36);
 	function objToPaths(obj, separator) {
 	    if (separator === void 0) { separator = "."; }
 	    var ret = {};
@@ -4221,7 +4671,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 36 */
+/* 38 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -4230,11 +4680,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var objects_1 = __webpack_require__(7);
-	var collection_1 = __webpack_require__(32);
-	var rest_model_1 = __webpack_require__(37);
-	var promises_1 = __webpack_require__(9);
-	var persistence_1 = __webpack_require__(38);
+	var objects_1 = __webpack_require__(11);
+	var collection_1 = __webpack_require__(34);
+	var rest_model_1 = __webpack_require__(39);
+	var promises_1 = __webpack_require__(13);
+	var persistence_1 = __webpack_require__(40);
 	var RestCollection = (function (_super) {
 	    __extends(RestCollection, _super);
 	    function RestCollection(models, options) {
@@ -4329,7 +4779,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 37 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -4338,10 +4788,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var objects_1 = __webpack_require__(7);
-	var promises_1 = __webpack_require__(9);
-	var nested_model_1 = __webpack_require__(35);
-	var persistence_1 = __webpack_require__(38);
+	var objects_1 = __webpack_require__(11);
+	var promises_1 = __webpack_require__(13);
+	var nested_model_1 = __webpack_require__(37);
+	var persistence_1 = __webpack_require__(40);
 	function normalize_path(url, id) {
 	    var i, p = "";
 	    if ((i = url.indexOf('?')) >= 0) {
@@ -4447,13 +4897,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 38 */
+/* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var promises_1 = __webpack_require__(9);
-	var utils_1 = __webpack_require__(6);
-	var request_1 = __webpack_require__(11);
+	var promises_1 = __webpack_require__(13);
+	var utils_1 = __webpack_require__(10);
+	var request_1 = __webpack_require__(15);
 	(function (RestMethod) {
 	    RestMethod[RestMethod["Create"] = 0] = "Create";
 	    RestMethod[RestMethod["Update"] = 1] = "Update";
@@ -4549,7 +4999,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 39 */
+/* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -4558,12 +5008,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var collection_1 = __webpack_require__(32);
-	var rest_collection_1 = __webpack_require__(36);
-	var promises_1 = __webpack_require__(9);
-	var persistence_1 = __webpack_require__(38);
-	var objects_1 = __webpack_require__(7);
-	var request_1 = __webpack_require__(11);
+	var collection_1 = __webpack_require__(34);
+	var rest_collection_1 = __webpack_require__(38);
+	var promises_1 = __webpack_require__(13);
+	var persistence_1 = __webpack_require__(40);
+	var objects_1 = __webpack_require__(11);
+	var request_1 = __webpack_require__(15);
 	var PARAM_TRIM_RE = /[\s'"]/g;
 	var URL_TRIM_RE = /[<>\s'"]/g;
 	function queryStringToParams(qs) {
@@ -4749,7 +5199,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 40 */
+/* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -4768,11 +5218,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
-	var html = __webpack_require__(10);
-	var utilities_1 = __webpack_require__(24);
-	var templates_1 = __webpack_require__(25);
-	var gallery_1 = __webpack_require__(41);
-	var Blazy = __webpack_require__(42);
+	var html = __webpack_require__(14);
+	var utilities_1 = __webpack_require__(26);
+	var templates_1 = __webpack_require__(27);
+	var gallery_1 = __webpack_require__(43);
+	var Blazy = __webpack_require__(44);
 	var MimeList = {
 	    'audio/mpeg': 'audio-generic',
 	    'audio/ogg': 'audio-generic',
@@ -4787,13 +5237,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	    className: 'assets-list-item',
 	    tagName: 'div',
 	    ui: {
-	        remove: '.remove',
+	        remove: '.assets-list-item-close-button',
 	        name: '.name',
 	        mime: '.mime-type'
 	    },
 	    triggers: {
-	        'click': 'click',
 	        'click @ui.remove': 'remove'
+	    },
+	    events: {
+	        'click': function (e) {
+	            var target = e.target;
+	            if (target === this.ui.remove)
+	                return;
+	            this.triggerMethod('click', this.model);
+	        }
 	    },
 	    onRender: function () {
 	        var model = this.model;
@@ -4829,7 +5286,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            html.addClass(view.el, 'active');
 	            this.trigger('selected', view, model);
 	        });
-	        this.listenTo(this, 'childview:remove', function (view, model) {
+	        this.listenTo(this, 'childview:remove', function (view, _a) {
+	            var model = _a.model;
+	            console.log(arguments);
 	            if (options.deleteable === true) {
 	                var remove = true;
 	                if (model.has('deleteable')) {
@@ -4942,7 +5401,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 41 */
+/* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -4961,12 +5420,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
-	var templates = __webpack_require__(25);
-	var assets_list_1 = __webpack_require__(40);
-	var assets_preview_1 = __webpack_require__(23);
-	var assets_collection_1 = __webpack_require__(30);
-	var filebutton_1 = __webpack_require__(29);
-	var utils = __webpack_require__(4);
+	var templates = __webpack_require__(27);
+	var assets_list_1 = __webpack_require__(42);
+	var assets_preview_1 = __webpack_require__(25);
+	var assets_collection_1 = __webpack_require__(32);
+	var filebutton_1 = __webpack_require__(31);
+	var utils = __webpack_require__(8);
 	function template(name) {
 	    return function (target) {
 	        var t;
@@ -5001,7 +5460,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        this.collection = collection;
 	        this._listView = new assets_list_1.AssetsListView({
-	            collection: collection
+	            collection: collection,
+	            deleteable: true
 	        });
 	        this._preView = new assets_preview_1.AssetsPreview();
 	        this._uploadButton = new filebutton_1.UploadButton({
@@ -5057,7 +5517,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 42 */
+/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!

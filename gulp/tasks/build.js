@@ -9,4 +9,4 @@ gulp.task('example', ['build'], () => {
   .pipe(gulp.dest('example/public'))
 })
 
-gulp.task('build', ['build:typescript', 'build:javascript', 'build:stylus']);
+gulp.task('build', ['build:typescript', 'build:javascript', 'build:stylus', 'build:copy']);

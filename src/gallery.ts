@@ -67,7 +67,8 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
         this.collection = collection
 
         this._listView = new AssetsListView({
-            collection: collection
+            collection: collection,
+            deleteable: true
         });
 
         this._preView = new AssetsPreview();

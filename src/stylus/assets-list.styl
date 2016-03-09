@@ -1,3 +1,4 @@
+@import variables
 
 .assets-list
 
@@ -7,7 +8,7 @@
   .loader 
     width: 64px;
     height: 64px;
-    background-image: url(assets.loader.gif)
+    background-image: url(loader-image)
     margin: auto;
     margin-top:20%;
   .assets-list-item
@@ -15,9 +16,24 @@
 
   &.collection-mode
     .assets-list-item
-      cursor pointer
-      width 22%
-      float left
-      margin 5px
-      word-wrap break-word
-      text-align center
+      position: relative
+      cursor: pointer
+      width: 22%
+      float: left
+      margin: 5px
+      word-wrap: break-word
+      text-align: center
+      .assets-list-item-close-button
+        width: 32px;
+        height: 35px;
+        background-image:url(close-image)
+        position: absolute
+        right: -10px
+        top: -10px
+        opacity 0
+        transition-duration: 0.8s;
+        transition-property: opacity;
+      &:hover
+        .assets-list-item-close-button
+            display: block
+            opacity 1

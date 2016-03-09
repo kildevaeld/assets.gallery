@@ -49,7 +49,8 @@ document.querySelector('.gallery-preview').appendChild(preview.render().el);
 */
 
 var gallery = new Assets.GalleryView({
-  url: '/files'
+  url: '/files',
+  deleteable: true
 });
 console.log(gallery)
 

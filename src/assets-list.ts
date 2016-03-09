@@ -29,14 +29,22 @@ export const AssetsListItem = View.extend({
 	className: 'assets-list-item',
 	tagName: 'div',
 	ui: {
-		remove: '.remove',
+		remove: '.assets-list-item-close-button',
 		name: '.name',
 		mime: '.mime-type'
 	},
 	triggers: {
-		'click': 'click',
+		
 		'click @ui.remove': 'remove'
 	},
+    events: {
+        'click': function (e) {
+            let target = e.target;
+            
+            if (target === this.ui.remove) return;
+            this.triggerMethod('click', this.model);
+        }
+    },
 	onRender () {
 		let model = this.model
 		let mime = model.get('mime') //.replace(/\//, '-')
@@ -113,8 +121,8 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 			this.trigger('selected', view, model);
 		});
 
-		this.listenTo(this, 'childview:remove', function (view, model) {
-
+		this.listenTo(this, 'childview:remove', function (view, {model}) {
+            console.log(arguments)
 			if (options.deleteable === true) {
 				let remove = true;
 				if (model.has('deleteable')) {

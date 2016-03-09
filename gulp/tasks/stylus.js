@@ -5,6 +5,10 @@ const gulp = require('gulp'),
 	nib = require('nib'),
     rename = require('gulp-rename');
 
+gulp.task('build:copy', () => {
+    return gulp.src('./src/images/*')
+    .pipe(gulp.src('dist'));
+})
 
 gulp.task('build:stylus',  function () {
 	return gulp.src('./src/stylus/client.styl')
@@ -16,5 +20,5 @@ gulp.task('build:stylus',  function () {
 });
 
 gulp.task('watch:stylus', function () {
-	gulp.watch('./src/stylus/*.styl', ['build:stylus']);
+	gulp.watch('./src/stylus/*.styl', ['build:stylus', 'example']);
 });

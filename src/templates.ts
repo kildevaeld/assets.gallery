@@ -33,6 +33,7 @@ export const PreviewInfoTemplate = `
 `
 
 export const AssetListItemTemplate = `
+<a class="assets-list-item-close-button"></a>
 <div class="thumbnail-container">
 	<i class="mime-type mime-unknown"></i>
 </div>
