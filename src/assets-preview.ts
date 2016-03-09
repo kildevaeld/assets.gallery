@@ -34,6 +34,7 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
 
     },
 
+
     clear() {
         if (this.ui.name) {
             this.ui.name.textContent = ""

@@ -133,10 +133,27 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 			}
             this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
 		});
+        
+        this.listenTo(this.collection, 'before:fetch', () => {
+            let loader = <HTMLElement>this.el.querySelector('.loader');
+            if (loader) return;
+            loader = document.createElement('div');
+            html.addClass(loader, 'loader');
+            this.el.appendChild(loader)
+        });
+        
+        this.listenTo(this.collection, 'fetch', () => {
+            let loader = this.el.querySelector('.loader');
+            if (loader) {
+                this.el.removeChild(loader);
+            }
+        })
 
 		this._initBlazy();
 
 	}
+
+
 
 	onRenderCollection () {
 		if (this._blazy) {

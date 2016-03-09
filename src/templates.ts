@@ -40,6 +40,8 @@ export const AssetListItemTemplate = `
 `
 
 export const gallery = `
-<div class="gallery-list"></div>
+<div class="gallery-list">
+    
+</div>
 <div class="gallery-preview"></div>
 <div class="gallery-upload"></div>`

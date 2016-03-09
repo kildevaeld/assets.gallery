@@ -38,5 +38,5 @@ gulp.task('build:javascript', ['build:typescript'], function () {
 });
 
 gulp.task('watch:javascript', function () {
-  gulp.watch('./src/*.ts', ['build:javascript'])
+  gulp.watch('./src/*.ts', ['build:javascript', 'example'])
 });

@@ -3,6 +3,13 @@
   height: 100%;
   overflow-y: auto;
 }
+.assets-list .loader {
+  width: 64px;
+  height: 64px;
+  background-image: url("assets.loader.gif");
+  margin: auto;
+  margin-top: 20%;
+}
 .assets-list .assets-list-item {
   width: 100%;
 }
@@ -53,7 +60,7 @@
   word-wrap: break-word;
 }
 .mime-type {
-  background-image: url("assets.mimetypes.png");
+  background-image: url("../images/assets.mimetypes.png");
   background-repeat: no-repeat;
   display: block;
 }
@@ -201,7 +208,7 @@
   max-height: 250px;
 }
 .assets-preview .info {
-  font-size: 0.8rem;
+  font-size: 1.1rem;
   table-layout: fixed;
   width: 100%;
 }
