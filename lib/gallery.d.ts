@@ -22,4 +22,5 @@ export declare class GalleryView extends LayoutView<HTMLDivElement> {
     private _onItemCreate(asset);
     private _onItemSelect({model});
     private _onItemRemove({model});
+    private _onSearch();
 }

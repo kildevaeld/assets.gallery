@@ -1,4 +1,8 @@
 
+.assets-gallery
+ .gallery-upload
+    margin-top: 10px
+
 .assets-button
     border 1px solid #ccc;
     background-color: #eee;
@@ -15,9 +19,15 @@
         box-shadow: inset 1px 1px 1px #000
         
 .assets-list
+  border-right 1px solid #eee
+  
+  .assets-list-empty-view 
+    width: 100%
+    text-align: center
+    margin-top: 20px
+  
   .assets-list-item
     width 100%
-  border-right 1px solid #eee
   &.collection-mode
     .assets-list-item
       transition-duration: 0.6s
@@ -26,22 +36,29 @@
       box-sizing border-box
       cursor pointer
       width 96px
-      height 128px
+      height 110px
       padding 5px
       float left
       //margin 5px
       word-wrap break-word
       text-align center
 
+      .thumbnail-container
+        width: 100%
+        height: 66px
       img
-        max-width 86px
-        max-height 86px
+        max-width: 100%
+        height: 80%
+        //max-width 86px
+        //max-height 66px
       &:hover
-        background-color #eee
+        background-color: lighten(#eee, 20%)
       &.active
-        background-color #ccc
+        background-color: #eee
       .name
         margin-top 5px
+        color: #999
+        
 
 
 .assets-preview
@@ -57,7 +74,7 @@
       max-height 250px
 
   .info
-    font-size 1.1rem
+    font-size 1.0rem
     table-layout: fixed;
     width 100%
     td:first-child

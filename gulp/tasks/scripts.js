@@ -28,7 +28,7 @@ gulp.task('build:javascript', ['build:typescript'], function () {
     output: {
       library: "Assets",
       libraryTarget: "umd",
-      filename: 'assets.gallery.js'
+      filename: 'assets-gallery.js'
     },
     externals: {
     	//views: 'views'
@@ -59,5 +59,5 @@ gulp.task('addfiles', (done) => {
 })
 
 gulp.task('watch:javascript', function () {
-  gulp.watch('./src/*.ts', ['build:javascript', 'example'])
+  gulp.watch('./src/scripts/**/*.ts', ['build:javascript', 'example'])
 });

@@ -26,6 +26,7 @@
     "src/scripts/fileuploader.ts",
     "src/scripts/gallery.ts",
     "src/scripts/index.ts",
+    "src/scripts/mime-types.ts",
     "src/scripts/preview-handlers.ts",
     "src/scripts/request.ts",
     "src/scripts/templates.ts",

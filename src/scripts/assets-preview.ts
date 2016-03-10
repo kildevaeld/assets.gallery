@@ -3,8 +3,8 @@ import {IDataView} from 'views/lib/types';
 import {truncate, humanFileSize} from './utilities';
 import * as html from 'utilities/lib/html';
 import {AssetsModel} from './assets-collection';
-import {PreviewTemplate, PreviewInfoTemplate} from './templates';
 import {Thumbnailer, MimeList} from './thumbnailer';
+import templates from './templates';
 
 export interface PreviewInfoOptions extends ViewOptions { }
 
@@ -20,7 +20,7 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
     },
     tagName: 'table',
     className: 'info',
-    template: PreviewInfoTemplate,
+    template: templates['preview-info'],
     setModel(model) {
         if (model == null) return
         this.ui.name.textContent = model.get('name')
@@ -150,7 +150,7 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
                 info: '.info-region'
             },
             className: 'assets-preview',
-            template: PreviewTemplate
+            template: templates['preview']
         });
         
         this.infoView = options.infoView ? new options.infoView(opts) : new AssetsInfoPreview(opts)

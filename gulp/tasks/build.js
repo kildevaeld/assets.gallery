@@ -5,8 +5,8 @@ const gulp = require('gulp');
 
 
 gulp.task('example', ['build'], () => {
-  gulp.src('./dist/*')
+  gulp.src('./dist/**')
   .pipe(gulp.dest('example/public'))
 })
 
-gulp.task('build', ['build:typescript', 'build:javascript', 'build:stylus', 'build:copy']);
+gulp.task('build', ['build:typescript', 'build:javascript', 'build:stylus', 'build:copy', 'build:templates']);

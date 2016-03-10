@@ -4,9 +4,9 @@ import {CollectionView, CollectionViewOptions, View, attributes} from 'views';
 import * as html from 'utilities/lib/html';
 import {truncate} from './utilities';
 import {AssetsModel} from './assets-collection';
-import {AssetListItemTemplate} from './templates';
 import {Thumbnailer} from './thumbnailer';
-
+import {getMimeIcon} from './mime-types'
+import templates from './templates';
 const Blazy = require('blazy');
 
 export interface AssetsListOptions extends CollectionViewOptions {
@@ -24,13 +24,13 @@ const MimeList = {
 }
 
 export const AssetsListItem = View.extend({
-	template: AssetListItemTemplate,
+	template: templates['list-item'],
 	className: 'assets-list-item',
 	tagName: 'div',
 	ui: {
 		remove: '.assets-list-item-close-button',
 		name: '.name',
-		mime: '.mime-type'
+		mime: '.mime'
 	},
 	triggers: {
 		
@@ -47,13 +47,12 @@ export const AssetsListItem = View.extend({
 	onRender () {
 		let model = this.model
 		let mime = model.get('mime') //.replace(/\//, '-')
-
-		mime = MimeList[mime]
-
-		if (mime) {
-			html.addClass(this.ui.mime, 'mime-' + mime);
-			html.removeClass(this.ui.mime, 'mime-unknown')
-		}
+        
+		//mime = MimeList[mime]
+       html.removeClass(this.ui.mime, 'mime-unknown')
+        mime = getMimeIcon(mime.replace(/\//, '-'));
+        console.log('MIME', mime)
+		html.addClass(this.ui.mime, mime);
 
 		this.ui.name.textContent = truncate(model.get('name'), 25)
         
@@ -81,7 +80,8 @@ export const AssetsListItem = View.extend({
 })
 
 export const AssetsEmptyView = View.extend({
-	template: 'Empty view'
+    className: 'assets-list-empty-view',
+	template: 'No files uploaded yet.'
 })
 
 
@@ -177,7 +177,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 			selector: 'img',
 			error: function (img) {
 				if (!img || !img.parentNode) return;
-				let m = img.parentNode.querySelector('.mime-type');
+				let m = img.parentNode.querySelector('.mime');
 				if (m) {
 					m.style.display = 'block';
 					img.style.display = 'none';
@@ -210,7 +210,8 @@ function elementInView(ele, container) {
 }
 
 function throttle(fn, minDelay) {
-     		 var lastCall = 0;
+        var lastCall = 0;
+        
 		 return function() {
 			 var now = +new Date();
          		 if (now - lastCall < minDelay) {

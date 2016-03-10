@@ -16,11 +16,11 @@ gulp.task('build:stylus',  function () {
 		use: nib(),
     url: {
       name: 'embedurl',
-      paths: [process.cwd() + '/src/images'],
+      paths: [process.cwd() + '/src/stylus'],
       limit: false
     }
 	}))
-    .pipe(rename('assets.gallery.css'))
+    .pipe(rename('assets-gallery.css'))
 	.pipe(gulp.dest('./dist/css'));
 });
 

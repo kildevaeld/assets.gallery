@@ -1,11 +1,11 @@
 
 import {BaseObject, ViewOptions, LayoutView, CollectionView, attributes} from 'views';
-import * as templates from './templates';
 import {AssetsListView} from './assets-list';
 import {AssetsPreview} from './assets-preview';
 import {AssetsCollection, AssetsModel} from './assets-collection';
 import {UploadButton} from './filebutton';
 import * as utils from 'utilities';
+import templates from './templates';
 
 export function template(name: string): ClassDecorator {
     return function <T extends Function>(target: T) {
@@ -26,7 +26,16 @@ export interface GalleryViewOptions extends ViewOptions {
 }
 
 @template('gallery')
-@attributes({ className: 'assets-gallery gallery', tagName: 'div', ui: { button: '.upload-button' } })
+@attributes({ 
+    className: 'assets-gallery gallery', 
+    tagName: 'div', 
+    ui: { 
+        button: '.upload-button',
+        search : ".assets-search-input" },
+    events: {
+        'change @ui.search': '_onSearch'
+    } 
+})
 export class GalleryView extends LayoutView<HTMLDivElement> {
     public collection: AssetsCollection
     public selected: AssetsModel
@@ -123,5 +132,12 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
     }
 
+
+    private _onSearch() {
+        let search = <HTMLInputElement>this.ui['search'];
+        this.collection.query(search.value).catch(e => {
+            console.log(e)
+        });
+    }
 
 }

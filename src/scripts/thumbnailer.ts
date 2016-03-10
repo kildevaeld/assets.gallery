@@ -24,6 +24,7 @@ export class Thumbnailer {
             return "";
         });
     }
+    
 
     static has(asset: AssetsModel): IPromise<string> {
         return request.get(asset.getURL()).end({
