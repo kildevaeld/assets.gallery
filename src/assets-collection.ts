@@ -1,22 +1,33 @@
-import {Collection, CollectionOptions, Model} from 'collection';
+import {RestCollectionOptions, RestModel, RestCollection, normalize_path} from 'collection';
 import {request} from './request';
 import {Promise, IPromise} from 'utilities';
 
-export interface AssetsCollectionOptions extends CollectionOptions<AssetsModel> {
+
+export interface AssetsCollectionOptions extends RestCollectionOptions<AssetsModel> {
 	url: string;
 }
 
 export interface AssetsCollectionFetchOption { }
 
-export class AssetsModel extends Model {
+/*export class AssetsModel extends Model {
 	idAttribute = 'path';
 	collection: AssetsCollection;
     getURL (): string {
         return this.collection.url + "/"  + encodeURIComponent(this.get('path'));
     }
+}*/
+
+export class AssetsModel extends RestModel {
+	idAttribute = "path";
+	collection: AssetsCollection;
+    
+    getURL (): string {
+        let baseURL = this.collection.getURL();
+        return normalize_path(baseURL, encodeURIComponent(this.id));
+    }
 }
 
-export class AssetsCollection extends Collection<AssetsModel> {
+export class AssetsCollection extends RestCollection<AssetsModel> {
 	Model = AssetsModel;
 	comparator = 'name';
 	url: string;
@@ -27,7 +38,7 @@ export class AssetsCollection extends Collection<AssetsModel> {
 		this.url = options.url;
 	}
 
-	fetch (options:AssetsCollectionFetchOption = {}, progress?:() => void): IPromise<any> {
+	/*fetch (options:AssetsCollectionFetchOption = {}, progress?:() => void): IPromise<any> {
 
 		return request.get(this.url)
 		.progress(function (e) {
@@ -42,6 +53,6 @@ export class AssetsCollection extends Collection<AssetsModel> {
 			return this.models;
 
 		});
-	}
+	}*/
 
 }

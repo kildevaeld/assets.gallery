@@ -1,5 +1,5 @@
 
-import {BaseObject, ViewOptions, LayoutView, CollectionView} from 'views';
+import {BaseObject, ViewOptions, LayoutView, CollectionView, attributes} from 'views';
 import * as templates from './templates';
 import {AssetsListView} from './assets-list';
 import {AssetsPreview} from './assets-preview';
@@ -17,11 +17,6 @@ export function template(name: string): ClassDecorator {
     }
 }
 
-export function attributes(attrs: Object): ClassDecorator {
-    return function <T extends Function>(target: T) {
-        utils.extend(target.prototype, attrs)
-    }
-}
 
 export interface GalleryViewOptions extends ViewOptions {
     uploadButton?: boolean
@@ -50,8 +45,8 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
     constructor(options: GalleryViewOptions = {}) {
         (<any>options).regions = {
             list: '.gallery-list',
-            preview: '.gallery-preview',
-            upload: '.gallery-upload'
+            preview: '.gallery-preview'/*,
+            upload: '.gallery-upload'*/
         }
 
         if (!options.url && !options.collection) {
@@ -73,30 +68,48 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
         this._preView = new AssetsPreview();
 
-        this._uploadButton = new UploadButton({
+        /*this._uploadButton = new UploadButton({
+            el: this.ui['button'],
             autoUpload: true,
             url: collection.url,
             maxSize: 1024 * 1000,
             //mimeType: 'image/*'
-        });
+        });*/
 
         this.listenTo(this._listView, 'selected', this._onItemSelect);
         this.listenTo(this._listView, 'remove', this._onItemRemove)
-        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-        //collection.fetch()
+        //this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+        
         this.collection = collection
     }
 
     onRender() {
         this.regions['list'].show(this._listView);
         this.regions['preview'].show(this._preView)
-        this.regions['upload'].show(this._uploadButton)
+        //this.regions['upload'].show(this._uploadButton)
+        this._uploadButton = new UploadButton({
+            el: this.ui['button'],
+            autoUpload: true,
+            url: this.collection.url,
+            maxSize: 1024 * 1000,
+            //mimeType: 'image/*'
+        });
+        
+        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
 
     }
 
     private _onItemCreate(asset) {
-
-        this.collection.create(asset)
+        this.collection.on('error', (e) => {
+            console.log(e);
+        });
+        try {
+            this.collection.add(asset);    
+        } catch (e) {
+            console.log(e);
+        }
+        
+        
     }
 
     private _onItemSelect({model}) {

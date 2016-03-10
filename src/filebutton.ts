@@ -77,6 +77,8 @@ export class UploadButton extends View<HTMLInputElement> {
   progressView: IProgressView;
   errorView: IMessageView;
   private uploader: FileUploader;
+  
+
 
   set url(url:string) {
       this.uploader.options.url = url;

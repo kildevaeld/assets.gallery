@@ -1,9 +1,27 @@
+
+.assets-button
+    border 1px solid #ccc;
+    background-color: #eee;
+    border-radius 5px
+    padding: 5px;
+    font-size: 12px;
+    cursor: pointer;
+    transition-duration: .3s;
+    transition-property: background-color
+    &:hover
+        background-color: darken(#eee, 10%)
+    &:active
+        background-color: darken(#eee, 20%)
+        box-shadow: inset 1px 1px 1px #000
+        
 .assets-list
   .assets-list-item
     width 100%
   border-right 1px solid #eee
   &.collection-mode
     .assets-list-item
+      transition-duration: 0.6s
+      transition-property: all;
       position relative
       box-sizing border-box
       cursor pointer
@@ -14,7 +32,7 @@
       //margin 5px
       word-wrap break-word
       text-align center
-      
+
       img
         max-width 86px
         max-height 86px

@@ -15,7 +15,8 @@ export const MimeList = {
 export class Thumbnailer {
 
     static request(asset: AssetsModel): IPromise<string> {
-        return request.get('/files/' + asset.get('path')).end({
+        let url = asset.getURL();
+        return request.get(url).end({
             thumbnail: true,
             base64: false
         }).then(function() {
@@ -25,11 +26,11 @@ export class Thumbnailer {
     }
 
     static has(asset: AssetsModel): IPromise<string> {
-        return request.get('/files/' + asset.get('path')).end({
+        return request.get(asset.getURL()).end({
             thumbnail: true,
             check: true
         }).then(function(msg) {
-            return `/files/${asset.get('path')}?thumbnail=true`;
+            return `${asset.getURL()}?thumbnail=true`;
         }).catch(function() {
             return null;
         });

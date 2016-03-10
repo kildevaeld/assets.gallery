@@ -25,10 +25,6 @@ export const PreviewInfoTemplate = `
 			<td>Download</td>
 			<td class="download"><a></a></td>
 		</tr>
-		<tr>
-			<td>Slet</td>
-			<td class="remove"><a class="remove">&times;</a></td>
-		</tr>
 	</table>
 `
 
@@ -45,4 +41,9 @@ export const gallery = `
     
 </div>
 <div class="gallery-preview"></div>
-<div class="gallery-upload"></div>`
+<div class="gallery-upload">
+    <label class="assets-button">
+        <span>Upload</span>
+        <input class="upload-button" style="display:none;" type="file" />
+    </label>
+</div>`

@@ -23,6 +23,10 @@ function setup(app) {
       this.params.image = this.params[0];
       yield next;
     }, app.assets.routes.stream({keyParam:'image'}));
+  app.router.delete(/\/files\/(.*)/, function *(next) {
+      this.params.image = this.params[0];
+      yield next;
+  }, app.assets.routes.remove({keyParam: 'image'}));
   //app.router.get('/assets.js', app.assets.routes.client());
   //app.router.get('/assets.css', app.assets.routes.client_css());
   app.router.get('/mimetypes.png', app.assets.routes.client_mime());

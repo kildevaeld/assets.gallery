@@ -28,9 +28,11 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
         this.ui.size.textContent = humanFileSize(model.get('size'), true);
         let link = this.ui.download.querySelector('a');
         
+        let url = model.getURL();
+        
         View.prototype.setModel.call(this, model);
-        link.textContent = model.get('url');
-        link.href = model.get('url') + '?download=true';
+        link.textContent = model.get('name');
+        link.href = url + '?download=true';
 
     },
 
@@ -106,6 +108,7 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
         let region = this.regions['preview']
         region.empty()
         if (Handler) {
+           
             let view = new Handler({ model: model })
             html.addClass(view.el, 'preview')
             region.show(view)
@@ -123,6 +126,7 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
 
             Thumbnailer.has(model)
                 .then((test) => {
+                    if (!test) return;
                     image.src = test
                     div.appendChild(image);
                 }).catch((e) => {

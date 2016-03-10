@@ -13,7 +13,12 @@ gulp.task('build:copy', () => {
 gulp.task('build:stylus',  function () {
 	return gulp.src('./src/stylus/client.styl')
 	.pipe(stylus({
-		use: nib()
+		use: nib(),
+    url: {
+      name: 'embedurl',
+      paths: [process.cwd() + '/src/images'],
+      limit: false
+    }
 	}))
     .pipe(rename('assets.gallery.css'))
 	.pipe(gulp.dest('./dist/'));

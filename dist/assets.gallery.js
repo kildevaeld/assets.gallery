@@ -70,7 +70,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	__export(__webpack_require__(32));
 	__export(__webpack_require__(42));
 	__export(__webpack_require__(25));
-	__export(__webpack_require__(43));
+	__export(__webpack_require__(44));
 	var View = (function (_super) {
 	    __extends(View, _super);
 	    function View() {
@@ -2690,7 +2690,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (options.collection) {
 	            this.collection = options.collection
 	        }
-	        
+
 	        if (options && options.template) {
 	            this.template = options.template
 	        }*/
@@ -3186,17 +3186,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	var assets_preview_1 = __webpack_require__(25);
 	assets_preview_1.setPreviewHandler('image/*', views_1.View.extend({
 	    template: function (data) {
-	        return "<img src=\"" + data.url + "\"/>";
+	        return "<img src=\"" + this.model.getURL() + "\"/>";
 	    }
 	}));
 	assets_preview_1.setPreviewHandler(['audio/mpeg', 'audio/wav', 'audio/ogg'], views_1.View.extend({
 	    template: function (data) {
-	        return "\n\t\t\t<audio controls>\n\t\t\t\t<source src=\"" + data.url + "\" type=\"" + data.mime + "\" />\n\t\t\t</audio>\n\t\t";
+	        return "\n\t\t\t<audio controls>\n\t\t\t\t<source src=\"" + this.model.getURL() + "\" type=\"" + data.mime + "\" />\n\t\t\t</audio>\n\t\t";
 	    }
 	}));
 	assets_preview_1.setPreviewHandler(['video/mp4', 'video/ogg', 'video/webm', 'video/x-m4v'], views_1.View.extend({
 	    template: function (data) {
-	        return "\n\t\t\t<video controls>\n\t\t\t\t<source src=\"" + data.url + "\" type=\"" + data.mime + "\" />\n\t\t\t</video>\n\t\t";
+	        return "\n\t\t\t<video controls>\n\t\t\t\t<source src=\"" + this.model.getURL() + "\" type=\"" + data.mime + "\" />\n\t\t\t</video>\n\t\t";
 	    }
 	}));
 
@@ -3236,9 +3236,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.ui.mime.textContent = model.get('mime');
 	        this.ui.size.textContent = utilities_1.humanFileSize(model.get('size'), true);
 	        var link = this.ui.download.querySelector('a');
+	        var url = model.getURL();
 	        views_1.View.prototype.setModel.call(this, model);
-	        link.textContent = model.get('url');
-	        link.href = model.get('url') + '?download=true';
+	        link.textContent = model.get('name');
+	        link.href = url + '?download=true';
 	    },
 	    clear: function () {
 	        if (this.ui.name) {
@@ -3317,6 +3318,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	            region.el.appendChild(div_1);
 	            thumbnailer_1.Thumbnailer.has(model)
 	                .then(function (test) {
+	                if (!test)
+	                    return;
 	                image_1.src = test;
 	                div_1.appendChild(image_1);
 	            }).catch(function (e) {
@@ -3400,9 +3403,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	"use strict";
 	exports.PreviewTemplate = "\n<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>\n";
-	exports.PreviewInfoTemplate = "\n<table>\n\t\t<tr>\n\t\t\t<td>Name</td>\n\t\t\t<td class=\"name\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Mime</td>\n\t\t\t<td class=\"mime\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Size</td>\n\t\t\t<td class=\"size\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Download</td>\n\t\t\t<td class=\"download\"><a></a></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Slet</td>\n\t\t\t<td class=\"remove\"><a class=\"remove\">&times;</a></td>\n\t\t</tr>\n\t</table>\n";
+	exports.PreviewInfoTemplate = "\n<table>\n\t\t<tr>\n\t\t\t<td>Name</td>\n\t\t\t<td class=\"name\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Mime</td>\n\t\t\t<td class=\"mime\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Size</td>\n\t\t\t<td class=\"size\"></td>\n\t\t</tr>\n\t\t<tr>\n\t\t\t<td>Download</td>\n\t\t\t<td class=\"download\"><a></a></td>\n\t\t</tr>\n\t</table>\n";
 	exports.AssetListItemTemplate = "\n<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">\n\t<i class=\"mime-type mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>\n";
-	exports.gallery = "\n<div class=\"gallery-list\">\n    \n</div>\n<div class=\"gallery-preview\"></div>\n<div class=\"gallery-upload\"></div>";
+	exports.gallery = "\n<div class=\"gallery-list\">\n    \n</div>\n<div class=\"gallery-preview\"></div>\n<div class=\"gallery-upload\">\n    <label class=\"assets-button\">\n        <span>Upload</span>\n        <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />\n    </label>\n</div>";
 
 
 /***/ },
@@ -3424,7 +3427,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function Thumbnailer() {
 	    }
 	    Thumbnailer.request = function (asset) {
-	        return request_1.request.get('/files/' + asset.get('path')).end({
+	        var url = asset.getURL();
+	        return request_1.request.get(url).end({
 	            thumbnail: true,
 	            base64: false
 	        }).then(function () {
@@ -3432,11 +3436,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    };
 	    Thumbnailer.has = function (asset) {
-	        return request_1.request.get('/files/' + asset.get('path')).end({
+	        return request_1.request.get(asset.getURL()).end({
 	            thumbnail: true,
 	            check: true
 	        }).then(function (msg) {
-	            return "/files/" + asset.get('path') + "?thumbnail=true";
+	            return asset.getURL() + "?thumbnail=true";
 	        }).catch(function () {
 	            return null;
 	        });
@@ -3839,18 +3843,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var collection_1 = __webpack_require__(33);
-	var request_1 = __webpack_require__(29);
 	var AssetsModel = (function (_super) {
 	    __extends(AssetsModel, _super);
 	    function AssetsModel() {
 	        _super.apply(this, arguments);
-	        this.idAttribute = 'path';
+	        this.idAttribute = "path";
 	    }
 	    AssetsModel.prototype.getURL = function () {
-	        return this.collection.url + "/" + encodeURIComponent(this.get('path'));
+	        var baseURL = this.collection.getURL();
+	        return collection_1.normalize_path(baseURL, encodeURIComponent(this.id));
 	    };
 	    return AssetsModel;
-	}(collection_1.Model));
+	}(collection_1.RestModel));
 	exports.AssetsModel = AssetsModel;
 	var AssetsCollection = (function (_super) {
 	    __extends(AssetsCollection, _super);
@@ -3860,23 +3864,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.comparator = 'name';
 	        this.url = options.url;
 	    }
-	    AssetsCollection.prototype.fetch = function (options, progress) {
-	        var _this = this;
-	        if (options === void 0) { options = {}; }
-	        return request_1.request.get(this.url)
-	            .progress(function (e) {
-	            progress ? progress() : void 0;
-	        })
-	            .json().then(function (result) {
-	            if (!Array.isArray(result)) {
-	                throw new Error('invalid format: expected json array');
-	            }
-	            _this.reset(result);
-	            return _this.models;
-	        });
-	    };
 	    return AssetsCollection;
-	}(collection_1.Collection));
+	}(collection_1.RestCollection));
 	exports.AssetsCollection = AssetsCollection;
 
 
@@ -4727,7 +4716,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            model = value;
 	        }
 	        else {
-	            model = new this.Model(value, { parse: true });
+	            model = new this.Model(value, { parse: true, url: this.getURL() });
 	        }
 	        if (options.wait === void 0)
 	            options.wait = true;
@@ -4818,6 +4807,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (this.collection && this.collection.getURL()) {
 	            url = this.collection.getURL();
 	        }
+	        id = id || this.id;
 	        if (id && url) {
 	            url = normalize_path(url, this.id);
 	        }
@@ -5221,8 +5211,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var html = __webpack_require__(14);
 	var utilities_1 = __webpack_require__(26);
 	var templates_1 = __webpack_require__(27);
-	var gallery_1 = __webpack_require__(43);
-	var Blazy = __webpack_require__(44);
+	var Blazy = __webpack_require__(43);
 	var MimeList = {
 	    'audio/mpeg': 'audio-generic',
 	    'audio/ogg': 'audio-generic',
@@ -5295,7 +5284,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    remove = !!model.get('deleteable');
 	                }
 	                if (remove)
-	                    this.collection.remove(model);
+	                    model.remove();
 	            }
 	            else {
 	            }
@@ -5347,7 +5336,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    };
 	    AssetsListView = __decorate([
-	        gallery_1.attributes({ className: 'assets-list collection-mode',
+	        views_1.attributes({ className: 'assets-list collection-mode',
 	            childView: exports.AssetsListItem, emptyView: exports.AssetsEmptyView,
 	            events: {
 	                'scroll': throttle(function () {
@@ -5402,122 +5391,6 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-	};
-	var views_1 = __webpack_require__(1);
-	var templates = __webpack_require__(27);
-	var assets_list_1 = __webpack_require__(42);
-	var assets_preview_1 = __webpack_require__(25);
-	var assets_collection_1 = __webpack_require__(32);
-	var filebutton_1 = __webpack_require__(31);
-	var utils = __webpack_require__(8);
-	function template(name) {
-	    return function (target) {
-	        var t;
-	        if (!(t = templates[name])) {
-	            throw new Error('could not find template: ' + template);
-	        }
-	        target.prototype.template = t;
-	    };
-	}
-	exports.template = template;
-	function attributes(attrs) {
-	    return function (target) {
-	        utils.extend(target.prototype, attrs);
-	    };
-	}
-	exports.attributes = attributes;
-	var GalleryView = (function (_super) {
-	    __extends(GalleryView, _super);
-	    function GalleryView(options) {
-	        if (options === void 0) { options = {}; }
-	        options.regions = {
-	            list: '.gallery-list',
-	            preview: '.gallery-preview',
-	            upload: '.gallery-upload'
-	        };
-	        if (!options.url && !options.collection) {
-	            throw new Error('either specify url or collection');
-	        }
-	        _super.call(this, options);
-	        var collection = options.collection ? options.collection : new assets_collection_1.AssetsCollection(null, {
-	            url: options.url
-	        });
-	        this.collection = collection;
-	        this._listView = new assets_list_1.AssetsListView({
-	            collection: collection,
-	            deleteable: true
-	        });
-	        this._preView = new assets_preview_1.AssetsPreview();
-	        this._uploadButton = new filebutton_1.UploadButton({
-	            autoUpload: true,
-	            url: collection.url,
-	            maxSize: 1024 * 1000,
-	        });
-	        this.listenTo(this._listView, 'selected', this._onItemSelect);
-	        this.listenTo(this._listView, 'remove', this._onItemRemove);
-	        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-	        this.collection = collection;
-	    }
-	    Object.defineProperty(GalleryView.prototype, "listView", {
-	        get: function () {
-	            return this._listView;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(GalleryView.prototype, "preView", {
-	        get: function () {
-	            return this._preView;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    GalleryView.prototype.onRender = function () {
-	        this.regions['list'].show(this._listView);
-	        this.regions['preview'].show(this._preView);
-	        this.regions['upload'].show(this._uploadButton);
-	    };
-	    GalleryView.prototype._onItemCreate = function (asset) {
-	        this.collection.create(asset);
-	    };
-	    GalleryView.prototype._onItemSelect = function (_a) {
-	        var model = _a.model;
-	        if (this._preView.model === model)
-	            return;
-	        this._preView.model = model;
-	        this.selected = model;
-	    };
-	    GalleryView.prototype._onItemRemove = function (_a) {
-	        var model = _a.model;
-	    };
-	    GalleryView = __decorate([
-	        template('gallery'),
-	        attributes({ className: 'assets-gallery gallery', tagName: 'div', ui: { button: '.upload-button' } }), 
-	        __metadata('design:paramtypes', [Object])
-	    ], GalleryView);
-	    return GalleryView;
-	}(views_1.LayoutView));
-	exports.GalleryView = GalleryView;
-
-
-/***/ },
-/* 44 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -5786,6 +5659,122 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 	    }
 	});
+
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
+	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
+	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
+	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    return c > 3 && r && Object.defineProperty(target, key, r), r;
+	};
+	var __metadata = (this && this.__metadata) || function (k, v) {
+	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	};
+	var views_1 = __webpack_require__(1);
+	var templates = __webpack_require__(27);
+	var assets_list_1 = __webpack_require__(42);
+	var assets_preview_1 = __webpack_require__(25);
+	var assets_collection_1 = __webpack_require__(32);
+	var filebutton_1 = __webpack_require__(31);
+	function template(name) {
+	    return function (target) {
+	        var t;
+	        if (!(t = templates[name])) {
+	            throw new Error('could not find template: ' + template);
+	        }
+	        target.prototype.template = t;
+	    };
+	}
+	exports.template = template;
+	var GalleryView = (function (_super) {
+	    __extends(GalleryView, _super);
+	    function GalleryView(options) {
+	        if (options === void 0) { options = {}; }
+	        options.regions = {
+	            list: '.gallery-list',
+	            preview: '.gallery-preview'
+	        };
+	        if (!options.url && !options.collection) {
+	            throw new Error('either specify url or collection');
+	        }
+	        _super.call(this, options);
+	        var collection = options.collection ? options.collection : new assets_collection_1.AssetsCollection(null, {
+	            url: options.url
+	        });
+	        this.collection = collection;
+	        this._listView = new assets_list_1.AssetsListView({
+	            collection: collection,
+	            deleteable: true
+	        });
+	        this._preView = new assets_preview_1.AssetsPreview();
+	        this.listenTo(this._listView, 'selected', this._onItemSelect);
+	        this.listenTo(this._listView, 'remove', this._onItemRemove);
+	        this.collection = collection;
+	    }
+	    Object.defineProperty(GalleryView.prototype, "listView", {
+	        get: function () {
+	            return this._listView;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Object.defineProperty(GalleryView.prototype, "preView", {
+	        get: function () {
+	            return this._preView;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    GalleryView.prototype.onRender = function () {
+	        this.regions['list'].show(this._listView);
+	        this.regions['preview'].show(this._preView);
+	        this._uploadButton = new filebutton_1.UploadButton({
+	            el: this.ui['button'],
+	            autoUpload: true,
+	            url: this.collection.url,
+	            maxSize: 1024 * 1000,
+	        });
+	        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+	    };
+	    GalleryView.prototype._onItemCreate = function (asset) {
+	        this.collection.on('error', function (e) {
+	            console.log(e);
+	        });
+	        try {
+	            this.collection.add(asset);
+	        }
+	        catch (e) {
+	            console.log(e);
+	        }
+	    };
+	    GalleryView.prototype._onItemSelect = function (_a) {
+	        var model = _a.model;
+	        if (this._preView.model === model)
+	            return;
+	        this._preView.model = model;
+	        this.selected = model;
+	    };
+	    GalleryView.prototype._onItemRemove = function (_a) {
+	        var model = _a.model;
+	    };
+	    GalleryView = __decorate([
+	        template('gallery'),
+	        views_1.attributes({ className: 'assets-gallery gallery', tagName: 'div', ui: { button: '.upload-button' } }), 
+	        __metadata('design:paramtypes', [Object])
+	    ], GalleryView);
+	    return GalleryView;
+	}(views_1.LayoutView));
+	exports.GalleryView = GalleryView;
 
 
 /***/ }

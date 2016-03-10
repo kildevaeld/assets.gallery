@@ -1,12 +1,11 @@
 declare var require: any;
 
-import {CollectionView, CollectionViewOptions, View} from 'views';
+import {CollectionView, CollectionViewOptions, View, attributes} from 'views';
 import * as html from 'utilities/lib/html';
 import {truncate} from './utilities';
 import {AssetsModel} from './assets-collection';
 import {AssetListItemTemplate} from './templates';
 import {Thumbnailer} from './thumbnailer';
-import {attributes} from './gallery';
 
 const Blazy = require('blazy');
 
@@ -128,7 +127,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 				if (model.has('deleteable')) {
 					remove = !!model.get('deleteable');
 				}
-				if (remove) this.collection.remove(model);
+				if (remove) model.remove();//this.collection.remove(model);
 			} else {
 
 			}
