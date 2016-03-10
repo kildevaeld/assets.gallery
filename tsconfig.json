@@ -1,35 +1,39 @@
 {
-    "compilerOptions": {
-        "target": "es5",
-        "module": "commonjs",
-        "isolatedModules": false,
-        "experimentalDecorators": true,
-        "emitDecoratorMetadata": true,
-        "declaration": true,
-        "noImplicitAny": false,
-        "removeComments": true,
-        "noLib": false,
-        "preserveConstEnums": true,
-        "suppressImplicitAnyIndexErrors": true,
-        "outDir": "./src/dist"
-    },
-    "filesGlob": [
-        "./src/**/*.ts",
-        "./src/**/*.tsx",
-        "!./node_modules/**/*.ts"
-    ],
-    "files": [
-        "./src/assets-collection.ts",
-        "./src/assets-list.ts",
-        "./src/assets-preview.ts",
-        "./src/filebutton.ts",
-        "./src/fileuploader.ts",
-        "./src/gallery.ts",
-        "./src/index.ts",
-        "./src/preview-handlers.ts",
-        "./src/request.ts",
-        "./src/templates.ts",
-        "./src/thumbnailer.ts",
-        "./src/utilities.ts"
-    ]
+  "compilerOptions": {
+    "target": "es5",
+    "module": "commonjs",
+    "isolatedModules": false,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "declaration": true,
+    "noImplicitAny": false,
+    "removeComments": true,
+    "noLib": false,
+    "preserveConstEnums": true,
+    "suppressImplicitAnyIndexErrors": true,
+    "outDir": "./src/dist"
+  },
+  "filesGlob": [
+    "./src/**/*.ts",
+    "./src/**/*.tsx",
+    "!./node_modules/**/*.ts"
+  ],
+  "files": [
+    "src/scripts/assets-collection.ts",
+    "src/scripts/assets-list.ts",
+    "src/scripts/assets-preview.ts",
+    "src/scripts/filebutton.ts",
+    "src/scripts/fileuploader.ts",
+    "src/scripts/gallery.ts",
+    "src/scripts/index.ts",
+    "src/scripts/preview-handlers.ts",
+    "src/scripts/request.ts",
+    "src/scripts/templates.ts",
+    "src/scripts/thumbnailer.ts",
+    "src/scripts/utilities.ts",
+    "src/scripts/preview-handlers/audio-preview.ts",
+    "src/scripts/preview-handlers/image-preview.ts",
+    "src/scripts/preview-handlers/index.ts",
+    "src/scripts/preview-handlers/video-preview.ts"
+  ]
 }

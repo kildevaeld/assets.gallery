@@ -1,5 +1,5 @@
 import * as views from 'views';
-import './preview-handlers';
+import './preview-handlers/index';
 export * from './fileuploader';
 export * from './filebutton';
 export * from './assets-collection';

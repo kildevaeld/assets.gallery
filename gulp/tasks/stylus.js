@@ -6,8 +6,8 @@ const gulp = require('gulp'),
     rename = require('gulp-rename');
 
 gulp.task('build:copy', () => {
-    return gulp.src('./src/images/*')
-    .pipe(gulp.src('dist'));
+    return gulp.src('./src/images/*.{png,gif}')
+    .pipe(gulp.dest('dist/images'));
 })
 
 gulp.task('build:stylus',  function () {
@@ -21,7 +21,7 @@ gulp.task('build:stylus',  function () {
     }
 	}))
     .pipe(rename('assets.gallery.css'))
-	.pipe(gulp.dest('./dist/'));
+	.pipe(gulp.dest('./dist/css'));
 });
 
 gulp.task('watch:stylus', function () {

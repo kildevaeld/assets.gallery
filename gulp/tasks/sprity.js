@@ -8,11 +8,17 @@ var sprity = require('sprity');
 gulp.task('sprites', function () {
   return sprity.src({
     src: './src/mimetypes/**/*.{png,jpg}',
-    style: './dist/sprite.css',
-    follow: true
+    style: 'mimetypes2.styl',
+    prefix: 'mime',
+    dimension: [{
+        ratio: 1, dpi: 72
+    }, {
+        ratio: 2, dpi: 192
+    }],
+    name: 'assets.mimetypes'
     // ... other optional options 
     // for example if you want to generate scss instead of css 
     //processor: 'css', // make sure you have installed sprity-sass 
   })
-  .pipe(gulpif('*.png', gulp.dest('./dist/img/'), gulp.dest('./dist/css/')))
+  .pipe(gulpif('*.png', gulp.dest('./dist/images/'), gulp.dest('./src/stylus')))
 });
