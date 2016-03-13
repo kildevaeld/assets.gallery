@@ -21,10 +21,20 @@ export class AssetsModel extends RestModel {
 	idAttribute = "path";
 	collection: AssetsCollection;
     
+    get fullPath (): string {
+        let path = this.get('path');
+        path = (path === '/' ? path : path + "/") + this.get('filename');
+        return path;    
+    }
+    
     getURL (): string {
         let baseURL = this.collection.getURL();
-        return normalize_path(baseURL, encodeURIComponent(this.id));
+        let path = this.get('path');
+        path = (path === '/' ? path : path + "/") + this.get('filename');  
+        return normalize_path(baseURL, encodeURIComponent(path));
     }
+    
+    
 }
 
 export class AssetsCollection extends RestCollection<AssetsModel> {
@@ -38,21 +48,5 @@ export class AssetsCollection extends RestCollection<AssetsModel> {
 		this.url = options.url;
 	}
 
-	/*fetch (options:AssetsCollectionFetchOption = {}, progress?:() => void): IPromise<any> {
-
-		return request.get(this.url)
-		.progress(function (e) {
-			progress ? progress() : void 0;
-		})
-		.json().then((result: Object) => {
-			if (!Array.isArray(result)) {
-				throw new Error('invalid format: expected json array');
-			}
-
-			this.reset(result);
-			return this.models;
-
-		});
-	}*/
 
 }

@@ -127,7 +127,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var util_1 = __webpack_require__(17);
 	var paddedLt = /^\s*</;
 	var unbubblebles = 'focus blur change'.split(' ');
-	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events'];
+	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events', 'triggers'];
 	var BaseView = (function (_super) {
 	    __extends(BaseView, _super);
 	    /**
@@ -1144,10 +1144,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        for (var _i = 1; _i < arguments.length; _i++) {
 	            args[_i - 1] = arguments[_i];
 	        }
-	        var events = (this._listeners || (this._listeners = {}))[eventName] || (this._listeners[eventName] = [])
-	            .concat(this._listeners['all'] || []);
+	        //let events = (this._listeners|| (this._listeners = {}))[eventName]||(this._listeners[eventName]=[])
+	        //.concat(this._listeners['all']||[])
+	        this._listeners = this._listeners || {};
+	        var events = (this._listeners[eventName] || []).concat(this._listeners['all'] || []);
 	        if (EventEmitter.debugCallback)
-	            EventEmitter.debugCallback(this.constructor.name, this.name, eventName, args);
+	            EventEmitter.debugCallback(this.constructor.name, this.name, eventName, args, events);
 	        var event, a, len = events.length, index;
 	        var calls = [];
 	        for (var i = 0, ii = events.length; i < ii; i++) {
@@ -2715,9 +2717,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (this._model === model)
 	            return this;
 	        this.triggerMethod('before:model', this._model, model);
-	        if (this._model) {
+	        if (this.model) {
+	            debug('stop listening on model uid: %s', this.model.uid);
 	            this.stopListening(this._model);
 	        }
+	        debug('viewId %s set model uid: %s', this.cid, model.uid);
 	        this._model = model;
 	        this.triggerMethod('model', model);
 	        return this;
@@ -2727,6 +2731,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return this;
 	        this.triggerMethod('before:collection', this._collection, collection);
 	        if (this._collection) {
+	            debug('viewId %s: stop listening on collection uid: %s', this.cid);
 	            this.stopListening(this._collection);
 	        }
 	        this._collection = collection;
@@ -2953,9 +2958,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!view)
 	            return;
 	        if (typeof view.destroy === 'function') {
+	            debug('destroy child view: %s', view);
 	            view.destroy();
 	        }
 	        else if (typeof view.remove === 'function') {
+	            debug('remove child view: %s', view);
 	            view.remove();
 	        }
 	        this.stopListening(view);
@@ -3237,7 +3244,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.AssetsInfoPreview = views_1.View.extend({
 	    ui: {
 	        name: '.name',
-	        mime: '.mime',
+	        mime: '.mimetype',
 	        size: '.size',
 	        download: '.download'
 	    },
@@ -3250,7 +3257,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    setModel: function (model) {
 	        if (model == null)
 	            return;
-	        this.ui.name.textContent = model.get('name');
+	        this.ui.name.textContent = model.get('filename');
 	        this.ui.mime.textContent = model.get('mime');
 	        this.ui.size.textContent = utilities_1.humanFileSize(model.get('size'), true);
 	        var link = this.ui.download.querySelector('a');
@@ -3270,9 +3277,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.ui.size.textContent = "";
 	        }
 	        if (this.ui.download) {
+	            var fp = this.model.fullPath;
 	            var link = this.ui.download.querySelector('a');
-	            link.textContent = this.model.get('url');
-	            link.href = this.model.get('url') + '?download=true';
+	            link.textContent = fp;
+	            link.href = fp + '?download=true';
 	        }
 	    },
 	    onItemRemove: function () {
@@ -3577,7 +3585,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.default = {
 	    "gallery": "<div class=\"gallery-list\">  </div>\n<div class=\"gallery-preview\"></div>\n<div class=\"gallery-upload\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div>",
 	    "list-item": "<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">  <i class=\"mime mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>",
-	    "preview-info": "<table>  <tr>  <td>Name</td>  <td class=\"name\"></td>  </tr>  <tr>  <td>Mime</td>  <td class=\"mime\"></td>  </tr>  <tr>  <td>Size</td>  <td class=\"size\"></td>  </tr>  <tr>  <td>Download</td>  <td class=\"download\">  <a></a>  </td>  </tr>\n</table>",
+	    "preview-info": "<table>  <tr>  <td>Name</td>  <td class=\"name\"></td>  </tr>  <tr>  <td>Mime</td>  <td class=\"mimetype\"></td>  </tr>  <tr>  <td>Size</td>  <td class=\"size\"></td>  </tr>  <tr>  <td>Download</td>  <td class=\"download\">  <a></a>  </td>  </tr>\n</table>",
 	    "preview": "<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>"
 	};
 
@@ -3922,9 +3930,20 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _super.apply(this, arguments);
 	        this.idAttribute = "path";
 	    }
+	    Object.defineProperty(AssetsModel.prototype, "fullPath", {
+	        get: function () {
+	            var path = this.get('path');
+	            path = (path === '/' ? path : path + "/") + this.get('filename');
+	            return path;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
 	    AssetsModel.prototype.getURL = function () {
 	        var baseURL = this.collection.getURL();
-	        return collection_1.normalize_path(baseURL, encodeURIComponent(this.id));
+	        var path = this.get('path');
+	        path = (path === '/' ? path : path + "/") + this.get('filename');
+	        return collection_1.normalize_path(baseURL, encodeURIComponent(path));
 	    };
 	    return AssetsModel;
 	}(collection_1.RestModel));
@@ -5318,11 +5337,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    onRender: function () {
 	        var model = this.model;
 	        var mime = model.get('mime');
+	        console.log(model);
 	        html.removeClass(this.ui.mime, 'mime-unknown');
 	        mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
 	        console.log('MIME', mime);
 	        html.addClass(this.ui.mime, mime);
-	        this.ui.name.textContent = utilities_1.truncate(model.get('name'), 25);
+	        this.ui.name.textContent = utilities_1.truncate(model.get('name') || model.get('filename'), 25);
 	        var url = model.getURL();
 	        var img = new Image();
 	        img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
@@ -5977,6 +5997,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            console.log(e);
 	        });
 	        try {
+	            console.log('uploaded', asset);
 	            this.collection.add(asset);
 	        }
 	        catch (e) {
@@ -5995,9 +6016,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    GalleryView.prototype._onSearch = function () {
 	        var search = this.ui['search'];
-	        this.collection.query(search.value).catch(function (e) {
-	            console.log(e);
-	        });
 	    };
 	    GalleryView = __decorate([
 	        template('gallery'),

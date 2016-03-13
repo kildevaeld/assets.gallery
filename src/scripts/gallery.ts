@@ -113,6 +113,7 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
             console.log(e);
         });
         try {
+            console.log('uploaded', asset)
             this.collection.add(asset);    
         } catch (e) {
             console.log(e);
@@ -135,9 +136,9 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
     private _onSearch() {
         let search = <HTMLInputElement>this.ui['search'];
-        this.collection.query(search.value).catch(e => {
+        /*this.collection.query(search.value).catch(e => {
             console.log(e)
-        });
+        });*/
     }
 
 }

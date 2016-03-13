@@ -23,6 +23,7 @@ const MimeList = {
 	'video/quicktime': 'video-generic'
 }
 
+
 export const AssetsListItem = View.extend({
 	template: templates['list-item'],
 	className: 'assets-list-item',
@@ -41,20 +42,21 @@ export const AssetsListItem = View.extend({
             let target = e.target;
             
             if (target === this.ui.remove) return;
+           
             this.triggerMethod('click', this.model);
         }
     },
 	onRender () {
 		let model = this.model
 		let mime = model.get('mime') //.replace(/\//, '-')
-        
+        console.log(model)
 		//mime = MimeList[mime]
        html.removeClass(this.ui.mime, 'mime-unknown')
         mime = getMimeIcon(mime.replace(/\//, '-'));
         console.log('MIME', mime)
 		html.addClass(this.ui.mime, mime);
 
-		this.ui.name.textContent = truncate(model.get('name'), 25)
+		this.ui.name.textContent = truncate(model.get('name')||model.get('filename'), 25)
         
         let url = model.getURL();
 
@@ -116,9 +118,13 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 		this.listenTo(this, 'childview:click', function (view, model) {
 			if (this._current) html.removeClass(this._current.el, 'active');
 			this._current = view
+            
 			html.addClass(view.el, 'active')
 			this.trigger('selected', view, model);
 		});
+
+
+      
 
 		this.listenTo(this, 'childview:remove', function (view, {model}) {
             console.log(arguments)

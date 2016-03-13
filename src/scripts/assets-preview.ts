@@ -11,7 +11,7 @@ export interface PreviewInfoOptions extends ViewOptions { }
 export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
     ui: {
         name: '.name',
-        mime: '.mime',
+        mime: '.mimetype',
         size: '.size',
         download: '.download'
     },
@@ -23,7 +23,7 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
     template: templates['preview-info'],
     setModel(model) {
         if (model == null) return
-        this.ui.name.textContent = model.get('name')
+        this.ui.name.textContent = model.get('filename')
         this.ui.mime.textContent = model.get('mime')
         this.ui.size.textContent = humanFileSize(model.get('size'), true);
         let link = this.ui.download.querySelector('a');
@@ -51,10 +51,12 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
         }
 
         if (this.ui.download) {
+            let fp = this.model.fullPath;
             let link = this.ui.download.querySelector('a')
-            link.textContent = this.model.get('url');
-            link.href = this.model.get('url') + '?download=true';
+            link.textContent = fp;
+            link.href = fp + '?download=true';
         }
+        
 
     },
 
