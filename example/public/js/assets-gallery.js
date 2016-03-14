@@ -2139,7 +2139,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        data = this._data;
 	        var url = this._url;
 	        if (data && data === Object(data) && this._method == 'GET') {
-	            var d = queryParam(data);
+	            var sep = (url.indexOf('?') === -1) ? '?' : '&';
+	            var d = sep + queryParam(data);
 	            url += d;
 	        }
 	        url = this._apply_params(url);
@@ -2168,8 +2169,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        });
 	    };
-	    Request.prototype.progress = function (fn) {
+	    Request.prototype.progres = function (fn) {
 	        this._xhr.addEventListener('progress', fn);
+	        return this;
+	    };
+	    Request.prototype.uploadProgress = function (fn) {
+	        this._xhr.upload.addEventListener('progress', fn);
 	        return this;
 	    };
 	    Request.prototype.header = function (field, value) {
@@ -3695,13 +3700,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	            formData.append(key, value);
 	        });
 	        return utils.request.post(this.options.url)
-	            .header('Content-Type', file.type)
 	            .header({
 	            'Content-Type': file.type,
-	            'Content-Length': String(file.size)
 	        })
 	            .params({ filename: file.name })
-	            .progress(function (event) {
+	            .uploadProgress(function (event) {
+	            console.log('progress', event);
 	            if (event.lengthComputable) {
 	                var progress = (event.loaded / event.total * 100 || 0);
 	                _this.trigger('progress', file, progress);
