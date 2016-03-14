@@ -73,7 +73,7 @@ export default class FileUploader extends EventEmitter {
         })
         .params({filename: file.name})
         .uploadProgress( (event:ProgressEvent) => {
-           console.log('progress', event)
+           
           if (event.lengthComputable) {
              let progress = (event.loaded / event.total * 100 || 0);
              this.trigger('progress', file, progress);

@@ -1,7 +1,6 @@
 .assets-list {
   width: 100%;
   height: 100%;
-  overflow-y: auto;
 }
 .assets-list .loader {
   width: 64px;
@@ -1276,13 +1275,14 @@
   flex: 2;
 }
 .assets-gallery .gallery-area .gallery-list {
+  overflow-y: auto;
   -webkit-box-flex: 2;
   -moz-box-flex: 2;
   -o-box-flex: 2;
   box-flex: 2;
-  -webkit-flex: 2 0;
-  -ms-flex: 2 0;
-  flex: 2 0;
+  -webkit-flex: 2 2 auto;
+  -ms-flex: 2 2 auto;
+  flex: 2 2 auto;
   min-width: 200px;
   -webkit-box-ordinal-group: 1;
   -moz-box-ordinal-group: 1;
@@ -1314,11 +1314,11 @@
   margin-bottom: 10px;
 }
 .assets-gallery .upload-progress-container .upload-progress {
-  -webkit-transition: 0.6s width ease-in-out;
-  -moz-transition: 0.6s width ease-in-out;
-  -o-transition: 0.6s width ease-in-out;
-  -ms-transition: 0.6s width ease-in-out;
-  transition: 0.6s width ease-in-out;
+  -webkit-transition: 0.6s all ease-in-out;
+  -moz-transition: 0.6s all ease-in-out;
+  -o-transition: 0.6s all ease-in-out;
+  -ms-transition: 0.6s all ease-in-out;
+  transition: 0.6s all ease-in-out;
   height: 100%;
   background-color: #f00;
   width: 0%;

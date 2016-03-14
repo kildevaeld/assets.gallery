@@ -3705,7 +3705,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        })
 	            .params({ filename: file.name })
 	            .uploadProgress(function (event) {
-	            console.log('progress', event);
 	            if (event.lengthComputable) {
 	                var progress = (event.loaded / event.total * 100 || 0);
 	                _this.trigger('progress', file, progress);
@@ -5943,6 +5942,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var assets_preview_1 = __webpack_require__(26);
 	var assets_collection_1 = __webpack_require__(35);
 	var filebutton_1 = __webpack_require__(34);
+	var utils = __webpack_require__(8);
 	var templates_1 = __webpack_require__(30);
 	function template(name) {
 	    return function (target) {
@@ -6006,14 +6006,21 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._uploadButton.render();
 	    };
 	    GalleryView.prototype._onUploadProgress = function (e) {
-	        var p = e.progress / e.total * 100;
+	        var p = Math.round((e.progress / e.total) * 100);
 	        this.$('.upload-progress')[0].style.width = p + '%';
 	    };
 	    GalleryView.prototype._onItemCreate = function (asset) {
 	        var _this = this;
 	        setTimeout(function () {
-	            _this.$('.upload-progress')[0].style.width = 0 + '%';
-	        }, 1000);
+	            var elm = _this.$('.upload-progress')[0];
+	            utils.transitionEnd(elm, function (e) {
+	                elm.style.width = '0';
+	                utils.transitionEnd(elm, function (e) {
+	                    elm.style.opacity = '1';
+	                }, 1000);
+	            }, 600);
+	            elm.style.opacity = '0';
+	        }, 800);
 	        this.collection.on('error', function (e) {
 	            console.log(e);
 	        });

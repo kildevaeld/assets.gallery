@@ -104,7 +104,7 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
     
     private _onUploadProgress (e) {
         
-        let p = e.progress / e.total * 100
+        let p = Math.round((e.progress / e.total) * 100);
         
         this.$('.upload-progress')[0].style.width = p + '%';
         
@@ -112,8 +112,22 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
     private _onItemCreate(asset) {
         setTimeout(() => {
-            this.$('.upload-progress')[0].style.width = 0 + '%';
-        }, 1000)
+            let elm: HTMLElement = this.$('.upload-progress')[0];
+            utils.transitionEnd(elm, (e) => {
+                
+                elm.style.width = '0';
+                utils.transitionEnd(elm, e => {
+                    elm.style.opacity = '1'
+                }, 1000)
+                
+                
+            }, 600);
+            
+            elm.style.opacity = '0';
+            
+            //this.$('.upload-progress')[0].style.width = 0 + '%';
+            //this.$('.upload-progress')[0].style.display = 'block';
+        }, 800)
         this.collection.on('error', (e) => {
             console.log(e);
         });
