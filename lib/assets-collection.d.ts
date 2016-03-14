@@ -1,9 +1,4 @@
-import { RestCollectionOptions, RestModel, RestCollection } from 'collection';
-export interface AssetsCollectionOptions extends RestCollectionOptions<AssetsModel> {
-    url: string;
-}
-export interface AssetsCollectionFetchOption {
-}
+import { RestModel, RestCollection } from 'collection';
 export declare class AssetsModel extends RestModel {
     idAttribute: string;
     collection: AssetsCollection;
@@ -13,6 +8,4 @@ export declare class AssetsModel extends RestModel {
 export declare class AssetsCollection extends RestCollection<AssetsModel> {
     Model: typeof AssetsModel;
     comparator: string;
-    url: string;
-    constructor(models: any, options: AssetsCollectionOptions);
 }

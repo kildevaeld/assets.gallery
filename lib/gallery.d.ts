@@ -19,6 +19,7 @@ export declare class GalleryView extends LayoutView<HTMLDivElement> {
     preView: AssetsPreview;
     constructor(options?: GalleryViewOptions);
     onRender(): void;
+    private _onUploadProgress(e);
     private _onItemCreate(asset);
     private _onItemSelect({model});
     private _onItemRemove({model});

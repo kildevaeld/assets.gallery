@@ -2099,7 +2099,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.queryStringToParams = queryStringToParams;
 	function queryParam(obj) {
-	    return '?' + Object.keys(obj).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(obj[k])); return a; }, []).join('&');
+	    return Object.keys(obj).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(obj[k])); return a; }, []).join('&');
 	}
 	exports.queryParam = queryParam;
 	var isValid = function (xhr, url) {
@@ -3583,7 +3583,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	"use strict";
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = {
-	    "gallery": "<div class=\"gallery-list\">  </div>\n<div class=\"gallery-preview\"></div>\n<div class=\"gallery-upload\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div>",
+	    "gallery": "<div class=\"gallery-area\">  <div class=\"gallery-list\">  </div>  <div class=\"gallery-preview\"></div>  </div>\n<div class=\"upload-progress-container\">  <div class=\"upload-progress\"></div>\n</div>\n<div class=\"gallery-toolbar\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div>",
 	    "list-item": "<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">  <i class=\"mime mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>",
 	    "preview-info": "<table>  <tr>  <td>Name</td>  <td class=\"name\"></td>  </tr>  <tr>  <td>Mime</td>  <td class=\"mimetype\"></td>  </tr>  <tr>  <td>Size</td>  <td class=\"size\"></td>  </tr>  <tr>  <td>Download</td>  <td class=\"download\">  <a></a>  </td>  </tr>\n</table>",
 	    "preview": "<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>"
@@ -3653,7 +3653,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var eventsjs_1 = __webpack_require__(7);
-	var request_1 = __webpack_require__(29);
 	var utils = __webpack_require__(8);
 	(function (HttpMethod) {
 	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
@@ -3695,9 +3694,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var value = attributes[key];
 	            formData.append(key, value);
 	        });
-	        var method = HttpMethod[this.options.method];
-	        var request = new request_1.Request(method, this.options.url);
-	        return request
+	        return utils.request.post(this.options.url)
+	            .header('Content-Type', file.type)
+	            .header({
+	            'Content-Type': file.type,
+	            'Content-Length': String(file.size)
+	        })
+	            .params({ filename: file.name })
 	            .progress(function (event) {
 	            if (event.lengthComputable) {
 	                var progress = (event.loaded / event.total * 100 || 0);
@@ -3707,7 +3710,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            }
 	        })
-	            .json(formData);
+	            .end(file)
+	            .then(function (res) {
+	            return JSON.parse(res);
+	        });
 	    };
 	    FileUploader.prototype.validateFile = function (file) {
 	        var maxSize = this.options.maxSize * 1000;
@@ -3853,7 +3859,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (pv != null) {
 	            pv.show();
 	        }
-	        this.uploader.upload(file, function (progress, total) {
+	        return this.uploader.upload(file, function (progress, total) {
 	            _this.trigger('progress', { progress: progress, total: total });
 	            _this.showProgress(progress, total);
 	        }).then(function (result) {
@@ -3950,11 +3956,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.AssetsModel = AssetsModel;
 	var AssetsCollection = (function (_super) {
 	    __extends(AssetsCollection, _super);
-	    function AssetsCollection(models, options) {
-	        _super.call(this, models, options);
+	    function AssetsCollection() {
+	        _super.apply(this, arguments);
 	        this.Model = AssetsModel;
 	        this.comparator = 'name';
-	        this.url = options.url;
 	    }
 	    return AssetsCollection;
 	}(collection_1.RestCollection));
@@ -5301,7 +5306,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	var views_1 = __webpack_require__(1);
 	var html = __webpack_require__(14);
-	var utilities_1 = __webpack_require__(27);
+	var utilities_1 = __webpack_require__(8);
+	var utilities_2 = __webpack_require__(27);
 	var mime_types_1 = __webpack_require__(46);
 	var templates_1 = __webpack_require__(30);
 	var Blazy = __webpack_require__(47);
@@ -5337,11 +5343,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    onRender: function () {
 	        var model = this.model;
 	        var mime = model.get('mime');
-	        console.log(model);
 	        html.removeClass(this.ui.mime, 'mime-unknown');
 	        mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
 	        html.addClass(this.ui.mime, mime);
-	        this.ui.name.textContent = utilities_1.truncate(model.get('name') || model.get('filename'), 25);
+	        this.ui.name.textContent = utilities_2.truncate(model.get('name') || model.get('filename'), 25);
 	        var url = model.getURL();
 	        var img = new Image();
 	        img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
@@ -5361,6 +5366,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var _this = this;
 	        _super.call(this, options);
 	        this.sort = false;
+	        this._onSroll = throttle(utilities_1.bind(this._onSroll, this), 500);
 	        this.listenTo(this, 'childview:click', function (view, model) {
 	            if (this._current)
 	                html.removeClass(this._current.el, 'active');
@@ -5413,6 +5419,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this._initBlazy();
 	        }
 	    };
+	    AssetsListView.prototype._onSroll = function (e) {
+	        var index = this.index ? this.index : (this.index = 0), len = this.children.length;
+	        for (var i = index; i < len; i++) {
+	            var view = this.children[i], img = view.$('img')[0];
+	            if (img == null)
+	                continue;
+	            if (img.src === img.getAttribute('data-src')) {
+	                index = i;
+	            }
+	            else if (elementInView(img, this.el)) {
+	                index = i;
+	                this._blazy.load(img, true);
+	            }
+	        }
+	        this.index = index;
+	    };
 	    AssetsListView.prototype._initBlazy = function () {
 	        this._blazy = new Blazy({
 	            container: '.gallery',
@@ -5430,25 +5452,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    AssetsListView = __decorate([
 	        views_1.attributes({ className: 'assets-list collection-mode',
-	            childView: exports.AssetsListItem, emptyView: exports.AssetsEmptyView,
+	            childView: exports.AssetsListItem,
+	            emptyView: exports.AssetsEmptyView,
 	            events: {
-	                'scroll': throttle(function () {
-	                    var index = this.index ? this.index : (this.index = 0), len = this.children.length;
-	                    for (var i = index; i < len; i++) {
-	                        var view = this.children[i], img = view.$('img')[0];
-	                        if (img == null)
-	                            continue;
-	                        if (img.src === img.getAttribute('data-src')) {
-	                            index = i;
-	                        }
-	                        else if (elementInView(img, this.el)) {
-	                            index = i;
-	                            this._blazy.load(img, true);
-	                        }
-	                    }
-	                    this.index = index;
-	                }, 100)
-	            } }), 
+	                'scroll': '_onSroll'
+	            }
+	        }), 
 	        __metadata('design:paramtypes', [Object])
 	    ], AssetsListView);
 	    return AssetsListView;
@@ -5964,7 +5973,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._preView = new assets_preview_1.AssetsPreview();
 	        this.listenTo(this._listView, 'selected', this._onItemSelect);
 	        this.listenTo(this._listView, 'remove', this._onItemRemove);
-	        this.collection = collection;
 	    }
 	    Object.defineProperty(GalleryView.prototype, "listView", {
 	        get: function () {
@@ -5986,20 +5994,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._uploadButton = new filebutton_1.UploadButton({
 	            el: this.ui['button'],
 	            autoUpload: true,
-	            url: this.collection.url,
+	            url: this.collection.getURL(),
 	            maxSize: 1024 * 1000,
 	        });
 	        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+	        this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
 	        this._uploadButton.render();
 	    };
+	    GalleryView.prototype._onUploadProgress = function (e) {
+	        var p = e.progress / e.total * 100;
+	        this.$('.upload-progress')[0].style.width = p + '%';
+	    };
 	    GalleryView.prototype._onItemCreate = function (asset) {
+	        var _this = this;
+	        setTimeout(function () {
+	            _this.$('.upload-progress')[0].style.width = 0 + '%';
+	        }, 1000);
 	        this.collection.on('error', function (e) {
 	            console.log(e);
 	        });
 	        try {
-	            console.log('uploaded', asset);
 	            this.collection.add(asset, { silent: false, parse: true });
-	            console.log(this.collection);
 	        }
 	        catch (e) {
 	            console.log(e);

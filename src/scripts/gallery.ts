@@ -77,50 +77,49 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
         this._preView = new AssetsPreview();
 
-        /*this._uploadButton = new UploadButton({
-            el: this.ui['button'],
-            autoUpload: true,
-            url: collection.url,
-            maxSize: 1024 * 1000,
-            //mimeType: 'image/*'
-        });*/
-
-
-
-
 
         this.listenTo(this._listView, 'selected', this._onItemSelect);
         this.listenTo(this._listView, 'remove', this._onItemRemove)
-        //this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-
-        this.collection = collection
+       
     }
 
     onRender() {
         this.regions['list'].show(this._listView);
         this.regions['preview'].show(this._preView)
-        //this.regions['upload'].show(this._uploadButton)
+        
+        
         this._uploadButton = new UploadButton({
           el: this.ui['button'],
           autoUpload: true,
-          url: this.collection.url,
+          url: this.collection.getURL(),
           maxSize: 1024 * 1000,
           //mimeType: 'image/*'
         });
         
         this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+        this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
         this._uploadButton.render();
+        
+    }
+    
+    private _onUploadProgress (e) {
+        
+        let p = e.progress / e.total * 100
+        
+        this.$('.upload-progress')[0].style.width = p + '%';
         
     }
 
     private _onItemCreate(asset) {
+        setTimeout(() => {
+            this.$('.upload-progress')[0].style.width = 0 + '%';
+        }, 1000)
         this.collection.on('error', (e) => {
             console.log(e);
         });
         try {
-            console.log('uploaded', asset)
             this.collection.add(asset, {silent: false, parse: true});
-            console.log(this.collection)
+           
         } catch (e) {
             console.log(e);
         }

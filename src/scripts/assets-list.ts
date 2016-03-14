@@ -2,6 +2,7 @@ declare var require: any;
 
 import {CollectionView, CollectionViewOptions, View, attributes} from 'views';
 import * as html from 'utilities/lib/html';
+import {bind} from 'utilities';
 import {truncate} from './utilities';
 import {AssetsModel} from './assets-collection';
 import {Thumbnailer} from './thumbnailer';
@@ -49,7 +50,7 @@ export const AssetsListItem = View.extend({
 	onRender () {
 		let model = this.model
 		let mime = model.get('mime') //.replace(/\//, '-')
-        console.log(model)    
+       
 		//mime = MimeList[mime]
         html.removeClass(this.ui.mime, 'mime-unknown')
         mime = getMimeIcon(mime.replace(/\//, '-'));
@@ -67,17 +68,8 @@ export const AssetsListItem = View.extend({
 		this.ui.mime.parentNode.insertBefore(img, this.ui.mime);
 		this.ui.mime.style.display = 'none'
 		this.trigger('image')
-		/*Thumbnailer.has(model)
-		.then((test) => {
-			let image = new Image();
-			//image.src = "data:base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI="
-			image.setAttribute('data-src',test)
-
-			this.ui.mime.parentNode.replaceChild(image, this.ui.mime);
-			this.trigger('image')
-		}).catch((e) => {
-				console.error(model.get('mime'), e)
-		})*/
+		
+        
 	}
 })
 
@@ -88,32 +80,22 @@ export const AssetsEmptyView = View.extend({
 
 
 @attributes({className:'assets-list collection-mode',
-	childView: AssetsListItem, emptyView: AssetsEmptyView,
+	childView: AssetsListItem, 
+    emptyView: AssetsEmptyView,
 	events: {
-		'scroll': throttle(function () {
-			let index = this.index ? this.index : (this.index = 0),
-				len = this.children.length
-
-			for (let i = index;i<len;i++) {
-				let view = this.children[i],
-					img = view.$('img')[0]
-					if (img == null) continue
-					if (img.src === img.getAttribute('data-src')) {
-						index = i;
-					} else if (elementInView(img, this.el)) {
-						index = i
-						this._blazy.load(img, true);
-					}
-			}
-			this.index = index
-		}, 100)
-	} })
+		'scroll': '_onSroll'
+	} 
+})
 export class AssetsListView extends CollectionView<HTMLDivElement> {
 	_current: View<HTMLDivElement>;
 	private _blazy: any;
+    private index: number;
 	constructor (options?:AssetsListOptions) {
 		super(options);
+        
 		this.sort = false;
+        
+        this._onSroll = throttle(bind(this._onSroll, this), 500);
 
 		this.listenTo(this, 'childview:click', function (view, model) {
 			if (this._current) html.removeClass(this._current.el, 'active');
@@ -123,9 +105,6 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 			this.trigger('selected', view, model);
 		});
 
-
-
-
 		this.listenTo(this, 'childview:remove', function (view, {model}) {
             console.log(arguments)
 			if (options.deleteable === true) {
@@ -133,7 +112,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 				if (model.has('deleteable')) {
 					remove = !!model.get('deleteable');
 				}
-				if (remove) model.remove();//this.collection.remove(model);
+				if (remove) model.remove();
 			} else {
 
 			}
@@ -177,7 +156,25 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 
 	}
 
-	_initBlazy () {
+    private _onSroll (e) {
+        let index = this.index ? this.index : (this.index = 0),
+				len = this.children.length
+
+			for (let i = index;i<len;i++) {
+				let view: View<HTMLDivElement> = <any>this.children[i],
+					img = view.$('img')[0]
+					if (img == null) continue
+					if (img.src === img.getAttribute('data-src')) {
+						index = i;
+					} else if (elementInView(img, this.el)) {
+						index = i
+						this._blazy.load(img, true);
+					}
+			}
+			this.index = index
+    }
+
+	private _initBlazy () {
 		this._blazy = new Blazy({
 			container: '.gallery',
 			selector: 'img',

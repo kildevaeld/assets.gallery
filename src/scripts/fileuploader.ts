@@ -65,12 +65,16 @@ export default class FileUploader extends EventEmitter {
           formData.append(key, value);
         });
 
-        let method: string = HttpMethod[this.options.method]
-
-        let request = new Request(method,this.options.url)
-
-        return request
+        
+        return utils.request.post(this.options.url)
+        .header('Content-Type', file.type)
+        .header({
+            'Content-Type': file.type,
+            'Content-Length': String(file.size)
+        })
+        .params({filename: file.name})
         .progress( (event:ProgressEvent) => {
+           
           if (event.lengthComputable) {
              let progress = (event.loaded / event.total * 100 || 0);
              this.trigger('progress', file, progress);
@@ -80,7 +84,10 @@ export default class FileUploader extends EventEmitter {
              }
             }
         })
-        .json(formData)
+        .end(file)
+        .then( (res) => {
+            return JSON.parse(res);
+        })
 
 
     }

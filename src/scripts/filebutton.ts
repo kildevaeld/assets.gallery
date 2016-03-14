@@ -134,10 +134,11 @@ export class UploadButton extends View<HTMLInputElement> {
       pv.show()
     }
 
-    this.uploader.upload(file, (progress, total) => {
+    return this.uploader.upload(file, (progress, total) => {
       this.trigger('progress', { progress, total })
       this.showProgress(progress, total)
     }).then((result) => {
+      
       this.trigger('upload', result)
       if (pv != null) pv.hide()
       this.clear()
