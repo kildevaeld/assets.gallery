@@ -18,7 +18,7 @@ export interface AssetsCollectionFetchOption { }
 }*/
 
 export class AssetsModel extends RestModel {
-	idAttribute = "path";
+	idAttribute = "id";
 	collection: AssetsCollection;
     
     get fullPath (): string {

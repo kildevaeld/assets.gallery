@@ -98,6 +98,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	__export(__webpack_require__(21));
 	__export(__webpack_require__(22));
 	__export(__webpack_require__(23));
+	exports.Version = '0.2.11';
 	function debug(debug) {
 	    if (window.localStorage) {
 	        window.localStorage['debug'] = debug ? "views:*" : '';
@@ -127,7 +128,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var util_1 = __webpack_require__(17);
 	var paddedLt = /^\s*</;
 	var unbubblebles = 'focus blur change'.split(' ');
-	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events', 'triggers'];
+	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events', 'triggers', 'ui'];
 	var BaseView = (function (_super) {
 	    __extends(BaseView, _super);
 	    /**
@@ -143,9 +144,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._domEvents = [];
 	        if (this.el == null) {
 	            this._ensureElement();
-	        }
-	        else {
-	            this.delegateEvents();
 	        }
 	    }
 	    BaseView.find = function (selector, context) {
@@ -169,11 +167,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        events = util_1.normalizeUIKeys(events, this._ui);
 	        var triggers = this._configureTriggers();
 	        events = utils.extend({}, events, triggers);
-	        debug('%s delegate events %j', this.cid, events);
+	        debug('%s delegate events %j', this, events);
 	        if (!events)
 	            return this;
 	        //if (!(events || (events = utils.result(this, 'events')))) return this;
-	        this.undelegateEvents();
+	        //this.undelegateEvents();
 	        var dels = [];
 	        for (var key in events) {
 	            var method = events[key];
@@ -197,7 +195,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    BaseView.prototype.undelegateEvents = function () {
 	        this._unbindUIElements();
-	        debug('%s undelegate events', this.cid);
+	        debug('%s undelegate events', this);
 	        if (this.el) {
 	            for (var i = 0, len = this._domEvents.length; i < len; i++) {
 	                var item = this._domEvents[i];
@@ -231,7 +229,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 	        /*jshint bitwise: false*/
 	        var useCap = !!~unbubblebles.indexOf(eventName) && selector != null;
-	        debug('%s delegate event %s ', this.cid, eventName);
+	        debug('%s delegate event %s ', this, eventName);
 	        utils.addEventListener(this.el, eventName, handler, useCap);
 	        this._domEvents.push({ eventName: eventName, handler: handler, listener: listener, selector: selector });
 	        return handler;
@@ -257,6 +255,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this;
 	    };
 	    BaseView.prototype.render = function (options) {
+	        this.undelegateEvents();
+	        this.delegateEvents();
 	        return this;
 	    };
 	    /**
@@ -308,9 +308,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    };
 	    BaseView.prototype.setElement = function (elm) {
-	        this.undelegateEvents();
+	        //this.undelegateEvents();
 	        this._setElement(elm);
-	        this.delegateEvents();
+	        //this.delegateEvents();
 	    };
 	    BaseView.prototype.remove = function () {
 	        this._removeElement();
@@ -345,11 +345,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	                if (elm instanceof NodeList) {
 	                    elm = elm[0];
 	                }
-	                debug('added ui element %s %s', k, ui[k]);
+	                debug('%s added ui element %s %s', _this, k, ui[k]);
 	                _this.ui[k] = elm;
 	            }
 	            else {
-	                debug('view ', _this.cid, ': ui element not found ', k, ui[k]);
+	                debug('%s ui element not found ', _this, k, ui[k]);
 	            }
 	        });
 	    };
@@ -376,7 +376,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var events = {}, val, key;
 	        for (key in triggers) {
 	            val = triggers[key];
-	            debug('added trigger %s %s', key, val);
+	            debug('%s added trigger %s %s', this, key, val);
 	            events[key] = this._buildViewTrigger(val);
 	        }
 	        return events;
@@ -420,7 +420,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                attrs.id = utils.result(this, 'id');
 	            if (this.className)
 	                attrs['class'] = utils.result(this, 'className');
-	            debug('%s created element: %s', this.cid, utils.result(this, 'tagName') || 'div');
+	            debug('%s created element: %s', this, utils.result(this, 'tagName') || 'div');
 	            this.setElement(this._createElement(utils.result(this, 'tagName') || 'div'));
 	            this._setAttributes(attrs);
 	        }
@@ -452,6 +452,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	        for (var attr in attrs) {
 	            attr in this.el ? this.el[attr] = attrs[attr] : this.el.setAttribute(attr, attrs[attr]);
 	        }
+	    };
+	    BaseView.prototype.toString = function () {
+	        return "[" + (this.name || 'View') + ": " + this.cid + "]";
 	    };
 	    return BaseView;
 	}(object_1.BaseObject));
@@ -989,9 +992,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function BaseObject(args) {
 	        _super.call(this);
 	        this._isDestroyed = false;
-	        /*if (typeof (<any>this).initialize === 'function') {
-	          callFunc((<any>this).initialize, this, slice(arguments))
-	        }*/
 	    }
 	    Object.defineProperty(BaseObject.prototype, "isDestroyed", {
 	        /**
@@ -2332,14 +2332,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /* 18 */
 /***/ function(module, exports, __webpack_require__) {
 
-	/* global BaseClass */
-	/* jshint latedef:nofunc */
 	"use strict";
 	var __extends = (this && this.__extends) || function (d, b) {
 	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
+	var debug = __webpack_require__(3)('views:region');
 	var object_1 = __webpack_require__(6);
 	var utilities_1 = __webpack_require__(8);
 	/** Region  */
@@ -2405,8 +2404,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.empty();
 	            // If the view is destroyed be others
 	            view.once('destroy', this.empty, this);
+	            debug('%s render view %s', this, view);
 	            view.render();
 	            utilities_1.triggerMethodOn(view, 'before:show');
+	            debug('%s attaching view: %s', this, view);
 	            this._attachHtml(view);
 	            utilities_1.triggerMethodOn(view, 'show');
 	            this._view = view;
@@ -2686,16 +2687,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (options === void 0) { options = {}; }
 	        _super.call(this, options);
 	        utilities_1.extend(this, utilities_1.pick(options, ['model', 'collection', 'template']));
-	        /*if (options.model) {
-	            this.model = options.model
-	        }
-	        if (options.collection) {
-	            this.collection = options.collection
-	        }
-
-	        if (options && options.template) {
-	            this.template = options.template
-	        }*/
 	    }
 	    Object.defineProperty(View.prototype, "model", {
 	        get: function () { return this._model; },
@@ -2721,7 +2712,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            debug('stop listening on model uid: %s', this.model.uid);
 	            this.stopListening(this._model);
 	        }
-	        debug('viewId %s set model uid: %s', this.cid, model.uid);
+	        debug('%s set model uid: %s', this, model.uid);
 	        this._model = model;
 	        this.triggerMethod('model', model);
 	        return this;
@@ -2731,7 +2722,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            return this;
 	        this.triggerMethod('before:collection', this._collection, collection);
 	        if (this._collection) {
-	            debug('viewId %s: stop listening on collection uid: %s', this.cid);
+	            debug('%s stop listening on collection', this);
 	            this.stopListening(this._collection);
 	        }
 	        this._collection = collection;
@@ -2745,9 +2736,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    View.prototype.render = function (options) {
 	        if (options === void 0) { options = {}; }
+	        debug('%s render', this);
 	        if (!options.silent)
 	            this.triggerMethod('before:render');
+	        this.undelegateEvents();
 	        this.renderTemplate(this.getTemplateData());
+	        this.delegateEvents();
 	        if (!options.silent)
 	            this.triggerMethod('render');
 	        return this;
@@ -2767,18 +2761,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	    View.prototype.renderTemplate = function (data) {
 	        var template = this.getOption('template');
 	        if (typeof template === 'function') {
-	            debug('%s render template function', this.cid);
+	            debug('%s render template function', this);
 	            template = template.call(this, data);
 	        }
 	        if (template && typeof template === 'string') {
-	            debug('%s attach template: %s', this.cid, template);
+	            debug('%s attach template: %s', this, template);
 	            this.attachTemplate(template);
 	        }
 	    };
 	    View.prototype.attachTemplate = function (template) {
-	        this.undelegateEvents();
+	        //this.undelegateEvents();
 	        this.el.innerHTML = template;
-	        this.delegateEvents();
+	        //this.delegateEvents();
 	    };
 	    View.prototype._delegateDataEvents = function (model, collection) {
 	        var _this = this;
@@ -2864,7 +2858,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	   * @param {DataViewOptions} options
 	   */
 	    function CollectionView(options) {
-	        //this._options = options||{}
 	        _super.call(this, options);
 	        this._options = options || {};
 	        this.children = [];
@@ -2925,7 +2918,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    CollectionView.prototype.renderChildView = function (view, index) {
 	        this.triggerMethod('before:render:child', view);
-	        debug('%s render child: %s', this.cid, view.cid);
+	        debug('%s render child: %s', this, view);
 	        view.render();
 	        this._attachHTML(view, index);
 	        this.triggerMethod('render:child', view);
@@ -2958,15 +2951,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!view)
 	            return;
 	        if (typeof view.destroy === 'function') {
-	            debug('destroy child view: %s', view);
+	            debug('%s destroy child view: %s', this, view);
 	            view.destroy();
 	        }
 	        else if (typeof view.remove === 'function') {
-	            debug('remove child view: %s', view);
+	            debug('%s remove child view: %s', this, view);
 	            view.remove();
 	        }
 	        this.stopListening(view);
-	        //this.children.delete(view);
 	        this.children.splice(this.children.indexOf(view), 1);
 	        if (this.children.length === 0) {
 	            this.showEmptyView();
@@ -3004,7 +2996,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    CollectionView.prototype._appendChild = function (view, index) {
 	        this._updateIndexes(view, true, index);
 	        this._proxyChildViewEvents(view);
-	        debug('%s append child %s at index: %s', this.cid, view.cid, index);
+	        debug('%s append child %s at index: %s', this, view, index);
 	        this.children.push(view);
 	        this.hideEmptyView();
 	        this.renderChildView(view, index);
@@ -3019,7 +3011,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	   */
 	    CollectionView.prototype._attachHTML = function (view, index) {
 	        if (this._buffer) {
-	            debug("%s attach to buffer: %s", this.cid, view.cid);
+	            debug("%s attach to buffer: %s", this, view);
 	            this._buffer.append(view);
 	        }
 	        else {
@@ -3057,13 +3049,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    };
 	    CollectionView.prototype._startBuffering = function () {
+	        debug("%s initializing buffer", this);
 	        this._buffer = new Buffer();
 	    };
 	    CollectionView.prototype._stopBuffering = function () {
+	        debug('%s appending buffer to container', this);
 	        this._container.appendChild(this._buffer.buffer);
 	        delete this._buffer;
 	    };
 	    CollectionView.prototype._initContainer = function () {
+	        debug("%s init container", this);
 	        var container = this.getOption('childViewContainer');
 	        if (container) {
 	            container = this.$(container)[0];
@@ -3094,6 +3089,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            });
 	        }
 	        if (currentView) {
+	            debug('%s insert child %s before: %s', this, childView, currentView);
 	            this._container.insertBefore(childView.el, currentView.el);
 	            return true;
 	        }
@@ -3104,6 +3100,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @private
 	     */
 	    CollectionView.prototype._insertAfter = function (childView) {
+	        debug('%s insert child %s ', this, childView);
 	        this._container.appendChild(childView.el);
 	    };
 	    /**
@@ -3126,6 +3123,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @private
 	     */
 	    CollectionView.prototype._onCollectionAdd = function (model) {
+	        debug('%s received add event from collection %s', this, this.collection);
 	        var view = this.getChildView(model);
 	        var index = this.collection.indexOf(model);
 	        this._appendChild(view, index);
@@ -3136,6 +3134,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     * @private
 	     */
 	    CollectionView.prototype._onCollectionRemove = function (model) {
+	        debug('%s received remove event from collection %s', this, this.collection);
 	        var view = utilities_1.find(this.children, function (view) {
 	            return view.model === model;
 	        });
@@ -3147,6 +3146,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	     */
 	    CollectionView.prototype._onCollectionSort = function () {
 	        var _this = this;
+	        debug('%s received sort event from collection %s', this, this.collection);
 	        var orderChanged = this.collection.find(function (model, index) {
 	            var view = utilities_1.find(_this.children, function (view) {
 	                return view.model === model;
@@ -3812,11 +3812,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var UploadButton = (function (_super) {
 	    __extends(UploadButton, _super);
 	    function UploadButton(options) {
-	        options = utils.extend({
-	            tagName: 'input',
-	            attributes: { type: 'file' },
-	            className: 'file-input-button'
-	        }, defaults, options);
+	        options = utils.extend({}, defaults, options);
 	        _super.call(this, options);
 	        utils.extend(this, utils.pick(options, ['errorView', 'progressView']));
 	        this.uploader = options.uploader || new fileuploader_1.default(options);
@@ -3903,8 +3899,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    };
 	    UploadButton = __decorate([
-	        views_1.events({
-	            change: '_onChange'
+	        views_1.attributes({
+	            tagName: 'input',
+	            attributes: { type: 'file' },
+	            events: {
+	                change: '_onChange'
+	            }
 	        }), 
 	        __metadata('design:paramtypes', [Object])
 	    ], UploadButton);
@@ -3928,7 +3928,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    __extends(AssetsModel, _super);
 	    function AssetsModel() {
 	        _super.apply(this, arguments);
-	        this.idAttribute = "path";
+	        this.idAttribute = "id";
 	    }
 	    Object.defineProperty(AssetsModel.prototype, "fullPath", {
 	        get: function () {
@@ -5340,7 +5340,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        console.log(model);
 	        html.removeClass(this.ui.mime, 'mime-unknown');
 	        mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
-	        console.log('MIME', mime);
 	        html.addClass(this.ui.mime, mime);
 	        this.ui.name.textContent = utilities_1.truncate(model.get('name') || model.get('filename'), 25);
 	        var url = model.getURL();
@@ -5991,6 +5990,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            maxSize: 1024 * 1000,
 	        });
 	        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+	        this._uploadButton.render();
 	    };
 	    GalleryView.prototype._onItemCreate = function (asset) {
 	        this.collection.on('error', function (e) {
@@ -5998,7 +5998,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        try {
 	            console.log('uploaded', asset);
-	            this.collection.add(asset);
+	            this.collection.add(asset, { silent: false, parse: true });
+	            console.log(this.collection);
 	        }
 	        catch (e) {
 	            console.log(e);
@@ -6016,6 +6017,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    GalleryView.prototype._onSearch = function () {
 	        var search = this.ui['search'];
+	        this.collection.query(search.value).catch(function (e) {
+	            console.log(e);
+	        });
 	    };
 	    GalleryView = __decorate([
 	        template('gallery'),

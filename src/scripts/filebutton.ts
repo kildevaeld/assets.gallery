@@ -1,5 +1,5 @@
 import FileUploader from './fileuploader'
-import {ViewOptions, View, events} from 'views'
+import {ViewOptions, View, attributes} from 'views'
 //import {utils} from 'views/lib/utils'
 import * as utils from 'utilities';
 
@@ -66,9 +66,12 @@ export function createButton (options:UploadButtonOptions) : any {
 
 }
 
-
-@events({
+@attributes({
+  tagName: 'input',
+  attributes: { type: 'file' },
+  events: {
     change: '_onChange'
+  }
 })
 export class UploadButton extends View<HTMLInputElement> {
 
@@ -77,25 +80,21 @@ export class UploadButton extends View<HTMLInputElement> {
   progressView: IProgressView;
   errorView: IMessageView;
   private uploader: FileUploader;
-  
+
 
 
   set url(url:string) {
       this.uploader.options.url = url;
   }
-  
+
   get url(): string {
       return this.uploader.options.url;
   }
 
   constructor(options: UploadButtonOptions) {
 
-    options = utils.extend({
-        tagName: 'input',
-        attributes: { type: 'file' },
-        className: 'file-input-button'
-    }, defaults,options);
-
+    options = utils.extend({}, defaults, options);
+   
     super(options);
 
     utils.extend(this, utils.pick(options, ['errorView','progressView']));
@@ -106,7 +105,7 @@ export class UploadButton extends View<HTMLInputElement> {
   }
 
   private _onChange (e: Event) {
-
+    
     this.hideErrorView()
 
     let files = this.el.files

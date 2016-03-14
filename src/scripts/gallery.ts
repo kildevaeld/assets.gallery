@@ -26,15 +26,15 @@ export interface GalleryViewOptions extends ViewOptions {
 }
 
 @template('gallery')
-@attributes({ 
-    className: 'assets-gallery gallery', 
-    tagName: 'div', 
-    ui: { 
+@attributes({
+    className: 'assets-gallery gallery',
+    tagName: 'div',
+    ui: {
         button: '.upload-button',
         search : ".assets-search-input" },
     events: {
         'change @ui.search': '_onSearch'
-    } 
+    }
 })
 export class GalleryView extends LayoutView<HTMLDivElement> {
     public collection: AssetsCollection
@@ -85,10 +85,14 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
             //mimeType: 'image/*'
         });*/
 
+
+
+
+
         this.listenTo(this._listView, 'selected', this._onItemSelect);
         this.listenTo(this._listView, 'remove', this._onItemRemove)
         //this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-        
+
         this.collection = collection
     }
 
@@ -97,15 +101,16 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
         this.regions['preview'].show(this._preView)
         //this.regions['upload'].show(this._uploadButton)
         this._uploadButton = new UploadButton({
-            el: this.ui['button'],
-            autoUpload: true,
-            url: this.collection.url,
-            maxSize: 1024 * 1000,
-            //mimeType: 'image/*'
+          el: this.ui['button'],
+          autoUpload: true,
+          url: this.collection.url,
+          maxSize: 1024 * 1000,
+          //mimeType: 'image/*'
         });
         
         this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-
+        this._uploadButton.render();
+        
     }
 
     private _onItemCreate(asset) {
@@ -114,12 +119,13 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
         });
         try {
             console.log('uploaded', asset)
-            this.collection.add(asset);    
+            this.collection.add(asset, {silent: false, parse: true});
+            console.log(this.collection)
         } catch (e) {
             console.log(e);
         }
-        
-        
+
+
     }
 
     private _onItemSelect({model}) {
@@ -136,9 +142,9 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
     private _onSearch() {
         let search = <HTMLInputElement>this.ui['search'];
-        /*this.collection.query(search.value).catch(e => {
+        this.collection.query(search.value).catch(e => {
             console.log(e)
-        });*/
+        });
     }
 
 }
