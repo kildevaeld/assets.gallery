@@ -17,6 +17,7 @@ export declare class GalleryView extends LayoutView<HTMLDivElement> {
     private _uploadButton;
     listView: AssetsListView;
     preView: AssetsPreview;
+    url: string;
     constructor(options?: GalleryViewOptions);
     onRender(): void;
     private _onUploadProgress(e);

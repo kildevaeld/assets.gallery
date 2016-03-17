@@ -5992,6 +5992,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        enumerable: true,
 	        configurable: true
 	    });
+	    Object.defineProperty(GalleryView.prototype, "url", {
+	        get: function () {
+	            return this.collection.getURL();
+	        },
+	        set: function (url) {
+	            this.collection.url = url;
+	            this._uploadButton.url = url;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
 	    GalleryView.prototype.onRender = function () {
 	        this.regions['list'].show(this._listView);
 	        this.regions['preview'].show(this._preView);

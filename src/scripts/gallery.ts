@@ -50,6 +50,15 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
     get preView(): AssetsPreview {
         return this._preView
     }
+    
+    get url (): string {
+        return this.collection.getURL();
+    }
+    
+    set url(url: string) {
+        this.collection.url = url;
+        this._uploadButton.url = url;
+    }
 
     constructor(options: GalleryViewOptions = {}) {
         (<any>options).regions = {
