@@ -19,10 +19,11 @@ export function template(name: string): ClassDecorator {
 
 
 export interface GalleryViewOptions extends ViewOptions {
-    uploadButton?: boolean
-    collection?: AssetsCollection
-    url?: string
-    removeable?: boolean
+    uploadButton?: boolean;
+    collection?: AssetsCollection;
+    url?: string;
+    removeable?: boolean;
+    mimeType?: string[]|string;
 }
 
 @template('gallery')
@@ -42,7 +43,11 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
     private _listView: AssetsListView
     private _preView: AssetsPreview
     private _uploadButton: UploadButton
-
+    
+    get options (): GalleryViewOptions {
+        return this._options;
+    }
+    
     get listView(): AssetsListView {
         return this._listView
     }
@@ -72,7 +77,8 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
         }
 
         super(options);
-
+        this._options = options;
+        
         let collection = options.collection ? options.collection : new AssetsCollection(null, {
             url: options.url
         });
@@ -103,6 +109,7 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
           url: this.collection.getURL(),
           maxSize: 1024 * 1000,
           //mimeType: 'image/*'
+          mimeType: this.options.mimeType
         });
         
         this.listenTo(this._uploadButton, 'upload', this._onItemCreate);

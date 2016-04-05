@@ -8,6 +8,7 @@ export interface GalleryViewOptions extends ViewOptions {
     collection?: AssetsCollection;
     url?: string;
     removeable?: boolean;
+    mimeType?: string[] | string;
 }
 export declare class GalleryView extends LayoutView<HTMLDivElement> {
     collection: AssetsCollection;
@@ -15,6 +16,7 @@ export declare class GalleryView extends LayoutView<HTMLDivElement> {
     private _listView;
     private _preView;
     private _uploadButton;
+    options: GalleryViewOptions;
     listView: AssetsListView;
     preView: AssetsPreview;
     url: string;
