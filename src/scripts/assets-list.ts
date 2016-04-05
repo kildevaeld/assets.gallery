@@ -41,10 +41,17 @@ export const AssetsListItem = View.extend({
     events: {
         'click': function (e) {
             let target = e.target;
-
+            e.preventDefault();
             if (target === this.ui.remove) return;
 
             this.triggerMethod('click', this.model);
+        },
+        'dblclick': function (e) {
+            e.preventDefault();
+            let target = e.target;
+            if (target === this.ui.remove) return;
+            
+            this.triggerMethod('dblclick', this.model);
         }
     },
 	onRender () {
@@ -104,6 +111,15 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 			html.addClass(view.el, 'active')
 			this.trigger('selected', view, model);
 		});
+        
+        this.listenTo(this, 'childview:dbclick', function (view, model) {
+            if (this._current) html.removeClass(this._current.el, 'active');
+			this._current = view
+
+			html.addClass(view.el, 'active')
+			this.trigger('selected', view, model);
+            this.trigger('dblclick', view, model);
+        })
 
 		this.listenTo(this, 'childview:remove', function (view, {model}) {
             console.log(arguments)

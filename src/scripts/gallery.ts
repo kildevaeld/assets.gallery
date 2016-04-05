@@ -165,7 +165,9 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
     }
 
     private _onItemRemove({model}) {
-
+        if (this._preView.model === model) {
+            this._preView.model = null;
+        }
     }
 
 

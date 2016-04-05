@@ -1,6 +1,6 @@
 import {RestCollectionOptions, RestModel, RestCollection, normalize_path} from 'collection';
 import {request} from './request';
-
+import {normalizeURL} from './utilities';
 
 export class AssetsModel extends RestModel {
 	idAttribute = "id";
@@ -8,15 +8,18 @@ export class AssetsModel extends RestModel {
     
     get fullPath (): string {
         let path = this.get('path');
-        path = (path === '/' ? path : path + "/") + this.get('filename');
+        if (path !== '/') {
+            if (path[path.length - 1] !== '/') path += '/';
+        }
+        path = path + this.get('filename');
         return path;    
     }
     
     getURL (): string {
         let baseURL = this.collection.getURL();
-        let path = this.get('path');
-        path = (path === '/' ? path : path + "/") + this.get('filename');  
-        return normalize_path(baseURL, encodeURIComponent(path));
+        let path = this.get('path'); 
+        path = normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
+        return path;
     }
 
 }

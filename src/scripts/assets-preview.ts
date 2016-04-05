@@ -104,6 +104,8 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
 
         this.hideInfoView(model == null ? true : false)
         this.infoView.model = model
+        
+        if (model == null) return;
 
         let Handler = getPreviewHandler(model.get('mime'))
 

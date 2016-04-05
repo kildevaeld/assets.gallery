@@ -43,3 +43,25 @@ export function humanFileSize(bytes:number, si:boolean = false): string {
     } while(Math.abs(bytes) >= thresh && u < units.length - 1);
     return bytes.toFixed(1)+' '+units[u];
 }
+
+
+export function normalizeURL(url:string, ...segments:string[]): string {
+    let i:number, p: string = "";
+    if ((i = url.indexOf('?')) >= 0) {
+        p = url.substr(i);
+        url = url.substr(0,i);
+   }
+   
+   if (url[url.length - 1] !== '/') url += '/';
+   
+   for (let i = 0, ii = segments.length; i < ii; i++) {
+       let s = segments[i];
+       if (s === '/') continue;
+       if (s[0] === '/') s = s.substr(1);
+       if (s[s.length - 1] !== '/') s += '/';
+       url += s;
+   }
+   if (url[url.length - 1] === '/') url = url.substr(0, url.length - 1);
+   
+   return url + p;
+}

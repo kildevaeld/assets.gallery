@@ -3703,6 +3703,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _super.prototype.setModel.call(this, model);
 	        this.hideInfoView(model == null ? true : false);
 	        this.infoView.model = model;
+	        if (model == null)
+	            return;
 	        var Handler = getPreviewHandler(model.get('mime'));
 	        var region = this.regions['preview'];
 	        region.empty();
@@ -3796,6 +3798,33 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return bytes.toFixed(1) + ' ' + units[u];
 	}
 	exports.humanFileSize = humanFileSize;
+	function normalizeURL(url) {
+	    var segments = [];
+	    for (var _i = 1; _i < arguments.length; _i++) {
+	        segments[_i - 1] = arguments[_i];
+	    }
+	    var i, p = "";
+	    if ((i = url.indexOf('?')) >= 0) {
+	        p = url.substr(i);
+	        url = url.substr(0, i);
+	    }
+	    if (url[url.length - 1] !== '/')
+	        url += '/';
+	    for (var i_1 = 0, ii = segments.length; i_1 < ii; i_1++) {
+	        var s = segments[i_1];
+	        if (s === '/')
+	            continue;
+	        if (s[0] === '/')
+	            s = s.substr(1);
+	        if (s[s.length - 1] !== '/')
+	            s += '/';
+	        url += s;
+	    }
+	    if (url[url.length - 1] === '/')
+	        url = url.substr(0, url.length - 1);
+	    return url + p;
+	}
+	exports.normalizeURL = normalizeURL;
 
 
 /***/ },
@@ -4645,6 +4674,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	var collection_1 = __webpack_require__(40);
+	var utilities_1 = __webpack_require__(30);
 	var AssetsModel = (function (_super) {
 	    __extends(AssetsModel, _super);
 	    function AssetsModel() {
@@ -4654,7 +4684,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    Object.defineProperty(AssetsModel.prototype, "fullPath", {
 	        get: function () {
 	            var path = this.get('path');
-	            path = (path === '/' ? path : path + "/") + this.get('filename');
+	            if (path !== '/') {
+	                if (path[path.length - 1] !== '/')
+	                    path += '/';
+	            }
+	            path = path + this.get('filename');
 	            return path;
 	        },
 	        enumerable: true,
@@ -4663,8 +4697,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    AssetsModel.prototype.getURL = function () {
 	        var baseURL = this.collection.getURL();
 	        var path = this.get('path');
-	        path = (path === '/' ? path : path + "/") + this.get('filename');
-	        return collection_1.normalize_path(baseURL, encodeURIComponent(path));
+	        path = utilities_1.normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
+	        return path;
 	    };
 	    return AssetsModel;
 	}(collection_1.RestModel));
@@ -6054,9 +6088,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    events: {
 	        'click': function (e) {
 	            var target = e.target;
+	            e.preventDefault();
 	            if (target === this.ui.remove)
 	                return;
 	            this.triggerMethod('click', this.model);
+	        },
+	        'dblclick': function (e) {
+	            e.preventDefault();
+	            var target = e.target;
+	            if (target === this.ui.remove)
+	                return;
+	            this.triggerMethod('dblclick', this.model);
 	        }
 	    },
 	    onRender: function () {
@@ -6092,6 +6134,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this._current = view;
 	            html.addClass(view.el, 'active');
 	            this.trigger('selected', view, model);
+	        });
+	        this.listenTo(this, 'childview:dbclick', function (view, model) {
+	            if (this._current)
+	                html.removeClass(this._current.el, 'active');
+	            this._current = view;
+	            html.addClass(view.el, 'active');
+	            this.trigger('selected', view, model);
+	            this.trigger('dblclick', view, model);
 	        });
 	        this.listenTo(this, 'childview:remove', function (view, _a) {
 	            var model = _a.model;
@@ -6776,6 +6826,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    GalleryView.prototype._onItemRemove = function (_a) {
 	        var model = _a.model;
+	        if (this._preView.model === model) {
+	            this._preView.model = null;
+	        }
 	    };
 	    GalleryView.prototype._onSearch = function () {
 	        var search = this.ui['search'];
