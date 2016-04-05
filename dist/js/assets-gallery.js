@@ -4537,6 +4537,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        enumerable: true,
 	        configurable: true
 	    });
+	    UploadButton.prototype.onRender = function () {
+	        if (this.options.mimeType) {
+	            var mime = void 0;
+	            if (Array.isArray(this.options.mimeType)) {
+	                mime = this.options.mimeType.join(',');
+	            }
+	            else {
+	                mime = this.options.mimeType;
+	            }
+	            this.el.setAttribute('accept', mime);
+	        }
+	    };
 	    UploadButton.prototype._onChange = function (e) {
 	        this.hideErrorView();
 	        var files = this.el.files;

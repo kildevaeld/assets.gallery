@@ -27,6 +27,7 @@ export declare class UploadButton extends View<HTMLInputElement> {
     private uploader;
     url: string;
     constructor(options: UploadButtonOptions);
+    onRender(): void;
     private _onChange(e);
     private upload(file);
     private clear();

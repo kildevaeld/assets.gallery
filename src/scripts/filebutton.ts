@@ -103,6 +103,18 @@ export class UploadButton extends View<HTMLInputElement> {
     this.options = options;
 
   }
+  
+  onRender () {
+      if (this.options.mimeType) {
+          let mime: string;
+          if (Array.isArray(this.options.mimeType)) {
+              mime = (<string[]>this.options.mimeType).join(',');
+          } else {
+              mime = <string>this.options.mimeType;
+          }
+          this.el.setAttribute('accept', mime);
+      }
+  }
 
   private _onChange (e: Event) {
     
