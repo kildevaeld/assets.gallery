@@ -23,7 +23,7 @@ gulp.task('build:templates', (done) => {
     }))
     .pipe(es.wait(() => {
       output.push("export default " + JSON.stringify(templates, null, 2));
-      return fs.writeFile('./src/scripts/templates.ts', output.join('\n'), done)
+      return fs.writeFile('./src/scripts/ui/templates.ts', output.join('\n'), done)
       
     }));
     

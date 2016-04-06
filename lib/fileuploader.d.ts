@@ -1,17 +1,6 @@
 import { EventEmitter } from 'eventsjs';
 import * as utils from 'utilities';
-export declare enum HttpMethod {
-    GET = 0,
-    POST = 1,
-    PUT = 2,
-    DELETE = 3,
-}
-export declare class HttpError implements Error {
-    name: string;
-    message: string;
-    code: number;
-    constructor(message: string, code: number);
-}
+import { HttpMethod } from './interface';
 export interface FileUploaderOptions {
     url: string;
     method?: HttpMethod;

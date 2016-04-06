@@ -1,4 +1,4 @@
-import {ajax} from './utilities'
+/*import {ajax} from './utilities'
 import {IPromise, Promise} from 'utilities';
   let xmlRe = /^(?:application|text)\/xml/,
       jsonRe = /^application\/json/,
@@ -71,7 +71,7 @@ export class Request {
 
       data = this._data;
       let url = this._url;
-      if (data && data === Object(data) /* && check for content-type */) {
+      if (data && data === Object(data)) {
         let d = queryParam(data)
         url += d
       }
@@ -133,3 +133,4 @@ export module request {
       return new Request('DELETE', url)
     }
 }
+*/

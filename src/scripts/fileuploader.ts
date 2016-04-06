@@ -1,22 +1,10 @@
 
 import {EventEmitter} from 'eventsjs';
-import {ajax} from './utilities';
-import {Request} from './request';
+//import {ajax} from './utilities';
+//import {Request} from './request';
 import * as utils from 'utilities';
+import {HttpMethod} from './interface';
 
-export enum HttpMethod {
-  GET, POST, PUT, DELETE
-}
-
-export class HttpError implements Error {
-  name: string
-  message: string
-  code: number
-  constructor (message: string, code: number) {
-    this.message = message
-    this.code = code
-  }
-}
 
 export interface FileUploaderOptions {
     url: string
@@ -68,8 +56,7 @@ export default class FileUploader extends EventEmitter {
         
         return utils.request.post(this.options.url)
         .header({
-            'Content-Type': file.type,
-            
+            'Content-Type': file.type, 
         })
         .params({filename: file.name})
         .uploadProgress( (event:ProgressEvent) => {

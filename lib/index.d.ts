@@ -1,10 +1,8 @@
 import * as views from 'views';
-import './preview-handlers/index';
 export * from './fileuploader';
-export * from './filebutton';
-export * from './assets-collection';
-export * from './assets-list';
-export * from './assets-preview';
-export * from './gallery';
+export * from './models';
+export * from './ui';
 export declare class View<T extends HTMLElement> extends views.View<T> {
 }
+import { AssetsClient, AssetsClientOptions } from './client';
+export declare function createClient(options: AssetsClientOptions): AssetsClient;
