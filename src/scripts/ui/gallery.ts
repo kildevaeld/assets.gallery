@@ -105,12 +105,14 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
             this.listenTo(this._client, 'change:url', () => {
                 this._uploadButton.url = this._client.url;
             });
+            
+            this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+            this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
+            this._uploadButton.render();
         }
         
         
-        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-        this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
-        this._uploadButton.render();
+       
         
     }
     

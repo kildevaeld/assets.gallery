@@ -9,6 +9,13 @@ export interface AssetsClientOptions {
 }
 
 export class AssetsClient extends EventEmitter {
+    
+    toModel (attr:any): AssetsModel {
+        return new AssetsModel(attr, {
+            url: this.url
+        });
+    }
+    
     private __options: AssetsClientOptions;
     
     get options() {
@@ -45,7 +52,9 @@ export class AssetsClient extends EventEmitter {
         .params({
             id: id
         }).json().then( value => {
-           return new AssetsModel(value); 
+           return new AssetsModel(value, {
+               url: this.url
+           }); 
         });
     }
     
@@ -57,7 +66,9 @@ export class AssetsClient extends EventEmitter {
         
         return request.get(url)
         .json().then( value => {
-            return new AssetsModel(value);   
+            return new AssetsModel(value, {
+                url: this.url
+            });   
         });
     }
     

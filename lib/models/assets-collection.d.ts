@@ -6,8 +6,11 @@ export declare class AssetsModel extends RestModel {
     fullPath: string;
     getURL(): string;
 }
+export interface AssetsCollectionOptions {
+    fetchOnUrl?: boolean;
+}
 export declare class AssetsCollection extends RestCollection<AssetsModel> {
     Model: typeof AssetsModel;
     comparator: string;
-    constructor(client: AssetsClient);
+    constructor(client: AssetsClient, options?: AssetsCollectionOptions);
 }

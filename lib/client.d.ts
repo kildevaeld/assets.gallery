@@ -5,6 +5,7 @@ export interface AssetsClientOptions {
     url?: string;
 }
 export declare class AssetsClient extends EventEmitter {
+    toModel(attr: any): AssetsModel;
     private __options;
     options: any;
     url: string;

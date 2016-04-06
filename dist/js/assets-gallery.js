@@ -67,6 +67,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	__export(__webpack_require__(27));
 	__export(__webpack_require__(29));
 	__export(__webpack_require__(41));
+	__export(__webpack_require__(58));
 	var View = (function (_super) {
 	    __extends(View, _super);
 	    function View() {
@@ -75,9 +76,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return View;
 	}(views.View));
 	exports.View = View;
-	var client_1 = __webpack_require__(58);
+	var client_2 = __webpack_require__(58);
 	function createClient(options) {
-	    return new client_1.AssetsClient(options);
+	    return new client_2.AssetsClient(options);
 	}
 	exports.createClient = createClient;
 
@@ -3736,6 +3737,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	};
 	var collection_1 = __webpack_require__(31);
 	var utilities_1 = __webpack_require__(40);
+	var utils = __webpack_require__(8);
 	var AssetsModel = (function (_super) {
 	    __extends(AssetsModel, _super);
 	    function AssetsModel() {
@@ -3756,7 +3758,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        configurable: true
 	    });
 	    AssetsModel.prototype.getURL = function () {
-	        var baseURL = this.collection.getURL();
+	        var baseURL = utils.result(this, 'rootURL');
+	        if (this.collection) {
+	            baseURL = this.collection.getURL();
+	        }
+	        if (baseURL == null)
+	            throw new Error("no url");
 	        var path = this.get('path');
 	        path = utilities_1.normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
 	        return path;
@@ -3766,16 +3773,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.AssetsModel = AssetsModel;
 	var AssetsCollection = (function (_super) {
 	    __extends(AssetsCollection, _super);
-	    function AssetsCollection(client) {
+	    function AssetsCollection(client, options) {
 	        var _this = this;
 	        _super.call(this, null, {
 	            url: client.url
 	        });
 	        this.Model = AssetsModel;
 	        this.comparator = 'name';
+	        options = options || { fetchOnUrl: true };
 	        this.listenTo(client, 'change:url', function () {
 	            _this.url = client.url;
-	            _this.reset(null);
+	            if (options.fetchOnUrl)
+	                _this.fetch();
 	        });
 	    }
 	    return AssetsCollection;
@@ -5345,8 +5354,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _super.prototype.setModel.call(this, model);
 	        this.hideInfoView(model == null ? true : false);
 	        this.infoView.model = model;
-	        if (model == null)
+	        if (model == null) {
+	            this.infoView.clear();
 	            return;
+	        }
 	        var Handler = getPreviewHandler(model.get('mime'));
 	        var region = this.regions['preview'];
 	        region.empty();
@@ -6059,7 +6070,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    AssetsListItemView.prototype._onClick = function (e) {
 	        e.preventDefault();
 	        var target = e.target;
-	        if (target === this.ui.remove)
+	        if (target === this.ui['remove'])
 	            return;
 	        this.triggerMethod('click', this.model);
 	    };
@@ -6794,10 +6805,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.listenTo(this._client, 'change:url', function () {
 	                _this._uploadButton.url = _this._client.url;
 	            });
+	            this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+	            this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
+	            this._uploadButton.render();
 	        }
-	        this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-	        this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
-	        this._uploadButton.render();
 	    };
 	    GalleryView.prototype._onUploadProgress = function (e) {
 	        var p = Math.round((e.progress / e.total) * 100);
@@ -6888,6 +6899,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.__options.url = '/';
 	        }
 	    }
+	    AssetsClient.prototype.toModel = function (attr) {
+	        return new models_1.AssetsModel(attr, {
+	            url: this.url
+	        });
+	    };
 	    Object.defineProperty(AssetsClient.prototype, "options", {
 	        get: function () {
 	            return utilities_1.extend({}, this.__options);
@@ -6912,21 +6928,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return new models_1.AssetsCollection(this);
 	    };
 	    AssetsClient.prototype.getById = function (id) {
+	        var _this = this;
 	        return utilities_1.request.get(this.url)
 	            .params({
 	            id: id
 	        }).json().then(function (value) {
-	            return new models_1.AssetsModel(value);
+	            return new models_1.AssetsModel(value, {
+	                url: _this.url
+	            });
 	        });
 	    };
 	    AssetsClient.prototype.getByPath = function (path) {
+	        var _this = this;
 	        if (path == null || path === '' || path === '/') {
 	            return utilities_1.Promise.reject(new interface_1.HttpError(500, ""));
 	        }
 	        var url = utilities_2.normalizeURL(this.url, path);
 	        return utilities_1.request.get(url)
 	            .json().then(function (value) {
-	            return new models_1.AssetsModel(value);
+	            return new models_1.AssetsModel(value, {
+	                url: _this.url
+	            });
 	        });
 	    };
 	    return AssetsClient;

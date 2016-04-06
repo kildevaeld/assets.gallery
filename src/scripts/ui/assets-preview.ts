@@ -105,7 +105,10 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
         this.hideInfoView(model == null ? true : false)
         this.infoView.model = model
         
-        if (model == null) return;
+        if (model == null) {
+            (<any>this.infoView).clear();
+            return
+        }
 
         let Handler = getPreviewHandler(model.get('mime'))
 
@@ -118,7 +121,6 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
             region.show(view)
 
         } else {
-
 
             let image = new Image();
 
