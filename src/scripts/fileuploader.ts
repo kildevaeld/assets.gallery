@@ -59,7 +59,7 @@ export default class FileUploader extends EventEmitter {
             'Content-Type': file.type, 
         })
         .params({filename: file.name})
-        .uploadProgress( (event:ProgressEvent) => {
+        .uploadProgress( (event) => {
            
           if (event.lengthComputable) {
              let progress = (event.loaded / event.total * 100 || 0);
@@ -70,9 +70,12 @@ export default class FileUploader extends EventEmitter {
              }
             }
         })
-        .end(file)
+        .end<string>(file)
         .then( (res) => {
-            return JSON.parse(res);
+            if (!res.isValid) {
+                throw new utils.HttpError(res.status, res.statusText, res.body);
+            }
+            return JSON.parse(res.body);
         })
 
 

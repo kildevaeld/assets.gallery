@@ -4,9 +4,22 @@ import {normalizeURL} from '../utilities';
 import {AssetsClient} from '../client';
 import * as utils from 'utilities';
 
+export interface IAsset {
+    filename: string;
+    path: string;
+    mime: string;
+    size: number;
+    meta: {[key: string]: any};
+    [key: string]: any;
+}
+
 export class AssetsModel extends RestModel {
     idAttribute = "id";
     collection: AssetsCollection;
+    
+    constructor(data:IAsset, options?:any) {
+        super(data, options);
+    }
 
     get fullPath(): string {
         let path = this.get('path');
@@ -29,6 +42,10 @@ export class AssetsModel extends RestModel {
         let path = this.get('path');
         path = normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
         return path;
+    }
+    
+    toJSON(): IAsset {
+        return super.toJSON();
     }
 
 }

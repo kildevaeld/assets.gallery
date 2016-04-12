@@ -1,7 +1,7 @@
 
 import {EventEmitter} from 'eventsjs';
 import {extend, request, IPromise, Promise} from 'utilities';
-import {AssetsCollection, AssetsModel} from './models'
+import {AssetsCollection, AssetsModel, IAsset} from './models'
 import {normalizeURL} from './utilities';
 import {HttpError} from './interface';
 export interface AssetsClientOptions {
@@ -51,8 +51,9 @@ export class AssetsClient extends EventEmitter {
         return request.get(this.url)
         .params({
             id: id
-        }).json().then( value => {
-           return new AssetsModel(value, {
+        }).json<IAsset>().then( value => {
+           if (!value.isValid) return null;
+           return new AssetsModel(value.body, {
                url: this.url
            }); 
         });
@@ -65,8 +66,9 @@ export class AssetsClient extends EventEmitter {
         let url = normalizeURL(this.url, path);
         
         return request.get(url)
-        .json().then( value => {
-            return new AssetsModel(value, {
+        .json<IAsset>().then( value => {
+            if (!value.isValid) return null;
+            return new AssetsModel(value.body, {
                 url: this.url
             });   
         });

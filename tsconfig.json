@@ -23,7 +23,6 @@
     "src/scripts/fileuploader.ts",
     "src/scripts/index.ts",
     "src/scripts/interface.ts",
-    "src/scripts/request.ts",
     "src/scripts/utilities.ts",
     "src/scripts/models/assets-collection.ts",
     "src/scripts/models/index.ts",
