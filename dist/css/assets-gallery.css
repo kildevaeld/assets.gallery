@@ -1260,6 +1260,7 @@
   flex-direction: column;
 }
 .assets-gallery .gallery-area {
+  max-height: 100%;
   display: -webkit-box;
   display: -moz-box;
   display: -webkit-flex;
