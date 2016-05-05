@@ -1444,6 +1444,13 @@
   max-width: 100%;
   max-height: 100%;
 }
+.assets.cropping-preview {
+  overflow: hidden;
+}
+.assets.cropping-preview img {
+  max-height: inherit !important;
+  max-width: inherit !important;
+}
 /*
  * Cropper.js v0.7.0
  * https://github.com/fengyuanchen/cropperjs

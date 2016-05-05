@@ -2,10 +2,13 @@
 import {View, ViewOptions ,attributes} from 'views';
 import * as Cropper from 'cropperjs';
 import {ICropper, ICropping} from './interfaces';
+import {AssetsModel} from '../../models';
+import {CropPreView} from './crop-preview';
 
 export interface CropViewOptions extends ViewOptions {
     aspectRatio?: number;
     resize: boolean;
+    preview?: CropPreView;
 }
 
 @attributes({
@@ -15,6 +18,7 @@ export interface CropViewOptions extends ViewOptions {
     }
 })
 export class CropView extends View<HTMLDivElement> {
+   
     private _cropper: ICropper;
     protected _cropping: ICropping;
     options: CropViewOptions;
@@ -34,9 +38,22 @@ export class CropView extends View<HTMLDivElement> {
         this._cropping = cropping
     }
     
+    setModel (model) {
+        
+        if (this.ui['image'] == null) return this;
+        
+        let image = <HTMLImageElement>this.ui['image'];
+        image.src = model.getURL();
+        
+        super.setModel(model);
+        
+        return this;
+    }
+    
     constructor(options:CropViewOptions = { resize: false }) {
         super(options);
         this.options = options;
+        
     }
     
     activate() {
@@ -48,7 +65,7 @@ export class CropView extends View<HTMLDivElement> {
            aspectRatio: this.options.aspectRatio,
            crop: (e) => {
                this._cropping = e.detail;
-               this.trigger('crop', e.detail)
+               this.triggerMethod('crop', e.detail)
            },
            data: this.cropping,
            built: (e) => this.trigger('built', e)
@@ -64,6 +81,16 @@ export class CropView extends View<HTMLDivElement> {
         }
         return this;
     }
+    
+    toggle() {
+        return this._cropper != null ? this.deactivate() : this.activate();
+    }
+    
+    onCrop (cropping) {
+        if (this.options.preview) {
+            this.options.preview.cropping = cropping;
+        }
+    }
  
     render () {
         super.render();
@@ -77,6 +104,12 @@ export class CropView extends View<HTMLDivElement> {
         }
         
         return this;  
-    }   
+    }
+    
+    destroy() {
+        this.deactivate();
+        super.destroy();
+        
+    } 
     
 }

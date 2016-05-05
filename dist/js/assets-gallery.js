@@ -7044,6 +7044,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        },
 	        set: function (cropping) {
 	            this._cropping = cropping;
+	            this.update();
 	        },
 	        enumerable: true,
 	        configurable: true
@@ -7052,26 +7053,61 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _super.prototype.render.call(this);
 	        if (this.ui['image'] == null) {
 	            this.undelegateEvents();
-	            var image = document.createElement('img');
-	            this.el.appendChild(image);
-	            this.ui['image'] = image;
+	            var image_1 = document.createElement('img');
+	            this.el.appendChild(image_1);
+	            this.ui['image'] = image_1;
 	            this.delegateEvents();
 	        }
+	        var image = this.ui['image'];
+	        if (image.src !== '') {
+	            this.size = {
+	                width: image.naturalWidth,
+	                height: image.naturalHeight
+	            };
+	        }
+	        image.style.maxHeight = '';
+	        image.style.maxWidth = '';
 	        return this;
 	    };
 	    CropPreView.prototype.update = function () {
 	        if (this._cropping == null || this.ui['image'] == null)
 	            return this;
-	        var el = this.ui['image'];
+	        var img = this.ui['image'];
+	        var el = this.el;
 	        var cropping = this._cropping;
 	        var cw = el.clientWidth, ch = el.clientHeight, rx = cw / cropping.width, ry = ch / cropping.height;
 	        var width = 0, height = 0;
+	        if (this.size) {
+	            width = this.size.width;
+	            height = this.size.height;
+	        }
+	        var e = {
+	            width: Math.round(rx * width) + 'px',
+	            height: Math.round(ry * height) + 'px',
+	            marginLeft: '-' + Math.round(rx * cropping.x) + 'px',
+	            marginTop: '-' + Math.round(ry * cropping.y) + 'px'
+	        };
+	        for (var key in e) {
+	            img.style[key] = e[key];
+	        }
+	        this.trigger('update');
+	    };
+	    CropPreView.prototype._onImageLoad = function () {
+	        var el = this.ui['image'];
+	        this.size = {
+	            width: el.naturalWidth || el.width,
+	            height: el.naturalHeight || el.height
+	        };
+	        this.trigger('onload', this.size);
 	    };
 	    CropPreView = __decorate([
 	        views_1.attributes({
 	            className: 'assets cropping-preview',
 	            ui: {
 	                image: 'img'
+	            },
+	            events: {
+	                'onload @ui.image': '_onImageLoad'
 	            }
 	        }), 
 	        __metadata('design:paramtypes', [])
@@ -7130,6 +7166,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        enumerable: true,
 	        configurable: true
 	    });
+	    CropView.prototype.setModel = function (model) {
+	        if (this.ui['image'] == null)
+	            return this;
+	        var image = this.ui['image'];
+	        image.src = model.getURL();
+	        _super.prototype.setModel.call(this, model);
+	        return this;
+	    };
 	    CropView.prototype.activate = function () {
 	        var _this = this;
 	        if (this._cropper != null) {
@@ -7139,7 +7183,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            aspectRatio: this.options.aspectRatio,
 	            crop: function (e) {
 	                _this._cropping = e.detail;
-	                _this.trigger('crop', e.detail);
+	                _this.triggerMethod('crop', e.detail);
 	            },
 	            data: this.cropping,
 	            built: function (e) { return _this.trigger('built', e); }
@@ -7153,6 +7197,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        return this;
 	    };
+	    CropView.prototype.toggle = function () {
+	        return this._cropper != null ? this.deactivate() : this.activate();
+	    };
+	    CropView.prototype.onCrop = function (cropping) {
+	        if (this.options.preview) {
+	            this.options.preview.cropping = cropping;
+	        }
+	    };
 	    CropView.prototype.render = function () {
 	        _super.prototype.render.call(this);
 	        if (this.ui['image'] == null) {
@@ -7163,6 +7215,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.delegateEvents();
 	        }
 	        return this;
+	    };
+	    CropView.prototype.destroy = function () {
+	        this.deactivate();
+	        _super.prototype.destroy.call(this);
 	    };
 	    CropView = __decorate([
 	        views_1.attributes({

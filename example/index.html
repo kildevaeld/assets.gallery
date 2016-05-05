@@ -1,47 +1,59 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <meta charset="UTF-8" />
-        <link rel="stylesheet" href="../dist/css/assets-gallery.css" />
-        <script src="../dist/js/assets-gallery.js"></script>
-    </head>
-    <body>
-        <div id="main" class="assets cropping-view">
-            <img src="image.png"" />
-        </div>
-        <button class="activate">Crop</button>
-        <script>
+
+<head>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" href="../dist/css/assets-gallery.css" />
+    <script src="../dist/js/assets-gallery.js"></script>
+</head>
+
+<body>
+    <div id="main" class="assets cropping-view cropping-preview">
+
+    </div>
+    <button class="activate">Crop</button>
+    <script>
+        var main = document.getElementById('main')
+
+
+
+
+
+
+        var preview = new Assets.CropPreView({
+            el: main
+        });
+
+        var view = new Assets.CropView({
+            aspectRatio: 3 / 2,
+            el: main,
+            preview: preview
+        });
+        //main.appendChild(view.render().el); 
+        view.el.style.width = '300px';
+        view.el.style.height = '200px';
+
+
+        view.render()
            
-           var main = document.getElementById('main') 
-           var view = new Assets.CropView({
-               aspectRatio: 3/2,
-              el: main
-           });
-           //main.appendChild(view.render().el); 
-           view.el.style.width = '300px';
-           view.el.style.height =  '200px';
-           
-           
-           
-           var ca = false;
-           document.querySelector('.activate').addEventListener('click', function () {
-               ca ? view.deactivate() : view.activate();
-               ca = !ca;
-           });
-          
-           
-           var preview = new Assets.CropPreView({
-               el: main
-           });
-           
-           view.render()
-           .on('crop', function (e) {
-               preview.cropping = e;
-           });
-           
-           preview.render();
-           
-           
-        </script>
-    </body>
+
+        view.model = new Assets.AssetsModel({
+            id: 1,
+            path: './',
+            filename: 'image.png',
+            mime: 'image/png'
+        }, {
+            url: '.'
+        });
+
+        preview.render();
+
+       
+        document.querySelector('.activate').addEventListener('click', function() {
+            view.toggle();
+
+        });
+    </script>
+</body>
+
 </html>
