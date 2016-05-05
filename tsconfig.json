@@ -11,7 +11,8 @@
     "noLib": false,
     "preserveConstEnums": true,
     "suppressImplicitAnyIndexErrors": true,
-    "outDir": "./src/dist"
+    "outDir": "./src/dist",
+    "allowSyntheticDefaultImports": true
   },
   "filesGlob": [
     "./src/**/*.ts",
@@ -19,11 +20,11 @@
     "!./node_modules/**/*.ts"
   ],
   "files": [
-    "src/scripts/client.ts",
     "src/scripts/fileuploader.ts",
     "src/scripts/index.ts",
     "src/scripts/interface.ts",
     "src/scripts/utilities.ts",
+    "src/scripts/client.ts",
     "src/scripts/models/assets-collection.ts",
     "src/scripts/models/index.ts",
     "src/scripts/ui/assets-preview.ts",
@@ -35,6 +36,10 @@
     "src/scripts/ui/templates.ts",
     "src/scripts/ui/thumbnailer.ts",
     "src/scripts/ui/utils.ts",
+    "src/scripts/ui/cropper/crop-preview.ts",
+    "src/scripts/ui/cropper/crop-view.ts",
+    "src/scripts/ui/cropper/index.ts",
+    "src/scripts/ui/cropper/interfaces.ts",
     "src/scripts/ui/list/index.ts",
     "src/scripts/ui/list/list-item.ts",
     "src/scripts/ui/list/list.ts",

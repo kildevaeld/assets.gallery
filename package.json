@@ -25,8 +25,9 @@
   },
   "dependencies": {
     "blazy": "^1.5.4",
-    "views": "git+https://github.com/kildevaeld/views.git",
-    "collection": "git+https://github.com/kildevaeld/collectionjs.git"
+    "collection": "git+https://github.com/kildevaeld/collectionjs.git",
+    "cropperjs": "^0.7.0",
+    "views": "git+https://github.com/kildevaeld/views.git"
   },
   "typings": "lib/index"
 }
