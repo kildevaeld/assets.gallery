@@ -1,4 +1,4 @@
-import { RestModel, RestCollection } from 'collection';
+import { RestModel, PaginatedCollection } from 'collection';
 import { AssetsClient } from '../client';
 export interface IAsset {
     filename: string;
@@ -21,7 +21,7 @@ export declare class AssetsModel extends RestModel {
 export interface AssetsCollectionOptions {
     fetchOnUrl?: boolean;
 }
-export declare class AssetsCollection extends RestCollection<AssetsModel> {
+export declare class AssetsCollection extends PaginatedCollection<AssetsModel> {
     Model: typeof AssetsModel;
     comparator: string;
     constructor(client: AssetsClient, options?: AssetsCollectionOptions);

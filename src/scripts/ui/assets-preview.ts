@@ -114,6 +114,12 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
 
         let region = this.regions['preview']
         region.empty()
+        
+        this.listenTo(model, 'remove', () => {
+            region.empty();
+            (<any>this.infoView).clear();
+        });
+        
         if (Handler) {
            
             let view = new Handler({ model: model })

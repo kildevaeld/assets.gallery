@@ -2468,13 +2468,29 @@ return /******/ (function(modules) { // webpackBootstrap
 	    HttpMethod[HttpMethod["HEAD"] = 4] = "HEAD";
 	})(exports.HttpMethod || (exports.HttpMethod = {}));
 	var HttpMethod = exports.HttpMethod;
+	function isResponse(a) {
+	    return objects_1.isObject(status) && objects_1.has(a, 'status') && objects_1.has(a, 'statusText') && objects_1.has(a, 'body');
+	}
+	exports.isResponse = isResponse;
 	var HttpError = (function (_super) {
 	    __extends(HttpError, _super);
 	    function HttpError(status, message, body) {
 	        _super.call(this, message);
-	        this.status = status;
-	        this.message = message;
-	        this.body = body;
+	        if (arguments.length === 1) {
+	            if (isResponse(status)) {
+	                this.status = status.status;
+	                this.message = status.statusText;
+	                this.body = status.body;
+	            }
+	            else {
+	                this.status = status;
+	            }
+	        }
+	        else {
+	            this.status = status;
+	            this.message = message;
+	            this.body = body;
+	        }
 	    }
 	    return HttpError;
 	}(Error));
@@ -2555,13 +2571,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this._xhr.withCredentials = ret;
 	        return this;
 	    };
-	    Request.prototype.json = function (data) {
+	    Request.prototype.json = function (data, throwOnInvalid) {
 	        var _this = this;
+	        if (throwOnInvalid === void 0) { throwOnInvalid = false; }
 	        this.header('content-type', 'application/json; charset=utf-8');
 	        if (!strings_1.isString(data)) {
 	            data = JSON.stringify(data);
 	        }
-	        return this.end(data)
+	        return this.end(data, throwOnInvalid)
 	            .then(function (resp) {
 	            var accepts = _this._xhr.getResponseHeader('content-type');
 	            if (jsonRe.test(accepts) && resp.body != "") {
@@ -2575,8 +2592,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        });
 	    };
-	    Request.prototype.end = function (data) {
+	    Request.prototype.end = function (data, throwOnInvalid) {
 	        var _this = this;
+	        if (throwOnInvalid === void 0) { throwOnInvalid = false; }
 	        data = data || this._data;
 	        var defer = promises_1.deferred();
 	        this._xhr.addEventListener('readystatechange', function () {
@@ -2606,6 +2624,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	                resp.contentLength = 0;
 	            resp.body = _this._xhr.response;
 	            resp.isValid = isValid(_this._xhr, _this._url);
+	            if (!resp.isValid && throwOnInvalid) {
+	                return defer.reject(new HttpError(resp));
+	            }
 	            defer.resolve(resp);
 	        });
 	        var method = HttpMethod[this._method];
@@ -3763,7 +3784,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	    }
 	    return AssetsCollection;
-	}(collection_1.RestCollection));
+	}(collection_1.PaginatedCollection));
 	exports.AssetsCollection = AssetsCollection;
 
 
@@ -5126,8 +5147,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        for (var i = 0, ii = data.length; i < ii; i++) {
 	            data[i] = this._prepareModel(data[i]);
 	        }
-	        this[options.reset ? 'reset' : 'set'](data, options);
-	        this.page.reset(data);
+	        this.add(data);
 	        return this;
 	    };
 	    PaginatedCollection.prototype._parseLinkHeaders = function (resp) {
@@ -5392,6 +5412,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.infoView = options.infoView ? new options.infoView(opts) : new exports.AssetsInfoPreview(opts);
 	    }
 	    AssetsPreview.prototype.setModel = function (model) {
+	        var _this = this;
 	        _super.prototype.setModel.call(this, model);
 	        this.hideInfoView(model == null ? true : false);
 	        this.infoView.model = model;
@@ -5402,6 +5423,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var Handler = getPreviewHandler(model.get('mime'));
 	        var region = this.regions['preview'];
 	        region.empty();
+	        this.listenTo(model, 'remove', function () {
+	            region.empty();
+	            _this.infoView.clear();
+	        });
 	        if (Handler) {
 	            var view = new Handler({ model: model });
 	            html.addClass(view.el, 'preview');
@@ -6345,10 +6370,15 @@ return /******/ (function(modules) { // webpackBootstrap
 	var AssetsListView = (function (_super) {
 	    __extends(AssetsListView, _super);
 	    function AssetsListView(options) {
-	        var _this = this;
 	        _super.call(this, options);
+	        this.options = options || {};
 	        this.sort = false;
-	        this._onSroll = throttle(utilities_1.bind(this._onSroll, this), 500);
+	        this._onSroll = throttle(utilities_1.bind(this._onSroll, this), 0);
+	        this._initEvents();
+	        this._initBlazy();
+	    }
+	    AssetsListView.prototype._initEvents = function () {
+	        var _this = this;
 	        this.listenTo(this, 'childview:click', function (view, model) {
 	            if (this._current)
 	                html.removeClass(this._current.el, 'active');
@@ -6366,8 +6396,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 	        this.listenTo(this, 'childview:remove', function (view, _a) {
 	            var model = _a.model;
-	            console.log(arguments);
-	            if (options.deleteable === true) {
+	            if (this.options.deleteable === true) {
 	                var remove = true;
 	                if (model.has('deleteable')) {
 	                    remove = !!model.get('deleteable');
@@ -6379,11 +6408,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        });
 	        this.listenTo(this, 'childview:image', function (view) {
+	            var _this = this;
 	            var img = view.$('img')[0];
 	            if (img.src === img.getAttribute('data-src')) {
 	                return;
 	            }
-	            this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
+	            setTimeout(function () {
+	                if (elementInView(view.el, _this.el)) {
+	                    _this._blazy.load(view.$('img')[0]);
+	                }
+	            }, 100);
 	        });
 	        this.listenTo(this.collection, 'before:fetch', function () {
 	            var loader = _this.el.querySelector('.loader');
@@ -6399,8 +6433,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                _this.el.removeChild(loader);
 	            }
 	        });
-	        this._initBlazy();
-	    }
+	    };
 	    AssetsListView.prototype.onRenderCollection = function () {
 	        if (this._blazy) {
 	            this._blazy.revalidate();
@@ -6424,10 +6457,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        }
 	        this.index = index;
+	        var el = this.el;
+	        console.log('SCOLL', this.collection);
+	        if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
+	        }
+	        else if (this.collection.hasNext()) {
+	            this.collection.getNextPage();
+	        }
 	    };
 	    AssetsListView.prototype._initBlazy = function () {
 	        this._blazy = new Blazy({
-	            container: '.gallery',
+	            container: '.assets-list',
 	            selector: 'img',
 	            error: function (img) {
 	                if (!img || !img.parentNode)
@@ -6440,8 +6480,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	        });
 	    };
+	    AssetsListView.prototype._initHeight = function () {
+	        var _this = this;
+	        var parent = this.el.parentElement;
+	        if (!parent || parent.clientHeight === 0) {
+	            if (!this._timer) {
+	                this._timer = setInterval(function () { return _this._initHeight(); }, 200);
+	            }
+	            return;
+	        }
+	        if (this._timer) {
+	            clearInterval(this._timer);
+	            this._timer = void 0;
+	        }
+	        this.el.style.height = parent.clientHeight + 'px';
+	    };
+	    AssetsListView.prototype.onShow = function () {
+	        this._initHeight();
+	    };
 	    AssetsListView = __decorate([
-	        views_1.attributes({ className: 'assets-list collection-mode',
+	        views_1.attributes({
+	            className: 'assets-list collection-mode',
 	            childView: list_item_1.AssetsListItemView,
 	            emptyView: exports.AssetsEmptyView,
 	            events: {
@@ -6486,7 +6545,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	  hey, [be]Lazy.js - v1.5.4 - 2016.03.06
+	  hey, [be]Lazy.js - v1.6.1 - 2016.05.02
 	  A fast, small and dependency free lazy load script (https://github.com/dinbror/blazy)
 	  (c) Bjoern Klinggaard - @bklinggaard - http://dinbror.dk/blazy
 	*/
@@ -6508,7 +6567,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    'use strict';
 
 	    //private vars
-	    var source, viewport, isRetina;
+	    var source, viewport, isRetina, attrSrc = 'src',
+	        attrSrcset = 'srcset';
 
 	    // constructor
 	    return function Blazy(options) {
@@ -6539,11 +6599,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scope.options.separator = scope.options.separator || '|';
 	        scope.options.container = scope.options.container ? document.querySelectorAll(scope.options.container) : false;
 	        scope.options.errorClass = scope.options.errorClass || 'b-error';
-	        scope.options.breakpoints = scope.options.breakpoints || false;
+	        scope.options.breakpoints = scope.options.breakpoints || false; // obsolete
 	        scope.options.loadInvisible = scope.options.loadInvisible || false;
 	        scope.options.successClass = scope.options.successClass || 'b-loaded';
 	        scope.options.validateDelay = scope.options.validateDelay || 25;
 	        scope.options.saveViewportOffsetDelay = scope.options.saveViewportOffsetDelay || 50;
+	        scope.options.srcset = scope.options.srcset || 'data-srcset';
 	        scope.options.src = source = scope.options.src || 'data-src';
 	        isRetina = window.devicePixelRatio > 1;
 	        viewport = {};
@@ -6591,7 +6652,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }, scope.options.saveViewportOffsetDelay, scope);
 	        saveViewportOffset(scope.options.offset);
 
-	        //handle multi-served image src
+	        //handle multi-served image src (obsolete)
 	        each(scope.options.breakpoints, function(object) {
 	            if (object.width >= window.screen.width) {
 	                source = object.src;
@@ -6600,33 +6661,34 @@ return /******/ (function(modules) { // webpackBootstrap
 	        });
 
 	        // start lazy load
-	        initialize(scope);
+	        setTimeout(function() {
+	            initialize(scope);
+	        }); // "dom ready" fix
+
 	    };
 
 
 	    /* Private helper functions
 	     ************************************/
 	    function initialize(self) {
-	        setTimeout(function() {
-	            var util = self._util;
-	            // First we create an array of elements to lazy load
-	            util.elements = toArray(self.options.selector);
-	            util.count = util.elements.length;
-	            // Then we bind resize and scroll events if not already binded
-	            if (util.destroyed) {
-	                util.destroyed = false;
-	                if (self.options.container) {
-	                    each(self.options.container, function(object) {
-	                        bindEvent(object, 'scroll', util.validateT);
-	                    });
-	                }
-	                bindEvent(window, 'resize', util.saveViewportOffsetT);
-	                bindEvent(window, 'resize', util.validateT);
-	                bindEvent(window, 'scroll', util.validateT);
+	        var util = self._util;
+	        // First we create an array of elements to lazy load
+	        util.elements = toArray(self.options.selector);
+	        util.count = util.elements.length;
+	        // Then we bind resize and scroll events if not already binded
+	        if (util.destroyed) {
+	            util.destroyed = false;
+	            if (self.options.container) {
+	                each(self.options.container, function(object) {
+	                    bindEvent(object, 'scroll', util.validateT);
+	                });
 	            }
-	            // And finally, we start to lazy load.
-	            validate(self);
-	        }, 1); // "dom ready" fix
+	            bindEvent(window, 'resize', util.saveViewportOffsetT);
+	            bindEvent(window, 'resize', util.validateT);
+	            bindEvent(window, 'scroll', util.validateT);
+	        }
+	        // And finally, we start to lazy load.
+	        validate(self);
 	    }
 
 	    function validate(self) {
@@ -6660,28 +6722,57 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (dataSrc) {
 	                var dataSrcSplitted = dataSrc.split(options.separator);
 	                var src = dataSrcSplitted[isRetina && dataSrcSplitted.length > 1 ? 1 : 0];
-	                var isImage = ele.nodeName.toLowerCase() === 'img';
+	                var isImage = equal(ele, 'img');
 	                // Image or background image
 	                if (isImage || ele.src === undefined) {
 	                    var img = new Image();
-	                    img.onerror = function() {
+						// using EventListener instead of onError and onLoad
+						// due to bug introduced in chrome v50 (https://productforums.google.com/forum/#!topic/chrome/p51Lk7vnP2o)
+						var onErrorHandler = function(){
 	                        if (options.error) options.error(ele, "invalid");
 	                        addClass(ele, options.errorClass);
-	                    };
-	                    img.onload = function() {
-	                        // Is element an image or should we add the src as a background image?
-	                        isImage ? ele.src = src : ele.style.backgroundImage = 'url("' + src + '")';
+							unbindEvent(img, 'error', onErrorHandler);
+							unbindEvent(img, 'load', onLoadHandler);
+						};
+						var onLoadHandler = function() {
+	                        // Is element an image
+	                        if (isImage) {
+	                            handleSource(ele, attrSrc, options.src); //src
+	                            handleSource(ele, attrSrcset, options.srcset); //srcset
+	                            //picture element
+	                            var parent = ele.parentNode;
+	                            if (parent && equal(parent, 'picture')) {
+	                                each(parent.getElementsByTagName('source'), function(source) {
+	                                    handleSource(source, attrSrcset, options.srcset);
+	                                });
+	                            }
+	                            // or background-image
+	                        } else {
+	                            ele.style.backgroundImage = 'url("' + src + '")';
+	                        }
 	                        itemLoaded(ele, options);
+							unbindEvent(img, 'load', onLoadHandler);
+							unbindEvent(img, 'error', onErrorHandler);
 	                    };
+						bindEvent(img, 'error', onErrorHandler);
+						bindEvent(img, 'load', onLoadHandler);
 	                    img.src = src; //preload
-	                    // An item with src like iframe, unity, video etc
-	                } else {
-	                    ele.src = src;
+	                } else { // An item with src like iframe, unity, simpelvideo etc
+	                    handleSource(ele, attrSrc, options.src);
 	                    itemLoaded(ele, options);
 	                }
 	            } else {
-	                if (options.error) options.error(ele, "missing");
-	                if (!hasClass(ele, options.errorClass)) addClass(ele, options.errorClass);
+	                // video with child source
+	                if (equal(ele, 'video')) {
+	                    each(ele.getElementsByTagName('source'), function(source) {
+	                        handleSource(source, attrSrc, options.src);
+	                    });
+	                    ele.load();
+	                    itemLoaded(ele, options);
+	                } else {
+	                    if (options.error) options.error(ele, "missing");
+	                    addClass(ele, options.errorClass);
+	                }
 	            }
 	        }
 	    }
@@ -6693,7 +6784,18 @@ return /******/ (function(modules) { // webpackBootstrap
 	        each(options.breakpoints, function(object) {
 	            ele.removeAttribute(object.src);
 	        });
-	        ele.removeAttribute(options.src);
+	    }
+
+	    function handleSource(ele, attr, dataAttr) {
+	        var dataSrc = ele.getAttribute(dataAttr);
+	        if (dataSrc) {
+	            ele[attr] = dataSrc;
+	            ele.removeAttribute(dataAttr);
+	        }
+	    }
+
+	    function equal(ele, str) {
+	        return ele.nodeName.toLowerCase() === str;
 	    }
 
 	    function hasClass(ele, className) {
@@ -6701,7 +6803,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function addClass(ele, className) {
-	        ele.className = ele.className + ' ' + className;
+	        if (!hasClass(ele, className)) {
+	            ele.className += ' ' + className;
+	        }
 	    }
 
 	    function toArray(selector) {
@@ -6751,7 +6855,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        };
 	    }
 	});
-
 
 /***/ },
 /* 56 */

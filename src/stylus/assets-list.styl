@@ -3,7 +3,12 @@
 .assets-list
   width 100%
   height 100%
-  //overflow-y auto
+  overflow-y auto
+  display: flex
+  flex-direction: row
+  flex-wrap: wrap
+  flex: 1 1
+  
   .loader 
     width: 64px;
     height: 64px;
@@ -15,6 +20,7 @@
 
   &.collection-mode
     .assets-list-item
+      font-size: 60%
       i.mime 
         margin: auto;
       position: relative

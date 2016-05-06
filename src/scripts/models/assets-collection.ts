@@ -1,4 +1,4 @@
-import {RestCollectionOptions, RestModel, RestCollection} from 'collection';
+import {RestCollectionOptions, RestModel, RestCollection, PaginatedCollection} from 'collection';
 //import {request} from '../request';
 import {normalizeURL} from '../utilities';
 import {AssetsClient} from '../client';
@@ -54,7 +54,7 @@ export interface AssetsCollectionOptions {
     fetchOnUrl?: boolean
 }
 
-export class AssetsCollection extends RestCollection<AssetsModel> {
+export class AssetsCollection extends PaginatedCollection<AssetsModel> {
     Model = AssetsModel;
     comparator = 'name';
 

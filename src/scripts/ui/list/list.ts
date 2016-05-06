@@ -4,7 +4,7 @@ import {CollectionView, CollectionViewOptions, View, attributes} from 'views';
 import * as html from 'utilities/lib/html';
 import {bind} from 'utilities';
 import {AssetsListItemView} from './list-item';
-
+import {AssetsCollection} from '../../models';
 const Blazy = require('blazy');
 
 export interface AssetsListOptions extends CollectionViewOptions {
@@ -29,14 +29,24 @@ export const AssetsEmptyView = View.extend({
 export class AssetsListView extends CollectionView<HTMLDivElement> {
     _current: View<HTMLDivElement>;
     private _blazy: any;
+    private _timer: number;
     private index: number;
+    public options: AssetsListOptions;
+    collection: AssetsCollection;
     constructor(options?: AssetsListOptions) {
         super(options);
-
+        this.options = options||{};
         this.sort = false;
 
-        this._onSroll = throttle(bind(this._onSroll, this), 500);
+        this._onSroll = throttle(bind(this._onSroll, this), 0);
+        
+        
+        this._initEvents();
+        this._initBlazy();
 
+    }
+
+    private _initEvents () {
         this.listenTo(this, 'childview:click', function (view, model) {
             if (this._current) html.removeClass(this._current.el, 'active');
             this._current = view
@@ -55,8 +65,8 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
         })
 
         this.listenTo(this, 'childview:remove', function (view, {model}) {
-            console.log(arguments)
-            if (options.deleteable === true) {
+            
+            if (this.options.deleteable === true) {
                 let remove = true;
                 if (model.has('deleteable')) {
                     remove = !!model.get('deleteable');
@@ -72,7 +82,14 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
             if (img.src === img.getAttribute('data-src')) {
                 return;
             }
-            this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
+            setTimeout(() => {
+                if (elementInView(view.el, this.el)) {
+                    this._blazy.load(view.$('img')[0]);
+                }
+                //this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
+                //console.log(elementInView(view.el, this.el))
+            }, 100);
+            //this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
         });
 
         this.listenTo(this.collection, 'before:fetch', () => {
@@ -89,12 +106,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
                 this.el.removeChild(loader);
             }
         })
-
-        this._initBlazy();
-
     }
-
-
 
     onRenderCollection() {
         if (this._blazy) {
@@ -108,7 +120,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
     private _onSroll(e) {
         let index = this.index ? this.index : (this.index = 0),
             len = this.children.length
-
+        
         for (let i = index; i < len; i++) {
             let view: View<HTMLDivElement> = <any>this.children[i],
                 img = view.$('img')[0]
@@ -121,6 +133,15 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
             }
         }
         this.index = index;
+        let el = this.el;
+        
+        console.log('SCOLL',this.collection)
+        if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
+
+        } else if (this.collection.hasNext()) {
+
+            this.collection.getNextPage();
+        }
     }
 
     private _initBlazy() {
@@ -137,6 +158,30 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
             }
         });
     }
+    
+    private _initHeight() {
+        let parent = this.el.parentElement;
+        if (!parent || parent.clientHeight === 0) {
+            if (!this._timer) {
+                this._timer = setInterval(() => this._initHeight(), 200);
+            }
+            return;
+        }
+        
+        if (this._timer) {
+            clearInterval(this._timer);
+            this._timer = void 0;
+        }
+        
+        this.el.style.height = parent.clientHeight + 'px';
+        
+    }
+    
+    onShow () {
+        this._initHeight();
+    }
+    
+    
 
 }
 
@@ -151,7 +196,7 @@ function elementInView(ele, container) {
     viewport.bottom = (container.innerHeight || document.documentElement.clientHeight)// + options.offset;
     viewport.right = (container.innerWidth || document.documentElement.clientWidth)// + options.offset;
     var rect = ele.getBoundingClientRect();
-
+    
     return (
         // Intersection
         rect.right >= viewport.left
