@@ -64,7 +64,7 @@ export class AssetsCollection extends PaginatedCollection<AssetsModel> {
         });
 
         options = options || { fetchOnUrl: true };
-
+        (<any>this)._state.size = 30;
         this.listenTo(client, 'change:url', () => {
             this.url = client.url;
             if (options.fetchOnUrl)
