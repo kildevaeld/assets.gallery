@@ -84,6 +84,8 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
         this.listenTo(this._listView, 'selected', this._onItemSelect);
         this.listenTo(this._listView, 'remove', this._onItemRemove)
+        
+   
        
     }
 
