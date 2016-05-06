@@ -55,33 +55,42 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
 	}
 	var views = __webpack_require__(1);
 	__export(__webpack_require__(26));
 	__export(__webpack_require__(28));
 	__export(__webpack_require__(40));
 	__export(__webpack_require__(57));
-	var View = (function (_super) {
-	    __extends(View, _super);
+
+	var View = function (_views$View) {
+	    _inherits(View, _views$View);
+
 	    function View() {
-	        _super.apply(this, arguments);
+	        _classCallCheck(this, View);
+
+	        return _possibleConstructorReturn(this, Object.getPrototypeOf(View).apply(this, arguments));
 	    }
+
 	    return View;
-	}(views.View));
+	}(views.View);
+
 	exports.View = View;
 	var client_2 = __webpack_require__(57);
 	function createClient(options) {
 	    return new client_2.AssetsClient(options);
 	}
 	exports.createClient = createClient;
-
 
 /***/ },
 /* 1 */
@@ -3559,110 +3568,120 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var eventsjs_1 = __webpack_require__(7);
 	var utils = __webpack_require__(8);
 	var interface_1 = __webpack_require__(27);
-	var FileUploader = (function (_super) {
-	    __extends(FileUploader, _super);
+
+	var FileUploader = function (_eventsjs_1$EventEmit) {
+	    _inherits(FileUploader, _eventsjs_1$EventEmit);
+
 	    function FileUploader(options) {
-	        _super.call(this);
-	        this.options = utils.extend({}, {
+	        _classCallCheck(this, FileUploader);
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(FileUploader).call(this));
+
+	        _this.options = utils.extend({}, {
 	            parameter: 'file',
 	            method: interface_1.HttpMethod.POST,
 	            maxSize: 2048
 	        }, options);
+	        return _this;
 	    }
-	    FileUploader.prototype.upload = function (file, progressFn, attributes) {
-	        var _this = this;
-	        try {
-	            this.validateFile(file);
-	        }
-	        catch (e) {
-	            return utils.Promise.reject(e);
-	        }
-	        var formData = new FormData();
-	        formData.append(this.options.parameter, file);
-	        attributes = attributes || {};
-	        Object.keys(attributes).forEach(function (key) {
-	            var value = attributes[key];
-	            formData.append(key, value);
-	        });
-	        return utils.request.post(this.options.url)
-	            .header({
-	            'Content-Type': file.type,
-	        })
-	            .params({ filename: file.name })
-	            .uploadProgress(function (event) {
-	            if (event.lengthComputable) {
-	                var progress = (event.loaded / event.total * 100 || 0);
-	                _this.trigger('progress', file, progress);
-	                if (progressFn != null) {
-	                    progressFn(event.loaded, event.total);
+
+	    _createClass(FileUploader, [{
+	        key: 'upload',
+	        value: function upload(file, progressFn, attributes) {
+	            var _this2 = this;
+
+	            try {
+	                this.validateFile(file);
+	            } catch (e) {
+	                return utils.Promise.reject(e);
+	            }
+	            var formData = new FormData();
+	            formData.append(this.options.parameter, file);
+	            attributes = attributes || {};
+	            Object.keys(attributes).forEach(function (key) {
+	                var value = attributes[key];
+	                formData.append(key, value);
+	            });
+	            return utils.request.post(this.options.url).header({
+	                'Content-Type': file.type
+	            }).params({ filename: file.name }).uploadProgress(function (event) {
+	                if (event.lengthComputable) {
+	                    var progress = event.loaded / event.total * 100 || 0;
+	                    _this2.trigger('progress', file, progress);
+	                    if (progressFn != null) {
+	                        progressFn(event.loaded, event.total);
+	                    }
 	                }
+	            }).end(file).then(function (res) {
+	                if (!res.isValid) {
+	                    throw new utils.HttpError(res.status, res.statusText, res.body);
+	                }
+	                return JSON.parse(res.body);
+	            });
+	        }
+	    }, {
+	        key: 'validateFile',
+	        value: function validateFile(file) {
+	            var maxSize = this.options.maxSize * 1000;
+	            if (maxSize !== 0 && file.size > maxSize) {
+	                throw new Error('file to big');
 	            }
-	        })
-	            .end(file)
-	            .then(function (res) {
-	            if (!res.isValid) {
-	                throw new utils.HttpError(res.status, res.statusText, res.body);
+	            var type = file.type;
+	            var mimeTypes;
+	            if (typeof this.options.mimeType === 'string') {
+	                mimeTypes = [this.options.mimeType];
+	            } else {
+	                mimeTypes = this.options.mimeType;
 	            }
-	            return JSON.parse(res.body);
-	        });
-	    };
-	    FileUploader.prototype.validateFile = function (file) {
-	        var maxSize = this.options.maxSize * 1000;
-	        if (maxSize !== 0 && file.size > maxSize) {
-	            throw new Error('file to big');
+	            if (!mimeTypes) return;
+	            for (var i = 0; i < mimeTypes.length; i++) {
+	                var mime = new RegExp(mimeTypes[i].replace('*', '.*'));
+	                if (mime.test(type)) return;else throw new Error('Wrong mime type');
+	            }
 	        }
-	        var type = file.type;
-	        var mimeTypes;
-	        if (typeof this.options.mimeType === 'string') {
-	            mimeTypes = [this.options.mimeType];
-	        }
-	        else {
-	            mimeTypes = this.options.mimeType;
-	        }
-	        if (!mimeTypes)
-	            return;
-	        for (var i = 0; i < mimeTypes.length; i++) {
-	            var mime = new RegExp(mimeTypes[i].replace('*', '.*'));
-	            if (mime.test(type))
-	                return;
-	            else
-	                throw new Error('Wrong mime type');
-	        }
-	    };
+	    }]);
+
 	    return FileUploader;
-	}(eventsjs_1.EventEmitter));
+	}(eventsjs_1.EventEmitter);
+
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = FileUploader;
 	function formatResponse(response) {
 	    var ret = null;
 	    try {
 	        ret = JSON.parse(response);
-	    }
-	    catch (e) {
+	    } catch (e) {
 	        ret = response;
 	    }
 	    return ret;
 	}
-
 
 /***/ },
 /* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var utilities_1 = __webpack_require__(8);
 	(function (HttpMethod) {
 	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
@@ -3671,122 +3690,162 @@ return /******/ (function(modules) { // webpackBootstrap
 	    HttpMethod[HttpMethod["DELETE"] = 3] = "DELETE";
 	})(exports.HttpMethod || (exports.HttpMethod = {}));
 	var HttpMethod = exports.HttpMethod;
-	var AssetsError = (function (_super) {
-	    __extends(AssetsError, _super);
+
+	var AssetsError = function (_Error) {
+	    _inherits(AssetsError, _Error);
+
 	    function AssetsError(status, message) {
+	        _classCallCheck(this, AssetsError);
+
 	        if (utilities_1.isString(status)) {
 	            message = status;
 	            status = 200;
-	        }
-	        else if (arguments.length === 1) {
+	        } else if (arguments.length === 1) {
 	            message = "";
 	        }
-	        _super.call(this, message);
-	        this.message = message;
-	        this.status = status;
-	    }
-	    AssetsError.prototype.toJSON = function () {
-	        var out = {
-	            status: this.status,
-	            message: this.message
-	        };
-	        if (this.name)
-	            out.name = this.name;
-	        return out;
-	    };
-	    return AssetsError;
-	}(Error));
-	exports.AssetsError = AssetsError;
-	var HttpError = (function (_super) {
-	    __extends(HttpError, _super);
-	    function HttpError() {
-	        _super.apply(this, arguments);
-	    }
-	    return HttpError;
-	}(AssetsError));
-	exports.HttpError = HttpError;
 
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsError).call(this, message));
+
+	        _this.message = message;
+	        _this.status = status;
+	        return _this;
+	    }
+
+	    _createClass(AssetsError, [{
+	        key: "toJSON",
+	        value: function toJSON() {
+	            var out = {
+	                status: this.status,
+	                message: this.message
+	            };
+	            if (this.name) out.name = this.name;
+	            return out;
+	        }
+	    }]);
+
+	    return AssetsError;
+	}(Error);
+
+	exports.AssetsError = AssetsError;
+
+	var HttpError = function (_AssetsError) {
+	    _inherits(HttpError, _AssetsError);
+
+	    function HttpError() {
+	        _classCallCheck(this, HttpError);
+
+	        return _possibleConstructorReturn(this, Object.getPrototypeOf(HttpError).apply(this, arguments));
+	    }
+
+	    return HttpError;
+	}(AssetsError);
+
+	exports.HttpError = HttpError;
 
 /***/ },
 /* 28 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
 	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
 	}
 	__export(__webpack_require__(29));
-
 
 /***/ },
 /* 29 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var collection_1 = __webpack_require__(30);
 	var utilities_1 = __webpack_require__(39);
 	var utils = __webpack_require__(8);
-	var AssetsModel = (function (_super) {
-	    __extends(AssetsModel, _super);
+
+	var AssetsModel = function (_collection_1$RestMod) {
+	    _inherits(AssetsModel, _collection_1$RestMod);
+
 	    function AssetsModel(data, options) {
-	        _super.call(this, data, options);
-	        this.idAttribute = "id";
+	        _classCallCheck(this, AssetsModel);
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsModel).call(this, data, options));
+
+	        _this.idAttribute = "id";
+	        return _this;
 	    }
-	    Object.defineProperty(AssetsModel.prototype, "fullPath", {
-	        get: function () {
+
+	    _createClass(AssetsModel, [{
+	        key: 'getURL',
+	        value: function getURL() {
+	            var baseURL = utils.result(this, 'rootURL');
+	            if (this.collection) {
+	                baseURL = this.collection.getURL();
+	            }
+	            if (baseURL == null) throw new Error("no url");
+	            var path = this.get('path');
+	            path = utilities_1.normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
+	            return path;
+	        }
+	    }, {
+	        key: 'toJSON',
+	        value: function toJSON() {
+	            return _get(Object.getPrototypeOf(AssetsModel.prototype), 'toJSON', this).call(this);
+	        }
+	    }, {
+	        key: 'fullPath',
+	        get: function get() {
 	            var path = this.get('path');
 	            if (path !== '/') {
-	                if (path[path.length - 1] !== '/')
-	                    path += '/';
+	                if (path[path.length - 1] !== '/') path += '/';
 	            }
 	            path = path + this.get('filename');
 	            return path;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    AssetsModel.prototype.getURL = function () {
-	        var baseURL = utils.result(this, 'rootURL');
-	        if (this.collection) {
-	            baseURL = this.collection.getURL();
 	        }
-	        if (baseURL == null)
-	            throw new Error("no url");
-	        var path = this.get('path');
-	        path = utilities_1.normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
-	        return path;
-	    };
-	    AssetsModel.prototype.toJSON = function () {
-	        return _super.prototype.toJSON.call(this);
-	    };
-	    return AssetsModel;
-	}(collection_1.RestModel));
-	exports.AssetsModel = AssetsModel;
-	var AssetsCollection = (function (_super) {
-	    __extends(AssetsCollection, _super);
-	    function AssetsCollection(client, options) {
-	        var _this = this;
-	        _super.call(this, null, {
-	            url: client.url
-	        });
-	        this.Model = AssetsModel;
-	        this.comparator = 'name';
-	        options = options || { fetchOnUrl: true };
-	        this.listenTo(client, 'change:url', function () {
-	            _this.url = client.url;
-	            if (options.fetchOnUrl)
-	                _this.fetch();
-	        });
-	    }
-	    return AssetsCollection;
-	}(collection_1.PaginatedCollection));
-	exports.AssetsCollection = AssetsCollection;
+	    }]);
 
+	    return AssetsModel;
+	}(collection_1.RestModel);
+
+	exports.AssetsModel = AssetsModel;
+
+	var AssetsCollection = function (_collection_1$Paginat) {
+	    _inherits(AssetsCollection, _collection_1$Paginat);
+
+	    function AssetsCollection(client, options) {
+	        _classCallCheck(this, AssetsCollection);
+
+	        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsCollection).call(this, null, {
+	            url: client.url
+	        }));
+
+	        _this2.Model = AssetsModel;
+	        _this2.comparator = 'name';
+	        options = options || { fetchOnUrl: true };
+	        _this2._state.size = 30;
+	        _this2.listenTo(client, 'change:url', function () {
+	            _this2.url = client.url;
+	            if (options.fetchOnUrl) _this2.fetch();
+	        });
+	        return _this2;
+	    }
+
+	    return AssetsCollection;
+	}(collection_1.PaginatedCollection);
+
+	exports.AssetsCollection = AssetsCollection;
 
 /***/ },
 /* 30 */
@@ -5180,6 +5239,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports) {
 
 	"use strict";
+
 	function ajax() {
 	    var e;
 	    if (window.hasOwnProperty('XMLHttpRequest')) {
@@ -5187,20 +5247,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	    try {
 	        return new ActiveXObject('msxml2.xmlhttp.6.0');
-	    }
-	    catch (_error) {
+	    } catch (_error) {
 	        e = _error;
 	    }
 	    try {
 	        return new ActiveXObject('msxml2.xmlhttp.3.0');
-	    }
-	    catch (_error) {
+	    } catch (_error) {
 	        e = _error;
 	    }
 	    try {
 	        return new ActiveXObject('msxml2.xmlhttp');
-	    }
-	    catch (_error) {
+	    } catch (_error) {
 	        e = _error;
 	    }
 	    return e;
@@ -5212,15 +5269,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return n + (n.length == str.length ? '' : '...');
 	}
 	exports.truncate = truncate;
-	function humanFileSize(bytes, si) {
-	    if (si === void 0) { si = false; }
+	function humanFileSize(bytes) {
+	    var si = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
 	    var thresh = si ? 1000 : 1024;
 	    if (Math.abs(bytes) < thresh) {
 	        return bytes + ' B';
 	    }
-	    var units = si
-	        ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
-	        : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+	    var units = si ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
 	    var u = -1;
 	    do {
 	        bytes /= thresh;
@@ -5230,41 +5286,40 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.humanFileSize = humanFileSize;
 	function normalizeURL(url) {
-	    var segments = [];
-	    for (var _i = 1; _i < arguments.length; _i++) {
-	        segments[_i - 1] = arguments[_i];
-	    }
-	    var i, p = "";
+	    var i = void 0,
+	        p = "";
 	    if ((i = url.indexOf('?')) >= 0) {
 	        p = url.substr(i);
 	        url = url.substr(0, i);
 	    }
-	    if (url[url.length - 1] !== '/')
-	        url += '/';
-	    for (var i_1 = 0, ii = segments.length; i_1 < ii; i_1++) {
-	        var s = segments[i_1];
-	        if (s === '/')
-	            continue;
-	        if (s[0] === '/')
-	            s = s.substr(1);
-	        if (s[s.length - 1] !== '/')
-	            s += '/';
+	    if (url[url.length - 1] !== '/') url += '/';
+
+	    for (var _len = arguments.length, segments = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	        segments[_key - 1] = arguments[_key];
+	    }
+
+	    for (var _i = 0, ii = segments.length; _i < ii; _i++) {
+	        var s = segments[_i];
+	        if (s === '/') continue;
+	        if (s[0] === '/') s = s.substr(1);
+	        if (s[s.length - 1] !== '/') s += '/';
 	        url += s;
 	    }
-	    if (url[url.length - 1] === '/')
-	        url = url.substr(0, url.length - 1);
+	    if (url[url.length - 1] === '/') url = url.substr(0, url.length - 1);
 	    return url + p;
 	}
 	exports.normalizeURL = normalizeURL;
-
 
 /***/ },
 /* 40 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
 	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
 	}
 	__webpack_require__(41);
 	__export(__webpack_require__(49));
@@ -5273,56 +5328,78 @@ return /******/ (function(modules) { // webpackBootstrap
 	__export(__webpack_require__(56));
 	__export(__webpack_require__(58));
 
-
 /***/ },
 /* 41 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
 	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
 	}
 	__export(__webpack_require__(42));
 	__export(__webpack_require__(47));
 	__export(__webpack_require__(48));
-
 
 /***/ },
 /* 42 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var views_1 = __webpack_require__(1);
 	var assets_preview_1 = __webpack_require__(43);
-	var AudioPreview = (function (_super) {
-	    __extends(AudioPreview, _super);
+
+	var AudioPreview = function (_views_1$View) {
+	    _inherits(AudioPreview, _views_1$View);
+
 	    function AudioPreview() {
-	        _super.apply(this, arguments);
-	        this.template = function (data) {
-	            return "\n\t\t\t<audio controls>\n\t\t\t\t<source src=\"" + this.model.getURL() + "\" type=\"" + data.mime + "\" />\n\t\t\t</audio>\n\t\t";
+	        var _Object$getPrototypeO;
+
+	        _classCallCheck(this, AudioPreview);
+
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(AudioPreview)).call.apply(_Object$getPrototypeO, [this].concat(args)));
+
+	        _this.template = function (data) {
+	            return '\n\t\t\t<audio controls>\n\t\t\t\t<source src="' + this.model.getURL() + '" type="' + data.mime + '" />\n\t\t\t</audio>\n\t\t';
 	        };
+	        return _this;
 	    }
+
 	    return AudioPreview;
-	}(views_1.View));
+	}(views_1.View);
+
 	exports.AudioPreview = AudioPreview;
 	assets_preview_1.setPreviewHandler(['audio/mpeg', 'audio/wav', 'audio/ogg'], AudioPreview);
-
 
 /***/ },
 /* 43 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var views_1 = __webpack_require__(1);
 	var utilities_1 = __webpack_require__(39);
 	var html = __webpack_require__(44);
@@ -5341,9 +5418,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    tagName: 'table',
 	    className: 'info',
 	    template: templates_1.default['preview-info'],
-	    setModel: function (model) {
-	        if (model == null)
-	            return;
+	    setModel: function setModel(model) {
+	        if (model == null) return;
 	        this.ui.name.textContent = model.get('filename');
 	        this.ui.mime.textContent = model.get('mime');
 	        this.ui.size.textContent = utilities_1.humanFileSize(model.get('size'), true);
@@ -5353,7 +5429,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        link.textContent = model.get('name');
 	        link.href = url + '?download=true';
 	    },
-	    clear: function () {
+	    clear: function clear() {
 	        if (this.ui.name) {
 	            this.ui.name.textContent = "";
 	        }
@@ -5370,8 +5446,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	            link.href = fp + '?download=true';
 	        }
 	    },
-	    onItemRemove: function () {
+	    onItemRemove: function onItemRemove() {
 	        var _this = this;
+
 	        this.model.remove().then(function () {
 	            var link = _this.ui.download.querySelector('a');
 	        });
@@ -5388,80 +5465,98 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.setPreviewHandler = setPreviewHandler;
 	function getPreviewHandler(mime) {
-	    var reg, k;
+	    var reg = void 0,
+	        k = void 0;
 	    for (k in previewHandlers) {
-	        if ((new RegExp(k)).test(mime))
-	            return previewHandlers[k];
+	        if (new RegExp(k).test(mime)) return previewHandlers[k];
 	    }
 	    return null;
 	}
 	exports.getPreviewHandler = getPreviewHandler;
-	var AssetsPreview = (function (_super) {
-	    __extends(AssetsPreview, _super);
-	    function AssetsPreview(options) {
-	        if (options === void 0) { options = {}; }
+
+	var AssetsPreview = function (_views_1$LayoutView) {
+	    _inherits(AssetsPreview, _views_1$LayoutView);
+
+	    function AssetsPreview() {
+	        var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+	        _classCallCheck(this, AssetsPreview);
+
 	        var opts = options.infoViewOptions || {};
-	        _super.call(this, {
+
+	        var _this2 = _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsPreview).call(this, {
 	            regions: {
 	                preview: '.preview-region',
 	                info: '.info-region'
 	            },
 	            className: 'assets-preview',
 	            template: templates_1.default['preview']
-	        });
-	        this.infoView = options.infoView ? new options.infoView(opts) : new exports.AssetsInfoPreview(opts);
-	    }
-	    AssetsPreview.prototype.setModel = function (model) {
-	        var _this = this;
-	        _super.prototype.setModel.call(this, model);
-	        this.hideInfoView(model == null ? true : false);
-	        this.infoView.model = model;
-	        if (model == null) {
-	            this.infoView.clear();
-	            return;
-	        }
-	        var Handler = getPreviewHandler(model.get('mime'));
-	        var region = this.regions['preview'];
-	        region.empty();
-	        this.listenTo(model, 'remove', function () {
-	            region.empty();
-	            _this.infoView.clear();
-	        });
-	        if (Handler) {
-	            var view = new Handler({ model: model });
-	            html.addClass(view.el, 'preview');
-	            region.show(view);
-	        }
-	        else {
-	            var image_1 = new Image();
-	            var div_1 = document.createElement('div');
-	            html.addClass(div_1, 'preview');
-	            region.el.innerHTML = '';
-	            region.el.appendChild(div_1);
-	            thumbnailer_1.Thumbnailer.has(model)
-	                .then(function (test) {
-	                if (!test)
-	                    return;
-	                image_1.src = test;
-	                div_1.appendChild(image_1);
-	            }).catch(function (e) {
-	                console.log(e);
-	            });
-	        }
-	        return this;
-	    };
-	    AssetsPreview.prototype.onRender = function () {
-	        this.regions['info'].show(this.infoView);
-	        this.hideInfoView();
-	    };
-	    AssetsPreview.prototype.hideInfoView = function (hide) {
-	        if (hide === void 0) { hide = true; }
-	        this.infoView.el.style.display = hide ? 'none' : 'table';
-	    };
-	    return AssetsPreview;
-	}(views_1.LayoutView));
-	exports.AssetsPreview = AssetsPreview;
+	        }));
 
+	        _this2.infoView = options.infoView ? new options.infoView(opts) : new exports.AssetsInfoPreview(opts);
+	        return _this2;
+	    }
+
+	    _createClass(AssetsPreview, [{
+	        key: 'setModel',
+	        value: function setModel(model) {
+	            var _this3 = this;
+
+	            _get(Object.getPrototypeOf(AssetsPreview.prototype), 'setModel', this).call(this, model);
+	            this.hideInfoView(model == null ? true : false);
+	            this.infoView.model = model;
+	            if (model == null) {
+	                this.infoView.clear();
+	                return;
+	            }
+	            var Handler = getPreviewHandler(model.get('mime'));
+	            var region = this.regions['preview'];
+	            region.empty();
+	            this.listenTo(model, 'remove', function () {
+	                region.empty();
+	                _this3.infoView.clear();
+	            });
+	            if (Handler) {
+	                var view = new Handler({ model: model });
+	                html.addClass(view.el, 'preview');
+	                region.show(view);
+	            } else {
+	                (function () {
+	                    var image = new Image();
+	                    var div = document.createElement('div');
+	                    html.addClass(div, 'preview');
+	                    region.el.innerHTML = '';
+	                    region.el.appendChild(div);
+	                    thumbnailer_1.Thumbnailer.has(model).then(function (test) {
+	                        if (!test) return;
+	                        image.src = test;
+	                        div.appendChild(image);
+	                    }).catch(function (e) {
+	                        console.log(e);
+	                    });
+	                })();
+	            }
+	            return this;
+	        }
+	    }, {
+	        key: 'onRender',
+	        value: function onRender() {
+	            this.regions['info'].show(this.infoView);
+	            this.hideInfoView();
+	        }
+	    }, {
+	        key: 'hideInfoView',
+	        value: function hideInfoView() {
+	            var hide = arguments.length <= 0 || arguments[0] === undefined ? true : arguments[0];
+
+	            this.infoView.el.style.display = hide ? 'none' : 'table';
+	        }
+	    }]);
+
+	    return AssetsPreview;
+	}(views_1.LayoutView);
+
+	exports.AssetsPreview = AssetsPreview;
 
 /***/ },
 /* 44 */
@@ -5798,6 +5893,11 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
 	var utilities_1 = __webpack_require__(8);
 	exports.MimeList = {
 	    'audio/mpeg': 'audio-generic',
@@ -5808,147 +5908,229 @@ return /******/ (function(modules) { // webpackBootstrap
 	    'video/x-m4v': 'video-generic',
 	    'video/quicktime': 'video-generic'
 	};
-	var Thumbnailer = (function () {
-	    function Thumbnailer() {
-	    }
-	    Thumbnailer.request = function (asset) {
-	        var url = asset.getURL();
-	        return utilities_1.request.get(url).params({
-	            thumbnail: true,
-	            base64: false
-	        }).end().then(function () {
-	            return "";
-	        });
-	    };
-	    Thumbnailer.has = function (asset) {
-	        return utilities_1.request.get(asset.getURL()).params({
-	            thumbnail: true,
-	            check: true
-	        }).end().then(function (msg) {
-	            return asset.getURL() + "?thumbnail=true";
-	        }).catch(function () {
-	            return null;
-	        });
-	    };
-	    return Thumbnailer;
-	}());
-	exports.Thumbnailer = Thumbnailer;
 
+	var Thumbnailer = function () {
+	    function Thumbnailer() {
+	        _classCallCheck(this, Thumbnailer);
+	    }
+
+	    _createClass(Thumbnailer, null, [{
+	        key: 'request',
+	        value: function request(asset) {
+	            var url = asset.getURL();
+	            return utilities_1.request.get(url).params({
+	                thumbnail: true,
+	                base64: false
+	            }).end().then(function () {
+	                return "";
+	            });
+	        }
+	    }, {
+	        key: 'has',
+	        value: function has(asset) {
+	            return utilities_1.request.get(asset.getURL()).params({
+	                thumbnail: true,
+	                check: true
+	            }).end().then(function (msg) {
+	                return asset.getURL() + '?thumbnail=true';
+	            }).catch(function () {
+	                return null;
+	            });
+	        }
+	    }]);
+
+	    return Thumbnailer;
+	}();
+
+	exports.Thumbnailer = Thumbnailer;
 
 /***/ },
 /* 46 */
 /***/ function(module, exports) {
 
 	"use strict";
+
 	Object.defineProperty(exports, "__esModule", { value: true });
 	exports.default = {
-	    "gallery": "<div class=\"gallery-area\">  <div class=\"gallery-list\">  </div>  <div class=\"gallery-preview\"></div>  </div>\n<div class=\"upload-progress-container\">  <div class=\"upload-progress\"></div>\n</div>\n<div class=\"gallery-toolbar\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div>",
+	    "gallery": "<div class=\"gallery-area\">  <div class=\"gallery-list\">  </div>  <div class=\"gallery-preview\"></div>  </div>\n<div class=\"upload-progress-container\">  <div class=\"upload-progress\"></div>\n</div>\n<!--div class=\"gallery-toolbar\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div-->",
 	    "list-item": "<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">  <i class=\"mime mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>",
 	    "preview-info": "<table>  <tr>  <td>Name</td>  <td class=\"name\"></td>  </tr>  <tr>  <td>Mime</td>  <td class=\"mimetype\"></td>  </tr>  <tr>  <td>Size</td>  <td class=\"size\"></td>  </tr>  <tr>  <td>Download</td>  <td class=\"download\">  <a></a>  </td>  </tr>\n</table>",
 	    "preview": "<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>"
 	};
-
 
 /***/ },
 /* 47 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var views_1 = __webpack_require__(1);
 	var assets_preview_1 = __webpack_require__(43);
-	var VideoPreview = (function (_super) {
-	    __extends(VideoPreview, _super);
+
+	var VideoPreview = function (_views_1$View) {
+	    _inherits(VideoPreview, _views_1$View);
+
 	    function VideoPreview() {
-	        _super.apply(this, arguments);
-	        this.template = function (data) {
-	            return "\n\t\t\t<video controls>\n\t\t\t\t<source src=\"" + this.model.getURL() + "\" type=\"" + data.mime + "\" />\n\t\t\t</video>\n\t\t";
+	        var _Object$getPrototypeO;
+
+	        _classCallCheck(this, VideoPreview);
+
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(VideoPreview)).call.apply(_Object$getPrototypeO, [this].concat(args)));
+
+	        _this.template = function (data) {
+	            return '\n\t\t\t<video controls>\n\t\t\t\t<source src="' + this.model.getURL() + '" type="' + data.mime + '" />\n\t\t\t</video>\n\t\t';
 	        };
+	        return _this;
 	    }
+
 	    return VideoPreview;
-	}(views_1.View));
+	}(views_1.View);
+
 	exports.VideoPreview = VideoPreview;
 	assets_preview_1.setPreviewHandler(['video/mp4', 'video/ogg', 'video/webm', 'video/x-m4v'], VideoPreview);
-
 
 /***/ },
 /* 48 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var views_1 = __webpack_require__(1);
 	var assets_preview_1 = __webpack_require__(43);
-	var ImagePreview = (function (_super) {
-	    __extends(ImagePreview, _super);
+
+	var ImagePreview = function (_views_1$View) {
+	    _inherits(ImagePreview, _views_1$View);
+
 	    function ImagePreview() {
-	        _super.apply(this, arguments);
-	        this.template = function (data) {
-	            return "<img src=\"" + this.model.getURL() + "\"/>";
+	        var _Object$getPrototypeO;
+
+	        _classCallCheck(this, ImagePreview);
+
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (_Object$getPrototypeO = Object.getPrototypeOf(ImagePreview)).call.apply(_Object$getPrototypeO, [this].concat(args)));
+
+	        _this.template = function (data) {
+	            return '<img src="' + this.model.getURL() + '"/>';
 	        };
+	        return _this;
 	    }
+
 	    return ImagePreview;
-	}(views_1.View));
+	}(views_1.View);
+
 	exports.ImagePreview = ImagePreview;
 	assets_preview_1.setPreviewHandler(['image/*'], ImagePreview);
-
 
 /***/ },
 /* 49 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var fileuploader_1 = __webpack_require__(26);
 	var views_1 = __webpack_require__(1);
 	var utils = __webpack_require__(8);
 	var defaults = { maxSize: 2048, mimeType: '*', autoUpload: false };
-	var MessageView = (function (_super) {
-	    __extends(MessageView, _super);
+
+	var MessageView = function (_views_1$View) {
+	    _inherits(MessageView, _views_1$View);
+
 	    function MessageView() {
-	        _super.apply(this, arguments);
+	        _classCallCheck(this, MessageView);
+
+	        return _possibleConstructorReturn(this, Object.getPrototypeOf(MessageView).apply(this, arguments));
 	    }
-	    MessageView.prototype.show = function () { this.el.style.display = 'block'; };
-	    MessageView.prototype.hide = function () { this.el.style.display = 'none'; };
-	    MessageView.prototype.setMessage = function (msg) {
-	        this.el.textContent = msg;
-	    };
+
+	    _createClass(MessageView, [{
+	        key: "show",
+	        value: function show() {
+	            this.el.style.display = 'block';
+	        }
+	    }, {
+	        key: "hide",
+	        value: function hide() {
+	            this.el.style.display = 'none';
+	        }
+	    }, {
+	        key: "setMessage",
+	        value: function setMessage(msg) {
+	            this.el.textContent = msg;
+	        }
+	    }]);
+
 	    return MessageView;
-	}(views_1.View));
-	var ProgressView = (function (_super) {
-	    __extends(ProgressView, _super);
+	}(views_1.View);
+
+	var ProgressView = function (_views_1$View2) {
+	    _inherits(ProgressView, _views_1$View2);
+
 	    function ProgressView() {
-	        _super.apply(this, arguments);
+	        _classCallCheck(this, ProgressView);
+
+	        return _possibleConstructorReturn(this, Object.getPrototypeOf(ProgressView).apply(this, arguments));
 	    }
-	    ProgressView.prototype.show = function () { this.el.style.display = 'block'; };
-	    ProgressView.prototype.hide = function () { this.el.style.display = 'none'; };
-	    ProgressView.prototype.setProgress = function (progress, total, percent) {
-	        percent = Math.floor(percent * 100) / 100;
-	        this.el.textContent = percent + "/100";
-	    };
+
+	    _createClass(ProgressView, [{
+	        key: "show",
+	        value: function show() {
+	            this.el.style.display = 'block';
+	        }
+	    }, {
+	        key: "hide",
+	        value: function hide() {
+	            this.el.style.display = 'none';
+	        }
+	    }, {
+	        key: "setProgress",
+	        value: function setProgress(progress, total, percent) {
+	            percent = Math.floor(percent * 100) / 100;
+	            this.el.textContent = percent + "/100";
+	        }
+	    }]);
+
 	    return ProgressView;
-	}(views_1.View));
+	}(views_1.View);
+
 	function createButton(options) {
 	    var progressView = new ProgressView();
 	    var errorView = new MessageView();
@@ -5962,222 +6144,250 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return div;
 	}
 	exports.createButton = createButton;
-	var UploadButton = (function (_super) {
-	    __extends(UploadButton, _super);
+	var UploadButton = function (_views_1$View3) {
+	    _inherits(UploadButton, _views_1$View3);
+
 	    function UploadButton(options) {
+	        _classCallCheck(this, UploadButton);
+
 	        options = utils.extend({}, defaults, options);
-	        _super.call(this, options);
-	        utils.extend(this, utils.pick(options, ['errorView', 'progressView']));
-	        this.uploader = options.uploader || new fileuploader_1.default(options);
-	        this.options = options;
+
+	        var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(UploadButton).call(this, options));
+
+	        utils.extend(_this3, utils.pick(options, ['errorView', 'progressView']));
+	        _this3.uploader = options.uploader || new fileuploader_1.default(options);
+	        _this3.options = options;
+	        return _this3;
 	    }
-	    Object.defineProperty(UploadButton.prototype, "url", {
-	        get: function () {
-	            return this.uploader.options.url;
-	        },
-	        set: function (url) {
+
+	    _createClass(UploadButton, [{
+	        key: "onRender",
+	        value: function onRender() {
+	            if (this.options.mimeType) {
+	                var mime = void 0;
+	                if (Array.isArray(this.options.mimeType)) {
+	                    mime = this.options.mimeType.join(',');
+	                } else {
+	                    mime = this.options.mimeType;
+	                }
+	                this.el.setAttribute('accept', mime);
+	            }
+	        }
+	    }, {
+	        key: "_onChange",
+	        value: function _onChange(e) {
+	            this.hideErrorView();
+	            var files = this.el.files;
+	            if (files.length === 0) return;
+	            var file = files[0];
+	            this.trigger('change', file);
+	            if (this.options.autoUpload === true) {
+	                this.upload(file);
+	            } else {
+	                try {
+	                    this.uploader.validateFile(file);
+	                } catch (e) {
+	                    this.trigger('error', e);
+	                }
+	            }
+	        }
+	    }, {
+	        key: "upload",
+	        value: function upload(file) {
+	            var _this4 = this;
+
+	            var pv = this.progressView;
+	            if (pv != null) {
+	                pv.show();
+	            }
+	            return this.uploader.upload(file, function (progress, total) {
+	                _this4.trigger('progress', { progress: progress, total: total });
+	                _this4.showProgress(progress, total);
+	            }).then(function (result) {
+	                _this4.trigger('upload', result);
+	                if (pv != null) pv.hide();
+	                _this4.clear();
+	            }).catch(function (e) {
+	                _this4.trigger('error', e);
+	                _this4.showErrorMessage(e);
+	                _this4.clear();
+	                if (pv != null) pv.hide();
+	            });
+	        }
+	    }, {
+	        key: "clear",
+	        value: function clear() {
+	            try {
+	                this.el.value = '';
+	                if (this.el.value) {
+	                    this.el.type = 'text';
+	                    this.el.type = 'file';
+	                }
+	            } catch (e) {
+	                console.error('could not clear file-input');
+	            }
+	        }
+	    }, {
+	        key: "showErrorMessage",
+	        value: function showErrorMessage(error) {
+	            if (this.errorView != null) {
+	                this.errorView.setMessage(error.message);
+	                this.errorView.show();
+	            }
+	        }
+	    }, {
+	        key: "hideErrorView",
+	        value: function hideErrorView() {
+	            if (this.errorView) {
+	                this.errorView.hide();
+	            }
+	        }
+	    }, {
+	        key: "showProgress",
+	        value: function showProgress(progress, total) {
+	            if (this.progressView != null) {
+	                var percent = progress / total * 100;
+	                this.progressView.setProgress(progress, total, percent);
+	            }
+	        }
+	    }, {
+	        key: "url",
+	        set: function set(url) {
 	            this.uploader.options.url = url;
 	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    UploadButton.prototype.onRender = function () {
-	        if (this.options.mimeType) {
-	            var mime = void 0;
-	            if (Array.isArray(this.options.mimeType)) {
-	                mime = this.options.mimeType.join(',');
-	            }
-	            else {
-	                mime = this.options.mimeType;
-	            }
-	            this.el.setAttribute('accept', mime);
+	        get: function get() {
+	            return this.uploader.options.url;
 	        }
-	    };
-	    UploadButton.prototype._onChange = function (e) {
-	        this.hideErrorView();
-	        var files = this.el.files;
-	        if (files.length === 0)
-	            return;
-	        var file = files[0];
-	        this.trigger('change', file);
-	        if (this.options.autoUpload === true) {
-	            this.upload(file);
-	        }
-	        else {
-	            try {
-	                this.uploader.validateFile(file);
-	            }
-	            catch (e) {
-	                this.trigger('error', e);
-	            }
-	        }
-	    };
-	    UploadButton.prototype.upload = function (file) {
-	        var _this = this;
-	        var pv = this.progressView;
-	        if (pv != null) {
-	            pv.show();
-	        }
-	        return this.uploader.upload(file, function (progress, total) {
-	            _this.trigger('progress', { progress: progress, total: total });
-	            _this.showProgress(progress, total);
-	        }).then(function (result) {
-	            _this.trigger('upload', result);
-	            if (pv != null)
-	                pv.hide();
-	            _this.clear();
-	        }).catch(function (e) {
-	            _this.trigger('error', e);
-	            _this.showErrorMessage(e);
-	            _this.clear();
-	            if (pv != null)
-	                pv.hide();
-	        });
-	    };
-	    UploadButton.prototype.clear = function () {
-	        try {
-	            this.el.value = '';
-	            if (this.el.value) {
-	                this.el.type = 'text';
-	                this.el.type = 'file';
-	            }
-	        }
-	        catch (e) {
-	            console.error('could not clear file-input');
-	        }
-	    };
-	    UploadButton.prototype.showErrorMessage = function (error) {
-	        if (this.errorView != null) {
-	            this.errorView.setMessage(error.message);
-	            this.errorView.show();
-	        }
-	    };
-	    UploadButton.prototype.hideErrorView = function () {
-	        if (this.errorView) {
-	            this.errorView.hide();
-	        }
-	    };
-	    UploadButton.prototype.showProgress = function (progress, total) {
-	        if (this.progressView != null) {
-	            var percent = (progress / total) * 100;
-	            this.progressView.setProgress(progress, total, percent);
-	        }
-	    };
-	    UploadButton = __decorate([
-	        views_1.attributes({
-	            tagName: 'input',
-	            attributes: { type: 'file' },
-	            events: {
-	                change: '_onChange'
-	            }
-	        }), 
-	        __metadata('design:paramtypes', [Object])
-	    ], UploadButton);
-	    return UploadButton;
-	}(views_1.View));
-	exports.UploadButton = UploadButton;
+	    }]);
 
+	    return UploadButton;
+	}(views_1.View);
+	UploadButton = __decorate([views_1.attributes({
+	    tagName: 'input',
+	    attributes: { type: 'file' },
+	    events: {
+	        change: '_onChange'
+	    }
+	}), __metadata('design:paramtypes', [Object])], UploadButton);
+	exports.UploadButton = UploadButton;
 
 /***/ },
 /* 50 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
 	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
 	}
 	__export(__webpack_require__(51));
 	__export(__webpack_require__(54));
-
 
 /***/ },
 /* 51 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
 	var utils_1 = __webpack_require__(52);
 	var utils = __webpack_require__(8);
 	var mime_types_1 = __webpack_require__(53);
-	var AssetsListItemView = (function (_super) {
-	    __extends(AssetsListItemView, _super);
-	    function AssetsListItemView() {
-	        _super.apply(this, arguments);
-	    }
-	    AssetsListItemView.prototype.onRender = function () {
-	        var model = this.model;
-	        var mime = model.get('mime');
-	        utils.removeClass(this.ui['mime'], 'mime-unknown');
-	        mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
-	        utils.addClass(this.ui['mime'], mime);
-	        this.ui['name'].textContent = utils.truncate(model.get('name') || model.get('filename'), 25);
-	        var url = model.getURL();
-	        var img = new Image();
-	        img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
-	        img.setAttribute('data-src', url + "?thumbnail=true");
-	        this.ui['mime'].parentNode.insertBefore(img, this.ui['mime']);
-	        this.ui['mime'].style.display = 'none';
-	        this.trigger('image');
-	    };
-	    AssetsListItemView.prototype._onClick = function (e) {
-	        e.preventDefault();
-	        var target = e.target;
-	        if (target === this.ui['remove'])
-	            return;
-	        this.triggerMethod('click', this.model);
-	    };
-	    AssetsListItemView.prototype._onDblClick = function (e) {
-	        e.preventDefault();
-	        this.trigger('dblclick', this.model);
-	    };
-	    AssetsListItemView = __decorate([
-	        utils_1.template('list-item'),
-	        views_1.attributes({
-	            tagName: 'div',
-	            className: 'assets-list-item',
-	            ui: {
-	                remove: '.assets-list-item-close-button',
-	                name: '.name',
-	                mime: '.mime'
-	            },
-	            triggers: {
-	                'click @ui.remove': 'remove'
-	            },
-	            events: {
-	                'click': '_onClick',
-	                'dblclick': '_onDblClick'
-	            }
-	        }), 
-	        __metadata('design:paramtypes', [])
-	    ], AssetsListItemView);
-	    return AssetsListItemView;
-	}(views_1.View));
-	exports.AssetsListItemView = AssetsListItemView;
+	var AssetsListItemView = function (_views_1$View) {
+	    _inherits(AssetsListItemView, _views_1$View);
 
+	    function AssetsListItemView() {
+	        _classCallCheck(this, AssetsListItemView);
+
+	        return _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsListItemView).apply(this, arguments));
+	    }
+
+	    _createClass(AssetsListItemView, [{
+	        key: "onRender",
+	        value: function onRender() {
+	            var model = this.model;
+	            var mime = model.get('mime');
+	            utils.removeClass(this.ui['mime'], 'mime-unknown');
+	            mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
+	            utils.addClass(this.ui['mime'], mime);
+	            this.ui['name'].textContent = utils.truncate(model.get('name') || model.get('filename'), 25);
+	            var url = model.getURL();
+	            var img = new Image();
+	            img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
+	            img.setAttribute('data-src', url + "?thumbnail=true");
+	            this.ui['mime'].parentNode.insertBefore(img, this.ui['mime']);
+	            this.ui['mime'].style.display = 'none';
+	            this.trigger('image');
+	        }
+	    }, {
+	        key: "_onClick",
+	        value: function _onClick(e) {
+	            e.preventDefault();
+	            var target = e.target;
+	            if (target === this.ui['remove']) return;
+	            this.triggerMethod('click', this.model);
+	        }
+	    }, {
+	        key: "_onDblClick",
+	        value: function _onDblClick(e) {
+	            e.preventDefault();
+	            this.trigger('dblclick', this.model);
+	        }
+	    }]);
+
+	    return AssetsListItemView;
+	}(views_1.View);
+	AssetsListItemView = __decorate([utils_1.template('list-item'), views_1.attributes({
+	    tagName: 'div',
+	    className: 'assets-list-item',
+	    ui: {
+	        remove: '.assets-list-item-close-button',
+	        name: '.name',
+	        mime: '.mime'
+	    },
+	    triggers: {
+	        'click @ui.remove': 'remove'
+	    },
+	    events: {
+	        'click': '_onClick',
+	        'dblclick': '_onDblClick'
+	    }
+	}), __metadata('design:paramtypes', [])], AssetsListItemView);
+	exports.AssetsListItemView = AssetsListItemView;
 
 /***/ },
 /* 52 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
 	var templates_1 = __webpack_require__(46);
 	function template(name) {
 	    return function (target) {
-	        var t;
+	        var t = void 0;
 	        if (!(t = templates_1.default[name])) {
 	            throw new Error('could not find template: ' + name);
 	        }
@@ -6185,13 +6395,74 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	}
 	exports.template = template;
-
+	function getImageSize(image) {
+	    var load = function load() {
+	        return new Promise(function (resolve, reject) {
+	            var i = new Image();
+	            i.onload = function () {
+	                resolve({
+	                    width: i.naturalWidth || i.width,
+	                    height: i.naturalHeight || i.height
+	                });
+	            };
+	            i.onerror = reject;
+	            i.src = image.src;
+	        });
+	    };
+	    if (image.naturalHeight === undefined) {
+	        return load();
+	    } else if (image.naturalHeight === 0) {
+	        return new Promise(function (resolve, reject) {
+	            var time = setTimeout(function () {
+	                time = null;
+	                load().then(resolve, reject);
+	            }, 200);
+	            image.onload = function () {
+	                if (time !== null) {
+	                    clearTimeout(time);
+	                }
+	                resolve({
+	                    width: image.naturalWidth,
+	                    height: image.naturalHeight
+	                });
+	            };
+	        });
+	    } else {
+	        return Promise.resolve({
+	            width: image.naturalWidth,
+	            height: image.naturalHeight
+	        });
+	    }
+	}
+	exports.getImageSize = getImageSize;
+	function getCropping(size, ratio) {
+	    var width = size.width,
+	        height = size.height;
+	    var nh = height,
+	        nw = width;
+	    if (width > height) {
+	        nh = width / ratio;
+	    } else {
+	        nw = height * ratio;
+	    }
+	    return {
+	        x: 0,
+	        y: 0,
+	        width: nw,
+	        height: nh,
+	        rotate: 0,
+	        scaleX: 1,
+	        scaleY: 1
+	    };
+	}
+	exports.getCropping = getCropping;
 
 /***/ },
 /* 53 */
 /***/ function(module, exports) {
 
 	"use strict";
+
 	var MimeTypes = {
 	    "application-x-7zip": "mime-application-x-7zip",
 	    "application-rss+xml": "mime-application-rss+xml",
@@ -6338,25 +6609,32 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.getMimeIcon = getMimeIcon;
 	;
 
-
 /***/ },
 /* 54 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
 	var html = __webpack_require__(44);
@@ -6367,150 +6645,163 @@ return /******/ (function(modules) { // webpackBootstrap
 	    className: 'assets-list-empty-view',
 	    template: 'No files uploaded yet.'
 	});
-	var AssetsListView = (function (_super) {
-	    __extends(AssetsListView, _super);
+	var AssetsListView = function (_views_1$CollectionVi) {
+	    _inherits(AssetsListView, _views_1$CollectionVi);
+
 	    function AssetsListView(options) {
-	        _super.call(this, options);
-	        this.options = options || {};
-	        this.sort = false;
-	        this._onSroll = throttle(utilities_1.bind(this._onSroll, this), 0);
-	        this._initEvents();
-	        this._initBlazy();
+	        _classCallCheck(this, AssetsListView);
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsListView).call(this, options));
+
+	        _this.options = options || {};
+	        _this.sort = false;
+	        _this._onSroll = throttle(utilities_1.bind(_this._onSroll, _this), 0);
+	        _this._initEvents();
+	        _this._initBlazy();
+	        return _this;
 	    }
-	    AssetsListView.prototype._initEvents = function () {
-	        var _this = this;
-	        this.listenTo(this, 'childview:click', function (view, model) {
-	            if (this._current)
-	                html.removeClass(this._current.el, 'active');
-	            this._current = view;
-	            html.addClass(view.el, 'active');
-	            this.trigger('selected', view, model);
-	        });
-	        this.listenTo(this, 'childview:dbclick', function (view, model) {
-	            if (this._current)
-	                html.removeClass(this._current.el, 'active');
-	            this._current = view;
-	            html.addClass(view.el, 'active');
-	            this.trigger('selected', view, model);
-	            this.trigger('dblclick', view, model);
-	        });
-	        this.listenTo(this, 'childview:remove', function (view, _a) {
-	            var model = _a.model;
-	            if (this.options.deleteable === true) {
-	                var remove = true;
-	                if (model.has('deleteable')) {
-	                    remove = !!model.get('deleteable');
-	                }
-	                if (remove)
-	                    model.remove();
-	            }
-	            else {
-	            }
-	        });
-	        this.listenTo(this, 'childview:image', function (view) {
-	            var _this = this;
-	            var img = view.$('img')[0];
-	            if (img.src === img.getAttribute('data-src')) {
-	                return;
-	            }
-	            setTimeout(function () {
-	                if (elementInView(view.el, _this.el)) {
-	                    _this._blazy.load(view.$('img')[0]);
-	                }
-	            }, 100);
-	        });
-	        this.listenTo(this.collection, 'before:fetch', function () {
-	            var loader = _this.el.querySelector('.loader');
-	            if (loader)
-	                return;
-	            loader = document.createElement('div');
-	            html.addClass(loader, 'loader');
-	            _this.el.appendChild(loader);
-	        });
-	        this.listenTo(this.collection, 'fetch', function () {
-	            var loader = _this.el.querySelector('.loader');
-	            if (loader) {
-	                _this.el.removeChild(loader);
-	            }
-	        });
-	    };
-	    AssetsListView.prototype.onRenderCollection = function () {
-	        if (this._blazy) {
-	            this._blazy.revalidate();
-	        }
-	        else {
-	            this._initBlazy();
-	        }
-	    };
-	    AssetsListView.prototype._onSroll = function (e) {
-	        var index = this.index ? this.index : (this.index = 0), len = this.children.length;
-	        for (var i = index; i < len; i++) {
-	            var view = this.children[i], img = view.$('img')[0];
-	            if (img == null)
-	                continue;
-	            if (img.src === img.getAttribute('data-src')) {
-	                index = i;
-	            }
-	            else if (elementInView(img, this.el)) {
-	                index = i;
-	                this._blazy.load(img, true);
-	            }
-	        }
-	        this.index = index;
-	        var el = this.el;
-	        console.log('SCOLL', this.collection);
-	        if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
-	        }
-	        else if (this.collection.hasNext()) {
-	            this.collection.getNextPage();
-	        }
-	    };
-	    AssetsListView.prototype._initBlazy = function () {
-	        this._blazy = new Blazy({
-	            container: '.assets-list',
-	            selector: 'img',
-	            error: function (img) {
-	                if (!img || !img.parentNode)
+
+	    _createClass(AssetsListView, [{
+	        key: "_initEvents",
+	        value: function _initEvents() {
+	            var _this3 = this;
+
+	            this.listenTo(this, 'childview:click', function (view, model) {
+	                if (this._current) html.removeClass(this._current.el, 'active');
+	                this._current = view;
+	                html.addClass(view.el, 'active');
+	                this.trigger('selected', view, model);
+	            });
+	            this.listenTo(this, 'childview:dbclick', function (view, model) {
+	                if (this._current) html.removeClass(this._current.el, 'active');
+	                this._current = view;
+	                html.addClass(view.el, 'active');
+	                this.trigger('selected', view, model);
+	                this.trigger('dblclick', view, model);
+	            });
+	            this.listenTo(this, 'childview:remove', function (view, _ref) {
+	                var model = _ref.model;
+
+	                if (this.options.deleteable === true) {
+	                    var remove = true;
+	                    if (model.has('deleteable')) {
+	                        remove = !!model.get('deleteable');
+	                    }
+	                    if (remove) model.remove();
+	                } else {}
+	            });
+	            this.listenTo(this, 'childview:image', function (view) {
+	                var _this2 = this;
+
+	                var img = view.$('img')[0];
+	                if (img.src === img.getAttribute('data-src')) {
 	                    return;
-	                var m = img.parentNode.querySelector('.mime');
-	                if (m) {
-	                    m.style.display = 'block';
-	                    img.style.display = 'none';
+	                }
+	                setTimeout(function () {
+	                    if (elementInView(view.el, _this2.el)) {
+	                        _this2._blazy.load(view.$('img')[0]);
+	                    }
+	                }, 100);
+	            });
+	            this.listenTo(this.collection, 'before:fetch', function () {
+	                var loader = _this3.el.querySelector('.loader');
+	                if (loader) return;
+	                loader = document.createElement('div');
+	                html.addClass(loader, 'loader');
+	                _this3.el.appendChild(loader);
+	            });
+	            this.listenTo(this.collection, 'fetch', function () {
+	                var loader = _this3.el.querySelector('.loader');
+	                if (loader) {
+	                    _this3.el.removeChild(loader);
+	                }
+	            });
+	        }
+	    }, {
+	        key: "onRenderCollection",
+	        value: function onRenderCollection() {
+	            if (this._blazy) {
+	                this._blazy.revalidate();
+	            } else {
+	                this._initBlazy();
+	            }
+	        }
+	    }, {
+	        key: "_onSroll",
+	        value: function _onSroll(e) {
+	            var index = this.index ? this.index : this.index = 0,
+	                len = this.children.length;
+	            for (var i = index; i < len; i++) {
+	                var view = this.children[i],
+	                    img = view.$('img')[0];
+	                if (img == null) continue;
+	                if (img.src === img.getAttribute('data-src')) {
+	                    index = i;
+	                } else if (elementInView(img, this.el)) {
+	                    index = i;
+	                    this._blazy.load(img, true);
 	                }
 	            }
-	        });
-	    };
-	    AssetsListView.prototype._initHeight = function () {
-	        var _this = this;
-	        var parent = this.el.parentElement;
-	        if (!parent || parent.clientHeight === 0) {
-	            if (!this._timer) {
-	                this._timer = setInterval(function () { return _this._initHeight(); }, 200);
+	            this.index = index;
+	            var el = this.el;
+	            console.log('SCOLL', this.collection);
+	            if (el.scrollTop < el.scrollHeight - el.clientHeight - el.clientHeight) {} else if (this.collection.hasNext()) {
+	                this.collection.getNextPage();
 	            }
-	            return;
 	        }
-	        if (this._timer) {
-	            clearInterval(this._timer);
-	            this._timer = void 0;
+	    }, {
+	        key: "_initBlazy",
+	        value: function _initBlazy() {
+	            this._blazy = new Blazy({
+	                container: '.assets-list',
+	                selector: 'img',
+	                error: function error(img) {
+	                    if (!img || !img.parentNode) return;
+	                    var m = img.parentNode.querySelector('.mime');
+	                    if (m) {
+	                        m.style.display = 'block';
+	                        img.style.display = 'none';
+	                    }
+	                }
+	            });
 	        }
-	        this.el.style.height = parent.clientHeight + 'px';
-	    };
-	    AssetsListView.prototype.onShow = function () {
-	        this._initHeight();
-	    };
-	    AssetsListView = __decorate([
-	        views_1.attributes({
-	            className: 'assets-list collection-mode',
-	            childView: list_item_1.AssetsListItemView,
-	            emptyView: exports.AssetsEmptyView,
-	            events: {
-	                'scroll': '_onSroll'
+	    }, {
+	        key: "_initHeight",
+	        value: function _initHeight() {
+	            var _this4 = this;
+
+	            var parent = this.el.parentElement;
+	            if (!parent || parent.clientHeight === 0) {
+	                if (!this._timer) {
+	                    this._timer = setInterval(function () {
+	                        return _this4._initHeight();
+	                    }, 200);
+	                }
+	                return;
 	            }
-	        }), 
-	        __metadata('design:paramtypes', [Object])
-	    ], AssetsListView);
+	            if (this._timer) {
+	                clearInterval(this._timer);
+	                this._timer = void 0;
+	            }
+	            this.el.style.height = parent.clientHeight + 'px';
+	        }
+	    }, {
+	        key: "onShow",
+	        value: function onShow() {
+	            this._initHeight();
+	        }
+	    }]);
+
 	    return AssetsListView;
-	}(views_1.CollectionView));
+	}(views_1.CollectionView);
+	AssetsListView = __decorate([views_1.attributes({
+	    className: 'assets-list collection-mode',
+	    childView: list_item_1.AssetsListItemView,
+	    emptyView: exports.AssetsEmptyView,
+	    events: {
+	        'scroll': '_onSroll'
+	    }
+	}), __metadata('design:paramtypes', [Object])], AssetsListView);
 	exports.AssetsListView = AssetsListView;
 	function elementInView(ele, container) {
 	    var viewport = {
@@ -6519,13 +6810,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        bottom: 0,
 	        right: 0
 	    };
-	    viewport.bottom = (container.innerHeight || document.documentElement.clientHeight);
-	    viewport.right = (container.innerWidth || document.documentElement.clientWidth);
+	    viewport.bottom = container.innerHeight || document.documentElement.clientHeight;
+	    viewport.right = container.innerWidth || document.documentElement.clientWidth;
 	    var rect = ele.getBoundingClientRect();
-	    return (rect.right >= viewport.left
-	        && rect.bottom >= viewport.top
-	        && rect.left <= viewport.right
-	        && rect.top <= viewport.bottom) && !ele.classList.contains('b-error');
+	    return rect.right >= viewport.left && rect.bottom >= viewport.top && rect.left <= viewport.right && rect.top <= viewport.bottom && !ele.classList.contains('b-error');
 	}
 	function throttle(fn, minDelay) {
 	    var lastCall = 0;
@@ -6538,7 +6826,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        fn.apply(this, arguments);
 	    };
 	}
-
 
 /***/ },
 /* 55 */
@@ -6861,19 +7148,27 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
 	var list_1 = __webpack_require__(50);
@@ -6882,460 +7177,544 @@ return /******/ (function(modules) { // webpackBootstrap
 	var utils = __webpack_require__(8);
 	var client_1 = __webpack_require__(57);
 	var utils_1 = __webpack_require__(52);
-	var GalleryView = (function (_super) {
-	    __extends(GalleryView, _super);
-	    function GalleryView(client, options) {
-	        if (options === void 0) { options = {}; }
+	var GalleryView = function (_views_1$LayoutView) {
+	    _inherits(GalleryView, _views_1$LayoutView);
+
+	    function GalleryView(client) {
+	        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+	        _classCallCheck(this, GalleryView);
+
 	        options.regions = {
 	            list: '.gallery-list',
 	            preview: '.gallery-preview'
 	        };
-	        _super.call(this, options);
-	        this._options = options;
-	        this._client = client;
-	        this.collection = client.getCollection();
-	        this._listView = new list_1.AssetsListView({
-	            collection: this.collection,
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(GalleryView).call(this, options));
+
+	        _this._options = options;
+	        _this._client = client;
+	        _this.collection = client.getCollection();
+	        _this._listView = new list_1.AssetsListView({
+	            collection: _this.collection,
 	            deleteable: true
 	        });
-	        this._preView = new assets_preview_1.AssetsPreview();
-	        this.listenTo(this._listView, 'selected', this._onItemSelect);
-	        this.listenTo(this._listView, 'remove', this._onItemRemove);
+	        _this._preView = new assets_preview_1.AssetsPreview();
+	        _this.listenTo(_this._listView, 'selected', _this._onItemSelect);
+	        _this.listenTo(_this._listView, 'remove', _this._onItemRemove);
+	        return _this;
 	    }
-	    Object.defineProperty(GalleryView.prototype, "options", {
-	        get: function () {
+
+	    _createClass(GalleryView, [{
+	        key: "onRender",
+	        value: function onRender() {
+	            var _this2 = this;
+
+	            this.regions['list'].show(this._listView);
+	            this.regions['preview'].show(this._preView);
+	            if (this.options.uploadButton) {
+	                this._uploadButton = new filebutton_1.UploadButton({
+	                    el: this.ui['button'],
+	                    autoUpload: true,
+	                    url: this._client.url,
+	                    maxSize: this.options.maxSize || 1024 * 1000,
+	                    mimeType: this.options.mimeType
+	                });
+	                this.listenTo(this._client, 'change:url', function () {
+	                    _this2._uploadButton.url = _this2._client.url;
+	                });
+	                this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
+	                this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
+	                this._uploadButton.render();
+	            }
+	        }
+	    }, {
+	        key: "_onUploadProgress",
+	        value: function _onUploadProgress(e) {
+	            var p = Math.round(e.progress / e.total * 100);
+	            this.$('.upload-progress')[0].style.width = p + '%';
+	        }
+	    }, {
+	        key: "_onItemCreate",
+	        value: function _onItemCreate(asset) {
+	            var _this3 = this;
+
+	            setTimeout(function () {
+	                var elm = _this3.$('.upload-progress')[0];
+	                utils.transitionEnd(elm, function (e) {
+	                    elm.style.width = '0';
+	                    utils.transitionEnd(elm, function (e) {
+	                        elm.style.opacity = '1';
+	                    }, 1000);
+	                }, 600);
+	                elm.style.opacity = '0';
+	            }, 800);
+	            this.collection.on('error', function (e) {
+	                console.log(e);
+	            });
+	            try {
+	                this.collection.add(asset, { silent: false, parse: true });
+	            } catch (e) {
+	                console.log(e);
+	            }
+	        }
+	    }, {
+	        key: "_onItemSelect",
+	        value: function _onItemSelect(_ref) {
+	            var model = _ref.model;
+
+	            if (this._preView.model === model) return;
+	            this._preView.model = model;
+	            this.selected = model;
+	        }
+	    }, {
+	        key: "_onItemRemove",
+	        value: function _onItemRemove(_ref2) {
+	            var model = _ref2.model;
+
+	            if (this._preView.model === model) {
+	                this._preView.model = null;
+	            }
+	        }
+	    }, {
+	        key: "_onSearch",
+	        value: function _onSearch() {
+	            var search = this.ui['search'];
+	            this.collection.query(search.value).catch(function (e) {
+	                console.log(e);
+	            });
+	        }
+	    }, {
+	        key: "options",
+	        get: function get() {
 	            return this._options;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(GalleryView.prototype, "listView", {
-	        get: function () {
+	        }
+	    }, {
+	        key: "listView",
+	        get: function get() {
 	            return this._listView;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(GalleryView.prototype, "preView", {
-	        get: function () {
+	        }
+	    }, {
+	        key: "preView",
+	        get: function get() {
 	            return this._preView;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(GalleryView.prototype, "url", {
-	        get: function () {
+	        }
+	    }, {
+	        key: "url",
+	        get: function get() {
 	            return this.collection.getURL();
 	        },
-	        set: function (url) {
+	        set: function set(url) {
 	            this.collection.url = url;
 	            this._uploadButton.url = url;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    GalleryView.prototype.onRender = function () {
-	        var _this = this;
-	        this.regions['list'].show(this._listView);
-	        this.regions['preview'].show(this._preView);
-	        if (this.options.uploadButton) {
-	            this._uploadButton = new filebutton_1.UploadButton({
-	                el: this.ui['button'],
-	                autoUpload: true,
-	                url: this._client.url,
-	                maxSize: this.options.maxSize || 1024 * 1000,
-	                mimeType: this.options.mimeType
-	            });
-	            this.listenTo(this._client, 'change:url', function () {
-	                _this._uploadButton.url = _this._client.url;
-	            });
-	            this.listenTo(this._uploadButton, 'upload', this._onItemCreate);
-	            this.listenTo(this._uploadButton, 'progress', this._onUploadProgress);
-	            this._uploadButton.render();
 	        }
-	    };
-	    GalleryView.prototype._onUploadProgress = function (e) {
-	        var p = Math.round((e.progress / e.total) * 100);
-	        this.$('.upload-progress')[0].style.width = p + '%';
-	    };
-	    GalleryView.prototype._onItemCreate = function (asset) {
-	        var _this = this;
-	        setTimeout(function () {
-	            var elm = _this.$('.upload-progress')[0];
-	            utils.transitionEnd(elm, function (e) {
-	                elm.style.width = '0';
-	                utils.transitionEnd(elm, function (e) {
-	                    elm.style.opacity = '1';
-	                }, 1000);
-	            }, 600);
-	            elm.style.opacity = '0';
-	        }, 800);
-	        this.collection.on('error', function (e) {
-	            console.log(e);
-	        });
-	        try {
-	            this.collection.add(asset, { silent: false, parse: true });
-	        }
-	        catch (e) {
-	            console.log(e);
-	        }
-	    };
-	    GalleryView.prototype._onItemSelect = function (_a) {
-	        var model = _a.model;
-	        if (this._preView.model === model)
-	            return;
-	        this._preView.model = model;
-	        this.selected = model;
-	    };
-	    GalleryView.prototype._onItemRemove = function (_a) {
-	        var model = _a.model;
-	        if (this._preView.model === model) {
-	            this._preView.model = null;
-	        }
-	    };
-	    GalleryView.prototype._onSearch = function () {
-	        var search = this.ui['search'];
-	        this.collection.query(search.value).catch(function (e) {
-	            console.log(e);
-	        });
-	    };
-	    GalleryView = __decorate([
-	        utils_1.template('gallery'),
-	        views_1.attributes({
-	            className: 'assets-gallery gallery',
-	            tagName: 'div',
-	            ui: {
-	                button: '.upload-button',
-	                search: ".assets-search-input" },
-	            events: {
-	                'change @ui.search': '_onSearch'
-	            }
-	        }), 
-	        __metadata('design:paramtypes', [client_1.AssetsClient, Object])
-	    ], GalleryView);
-	    return GalleryView;
-	}(views_1.LayoutView));
-	exports.GalleryView = GalleryView;
+	    }]);
 
+	    return GalleryView;
+	}(views_1.LayoutView);
+	GalleryView = __decorate([utils_1.template('gallery'), views_1.attributes({
+	    className: 'assets-gallery gallery',
+	    tagName: 'div',
+	    ui: {
+	        button: '.upload-button'
+	    },
+	    events: {
+	        'change @ui.search': '_onSearch'
+	    }
+	}), __metadata('design:paramtypes', [client_1.AssetsClient, Object])], GalleryView);
+	exports.GalleryView = GalleryView;
 
 /***/ },
 /* 57 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
 	var eventsjs_1 = __webpack_require__(7);
 	var utilities_1 = __webpack_require__(8);
 	var models_1 = __webpack_require__(28);
 	var utilities_2 = __webpack_require__(39);
 	var interface_1 = __webpack_require__(27);
-	var AssetsClient = (function (_super) {
-	    __extends(AssetsClient, _super);
-	    function AssetsClient(options) {
-	        if (options === void 0) { options = {}; }
-	        _super.call(this);
-	        this.__options = utilities_1.extend({}, options);
+
+	var AssetsClient = function (_eventsjs_1$EventEmit) {
+	    _inherits(AssetsClient, _eventsjs_1$EventEmit);
+
+	    function AssetsClient() {
+	        var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+	        _classCallCheck(this, AssetsClient);
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(AssetsClient).call(this));
+
+	        _this.__options = utilities_1.extend({}, options);
 	        if (!options.url || options.url === '') {
-	            this.__options.url = '/';
+	            _this.__options.url = '/';
 	        }
+	        return _this;
 	    }
-	    AssetsClient.prototype.toModel = function (attr) {
-	        return new models_1.AssetsModel(attr, {
-	            url: this.url
-	        });
-	    };
-	    Object.defineProperty(AssetsClient.prototype, "options", {
-	        get: function () {
+
+	    _createClass(AssetsClient, [{
+	        key: 'toModel',
+	        value: function toModel(attr) {
+	            return new models_1.AssetsModel(attr, {
+	                url: this.url
+	            });
+	        }
+	    }, {
+	        key: 'getCollection',
+	        value: function getCollection() {
+	            return new models_1.AssetsCollection(this);
+	        }
+	    }, {
+	        key: 'getById',
+	        value: function getById(id) {
+	            var _this2 = this;
+
+	            return utilities_1.request.get(this.url).params({
+	                id: id
+	            }).json().then(function (value) {
+	                if (!value.isValid) return null;
+	                return new models_1.AssetsModel(value.body, {
+	                    url: _this2.url
+	                });
+	            });
+	        }
+	    }, {
+	        key: 'getByPath',
+	        value: function getByPath(path) {
+	            var _this3 = this;
+
+	            if (path == null || path === '' || path === '/') {
+	                return utilities_1.Promise.reject(new interface_1.HttpError(500, ""));
+	            }
+	            var url = utilities_2.normalizeURL(this.url, path);
+	            return utilities_1.request.get(url).json().then(function (value) {
+	                if (!value.isValid) return null;
+	                return new models_1.AssetsModel(value.body, {
+	                    url: _this3.url
+	                });
+	            });
+	        }
+	    }, {
+	        key: 'options',
+	        get: function get() {
 	            return utilities_1.extend({}, this.__options);
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(AssetsClient.prototype, "url", {
-	        get: function () {
+	        }
+	    }, {
+	        key: 'url',
+	        get: function get() {
 	            return this.__options.url;
 	        },
-	        set: function (url) {
-	            if (this.url === url)
-	                return;
+	        set: function set(url) {
+	            if (this.url === url) return;
 	            this.__options.url = url;
 	            this.trigger('change:url', url);
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    AssetsClient.prototype.getCollection = function () {
-	        return new models_1.AssetsCollection(this);
-	    };
-	    AssetsClient.prototype.getById = function (id) {
-	        var _this = this;
-	        return utilities_1.request.get(this.url)
-	            .params({
-	            id: id
-	        }).json().then(function (value) {
-	            if (!value.isValid)
-	                return null;
-	            return new models_1.AssetsModel(value.body, {
-	                url: _this.url
-	            });
-	        });
-	    };
-	    AssetsClient.prototype.getByPath = function (path) {
-	        var _this = this;
-	        if (path == null || path === '' || path === '/') {
-	            return utilities_1.Promise.reject(new interface_1.HttpError(500, ""));
 	        }
-	        var url = utilities_2.normalizeURL(this.url, path);
-	        return utilities_1.request.get(url)
-	            .json().then(function (value) {
-	            if (!value.isValid)
-	                return null;
-	            return new models_1.AssetsModel(value.body, {
-	                url: _this.url
-	            });
-	        });
-	    };
-	    return AssetsClient;
-	}(eventsjs_1.EventEmitter));
-	exports.AssetsClient = AssetsClient;
+	    }]);
 
+	    return AssetsClient;
+	}(eventsjs_1.EventEmitter);
+
+	exports.AssetsClient = AssetsClient;
 
 /***/ },
 /* 58 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
+
 	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
 	}
 	__export(__webpack_require__(59));
 	__export(__webpack_require__(60));
-
 
 /***/ },
 /* 59 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
-	var CropPreView = (function (_super) {
-	    __extends(CropPreView, _super);
+	var utils_1 = __webpack_require__(52);
+	var CropPreView = function (_views_1$View) {
+	    _inherits(CropPreView, _views_1$View);
+
 	    function CropPreView() {
-	        _super.apply(this, arguments);
+	        var options = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
+
+	        _classCallCheck(this, CropPreView);
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CropPreView).call(this, options));
+
+	        _this.options = options;
+	        return _this;
 	    }
-	    Object.defineProperty(CropPreView.prototype, "cropping", {
-	        get: function () {
-	            return this._cropping;
-	        },
-	        set: function (cropping) {
+
+	    _createClass(CropPreView, [{
+	        key: "render",
+	        value: function render() {
+	            this.triggerMethod('before:render');
+	            this.undelegateEvents();
+	            var image = this.el.querySelector('img');
+	            if (image == null) {
+	                image = document.createElement('img');
+	                this.el.appendChild(image);
+	            }
+	            this.delegateEvents();
+	            this.triggerMethod('render');
+	            if (image.src !== '') {
+	                this.update();
+	            }
+	            return this;
+	        }
+	    }, {
+	        key: "update",
+	        value: function update() {
+	            var _this2 = this;
+
+	            this.triggerMethod('before:update');
+	            var img = this.ui['image'];
+	            return utils_1.getImageSize(img).then(function (size) {
+	                if (_this2.ui['image'] == null) return _this2;
+	                var el = _this2.el;
+	                if (_this2._cropping == null) {
+	                    if (_this2.options.aspectRatio == null) {
+	                        return _this2;
+	                    }
+	                    _this2._cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
+	                }
+	                var cropping = _this2._cropping;
+	                var cw = el.clientWidth,
+	                    ch = el.clientHeight,
+	                    rx = cw / cropping.width,
+	                    ry = ch / cropping.height;
+	                var width = size.width,
+	                    height = size.height;
+	                var e = {
+	                    width: Math.round(rx * width) + 'px',
+	                    height: Math.round(ry * height) + 'px',
+	                    marginLeft: '-' + Math.round(rx * cropping.x) + 'px',
+	                    marginTop: '-' + Math.round(ry * cropping.y) + 'px'
+	                };
+	                for (var key in e) {
+	                    img.style[key] = e[key];
+	                }
+	                _this2.triggerMethod('update');
+	            });
+	        }
+	    }, {
+	        key: "cropping",
+	        set: function set(cropping) {
 	            this._cropping = cropping;
 	            this.update();
 	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    CropPreView.prototype.render = function () {
-	        _super.prototype.render.call(this);
-	        if (this.ui['image'] == null) {
-	            this.undelegateEvents();
-	            var image_1 = document.createElement('img');
-	            this.el.appendChild(image_1);
-	            this.ui['image'] = image_1;
-	            this.delegateEvents();
+	        get: function get() {
+	            return this._cropping;
 	        }
-	        var image = this.ui['image'];
-	        if (image.src !== '') {
-	            this.size = {
-	                width: image.naturalWidth,
-	                height: image.naturalHeight
-	            };
-	        }
-	        image.style.maxHeight = '';
-	        image.style.maxWidth = '';
-	        return this;
-	    };
-	    CropPreView.prototype.update = function () {
-	        if (this._cropping == null || this.ui['image'] == null)
-	            return this;
-	        var img = this.ui['image'];
-	        var el = this.el;
-	        var cropping = this._cropping;
-	        var cw = el.clientWidth, ch = el.clientHeight, rx = cw / cropping.width, ry = ch / cropping.height;
-	        var width = 0, height = 0;
-	        if (this.size) {
-	            width = this.size.width;
-	            height = this.size.height;
-	        }
-	        var e = {
-	            width: Math.round(rx * width) + 'px',
-	            height: Math.round(ry * height) + 'px',
-	            marginLeft: '-' + Math.round(rx * cropping.x) + 'px',
-	            marginTop: '-' + Math.round(ry * cropping.y) + 'px'
-	        };
-	        for (var key in e) {
-	            img.style[key] = e[key];
-	        }
-	        this.trigger('update');
-	    };
-	    CropPreView.prototype._onImageLoad = function () {
-	        var el = this.ui['image'];
-	        this.size = {
-	            width: el.naturalWidth || el.width,
-	            height: el.naturalHeight || el.height
-	        };
-	        this.trigger('onload', this.size);
-	    };
-	    CropPreView = __decorate([
-	        views_1.attributes({
-	            className: 'assets cropping-preview',
-	            ui: {
-	                image: 'img'
-	            },
-	            events: {
-	                'onload @ui.image': '_onImageLoad'
-	            }
-	        }), 
-	        __metadata('design:paramtypes', [])
-	    ], CropPreView);
-	    return CropPreView;
-	}(views_1.View));
-	exports.CropPreView = CropPreView;
+	    }]);
 
+	    return CropPreView;
+	}(views_1.View);
+	CropPreView = __decorate([views_1.attributes({
+	    className: 'assets cropping-preview',
+	    ui: {
+	        image: 'img'
+	    }
+	}), __metadata('design:paramtypes', [Object])], CropPreView);
+	exports.CropPreView = CropPreView;
 
 /***/ },
 /* 60 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
 	};
-	var __decorate = (this && this.__decorate) || function (decorators, target, key, desc) {
-	    var c = arguments.length, r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc, d;
-	    if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);
-	    else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = (this && this.__metadata) || function (k, v) {
-	    if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
 	var Cropper = __webpack_require__(61);
-	var CropView = (function (_super) {
-	    __extends(CropView, _super);
-	    function CropView(options) {
-	        if (options === void 0) { options = { resize: false }; }
-	        _super.call(this, options);
-	        this.options = options;
+	var utils_1 = __webpack_require__(52);
+	var CropView = function (_views_1$View) {
+	    _inherits(CropView, _views_1$View);
+
+	    function CropView() {
+	        var options = arguments.length <= 0 || arguments[0] === undefined ? { resize: false } : arguments[0];
+
+	        _classCallCheck(this, CropView);
+
+	        var _this = _possibleConstructorReturn(this, Object.getPrototypeOf(CropView).call(this, options));
+
+	        _this.options = options;
+	        return _this;
 	    }
-	    Object.defineProperty(CropView.prototype, "cropper", {
-	        get: function () {
-	            if (this._cropper != null)
-	                return this._cropper;
-	            if (this.ui['image'] == null)
-	                return null;
+
+	    _createClass(CropView, [{
+	        key: "setModel",
+	        value: function setModel(model) {
+	            var _this2 = this;
+
+	            if (this.ui['image'] == null) return this;
+	            var image = this.ui['image'];
+	            if (model == null) {
+	                image.src = "";
+	                if (this.model) this.stopListening(this.model);
+	                this._model = model;
+	                return;
+	            }
+	            image.src = model.getURL();
+	            _get(Object.getPrototypeOf(CropView.prototype), "setModel", this).call(this, model);
+	            if (this.options.aspectRatio != null) {
+	                utils_1.getImageSize(image).then(function (size) {
+	                    _this2._cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
+	                }).catch(function (e) {
+	                    _this2.trigger('error', e);
+	                });
+	            }
+	            return this;
+	        }
+	    }, {
+	        key: "activate",
+	        value: function activate() {
+	            var _this3 = this;
+
+	            if (this._cropper != null) {
+	                return this;
+	            }
+	            this._cropper = new Cropper(this.ui['image'], {
+	                aspectRatio: this.options.aspectRatio,
+	                crop: function crop(e) {
+	                    _this3._cropping = e.detail;
+	                    _this3.triggerMethod('crop', e.detail);
+	                },
+	                data: this.cropping,
+	                built: function built(e) {
+	                    return _this3.triggerMethod('built', e);
+	                },
+	                viewMode: 1
+	            });
+	            return this;
+	        }
+	    }, {
+	        key: "deactivate",
+	        value: function deactivate() {
+	            if (this.cropper) {
+	                this._cropper.destroy();
+	                this._cropper = void 0;
+	            }
+	            return this;
+	        }
+	    }, {
+	        key: "toggle",
+	        value: function toggle() {
+	            return this._cropper != null ? this.deactivate() : this.activate();
+	        }
+	    }, {
+	        key: "onCrop",
+	        value: function onCrop(cropping) {
+	            if (this.options.preview) {
+	                this.options.preview.cropping = cropping;
+	            }
+	        }
+	    }, {
+	        key: "render",
+	        value: function render() {
+	            this.triggerMethod('before:render');
+	            this.undelegateEvents();
+	            var image = this.el.querySelector('img');
+	            if (image == null) {
+	                image = document.createElement('img');
+	                this.el.appendChild(image);
+	            }
+	            this.delegateEvents();
+	            this.triggerMethod('render');
+	            return this;
+	        }
+	    }, {
+	        key: "destroy",
+	        value: function destroy() {
+	            this.deactivate();
+	            _get(Object.getPrototypeOf(CropView.prototype), "destroy", this).call(this);
+	        }
+	    }, {
+	        key: "cropper",
+	        get: function get() {
+	            if (this._cropper != null) return this._cropper;
+	            if (this.ui['image'] == null) return null;
 	            return this.activate()._cropper;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(CropView.prototype, "cropping", {
-	        get: function () {
+	        }
+	    }, {
+	        key: "cropping",
+	        get: function get() {
 	            return this._cropping;
 	        },
-	        set: function (cropping) {
+	        set: function set(cropping) {
 	            this._cropping = cropping;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    CropView.prototype.setModel = function (model) {
-	        if (this.ui['image'] == null)
-	            return this;
-	        var image = this.ui['image'];
-	        image.src = model.getURL();
-	        _super.prototype.setModel.call(this, model);
-	        return this;
-	    };
-	    CropView.prototype.activate = function () {
-	        var _this = this;
-	        if (this._cropper != null) {
-	            return this;
+	            if (this.options.preview) this.options.preview.cropping = cropping;
 	        }
-	        this._cropper = new Cropper(this.ui['image'], {
-	            aspectRatio: this.options.aspectRatio,
-	            crop: function (e) {
-	                _this._cropping = e.detail;
-	                _this.triggerMethod('crop', e.detail);
-	            },
-	            data: this.cropping,
-	            built: function (e) { return _this.trigger('built', e); }
-	        });
-	        return this;
-	    };
-	    CropView.prototype.deactivate = function () {
-	        if (this.cropper) {
-	            this._cropper.destroy();
-	            this._cropper = void 0;
-	        }
-	        return this;
-	    };
-	    CropView.prototype.toggle = function () {
-	        return this._cropper != null ? this.deactivate() : this.activate();
-	    };
-	    CropView.prototype.onCrop = function (cropping) {
-	        if (this.options.preview) {
-	            this.options.preview.cropping = cropping;
-	        }
-	    };
-	    CropView.prototype.render = function () {
-	        _super.prototype.render.call(this);
-	        if (this.ui['image'] == null) {
-	            this.undelegateEvents();
-	            var image = document.createElement('img');
-	            this.el.appendChild(image);
-	            this.ui['image'] = image;
-	            this.delegateEvents();
-	        }
-	        return this;
-	    };
-	    CropView.prototype.destroy = function () {
-	        this.deactivate();
-	        _super.prototype.destroy.call(this);
-	    };
-	    CropView = __decorate([
-	        views_1.attributes({
-	            className: 'assets cropping-view',
-	            ui: {
-	                image: 'img'
-	            }
-	        }), 
-	        __metadata('design:paramtypes', [Object])
-	    ], CropView);
-	    return CropView;
-	}(views_1.View));
-	exports.CropView = CropView;
+	    }]);
 
+	    return CropView;
+	}(views_1.View);
+	CropView = __decorate([views_1.attributes({
+	    className: 'assets cropping-view',
+	    ui: {
+	        image: 'img'
+	    }
+	}), __metadata('design:paramtypes', [Object])], CropView);
+	exports.CropView = CropView;
 
 /***/ },
 /* 61 */

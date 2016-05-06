@@ -21,7 +21,8 @@
 
 
         var preview = new Assets.CropPreView({
-            el: main
+            el: main,
+            aspectRatio: 3 / 2
         });
 
         var view = new Assets.CropView({
@@ -45,6 +46,10 @@
         }, {
             url: '.'
         });
+        
+        view.on('crop', (crop) => {
+            console.log(crop)
+        })
 
         preview.render();
 

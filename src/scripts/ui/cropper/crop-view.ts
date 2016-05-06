@@ -4,6 +4,7 @@ import * as Cropper from 'cropperjs';
 import {ICropper, ICropping} from './interfaces';
 import {AssetsModel} from '../../models';
 import {CropPreView} from './crop-preview';
+import {getCropping, getImageSize} from '../utils';
 
 export interface CropViewOptions extends ViewOptions {
     aspectRatio?: number;
@@ -36,6 +37,7 @@ export class CropView extends View<HTMLDivElement> {
     
     set cropping(cropping: ICropping) {
         this._cropping = cropping
+        if (this.options.preview) this.options.preview.cropping = cropping;
     }
     
     setModel (model) {
@@ -43,17 +45,31 @@ export class CropView extends View<HTMLDivElement> {
         if (this.ui['image'] == null) return this;
         
         let image = <HTMLImageElement>this.ui['image'];
+        
+        if (model == null) {
+            image.src = "";
+            if (this.model) this.stopListening(this.model);
+            this._model = model;
+            return;
+         }
+        
         image.src = model.getURL();
         
         super.setModel(model);
         
+        if (this.options.aspectRatio != null) {
+            getImageSize(image).then( size => {
+                this._cropping = getCropping(size, this.options.aspectRatio);
+            }).catch(e => {
+                this.trigger('error', e);
+            });     
+        }
         return this;
     }
     
     constructor(options:CropViewOptions = { resize: false }) {
         super(options);
         this.options = options;
-        
     }
     
     activate() {
@@ -68,7 +84,8 @@ export class CropView extends View<HTMLDivElement> {
                this.triggerMethod('crop', e.detail)
            },
            data: this.cropping,
-           built: (e) => this.trigger('built', e)
+           built: (e) => this.triggerMethod('built', e),
+           viewMode: 1
         });
         
         return this;
@@ -93,17 +110,23 @@ export class CropView extends View<HTMLDivElement> {
     }
  
     render () {
-        super.render();
+        //super.render();
+        this.triggerMethod('before:render');
         
-        if (this.ui['image'] == null) {
-            this.undelegateEvents();
-            let image = document.createElement('img');
+        this.undelegateEvents();
+        
+        let image = this.el.querySelector('img');
+        
+        if (image == null) {
+            image = document.createElement('img');
             this.el.appendChild(image);
-            this.ui['image'] = image;
-            this.delegateEvents();
         }
         
-        return this;  
+        this.delegateEvents();
+        this.triggerMethod('render');
+        
+        return this;
+       
     }
     
     destroy() {
