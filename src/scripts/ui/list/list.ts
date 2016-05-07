@@ -134,8 +134,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
         }
         this.index = index;
         let el = this.el;
-        
-        console.log('SCOLL',this.collection)
+      
         if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
 
         } else if (this.collection.hasNext()) {
