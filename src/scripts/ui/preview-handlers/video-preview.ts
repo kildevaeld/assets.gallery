@@ -1,7 +1,8 @@
 import {View} from 'views';
-import {setPreviewHandler} from '../assets-preview';
+import {preview} from '../interfaces';
 import {AssetsModel} from '../../models';
 
+preview('video/mp4', 'video/ogg', 'video/webm', 'video/x-m4v')
 export class VideoPreview extends View<HTMLDivElement> {
     model: AssetsModel;
     template = function (data:any): string {
@@ -12,5 +13,3 @@ export class VideoPreview extends View<HTMLDivElement> {
 		`;
     }
 }
-
-setPreviewHandler(['video/mp4', 'video/ogg', 'video/webm', 'video/x-m4v'], VideoPreview);

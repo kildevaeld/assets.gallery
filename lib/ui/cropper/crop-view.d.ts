@@ -16,7 +16,7 @@ export declare class CropView extends View<HTMLDivElement> {
     activate(): this;
     deactivate(): this;
     toggle(): this;
-    onCrop(cropping: any): void;
+    onCrop(cropping: cropperjs.Data): void;
     render(): this;
     destroy(): void;
 }

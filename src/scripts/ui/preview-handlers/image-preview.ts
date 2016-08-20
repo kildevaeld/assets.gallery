@@ -1,12 +1,11 @@
 import {View} from 'views';
-import {setPreviewHandler} from '../assets-preview';
+import {preview} from '../interfaces';
 import {AssetsModel} from '../../models';
 
+preview('image/*')
 export class ImagePreview extends View<HTMLDivElement> {
     model: AssetsModel;
     template = function (data:any): string {
         return `<img src="${this.model.getURL()}"/>`;
     }
 }
-
-setPreviewHandler(['image/*'], ImagePreview);

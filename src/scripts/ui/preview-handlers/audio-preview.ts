@@ -1,7 +1,8 @@
 import {View} from 'views'
-import {setPreviewHandler} from '../assets-preview'
+import {preview} from '../interfaces'
 import {AssetsModel} from '../../models'
 
+@preview('audio/mpeg', 'audio/wav', 'audio/ogg')
 export class AudioPreview extends View<HTMLDivElement> {
     model: AssetsModel;
     template = function (data:any): string {
@@ -13,4 +14,3 @@ export class AudioPreview extends View<HTMLDivElement> {
     }
 }
 
-setPreviewHandler(['audio/mpeg', 'audio/wav', 'audio/ogg'], AudioPreview);

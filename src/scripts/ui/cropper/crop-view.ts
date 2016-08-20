@@ -6,6 +6,10 @@ import {CropPreView} from './crop-preview';
 import {getCropping, getImageSize} from '../utils';
 import {extend} from 'utilities';
 
+function isFunction(a:any): a is Function {
+    return (typeof a === 'function');
+}
+
 export interface CropViewOptions extends ViewOptions, cropperjs.CropperOptions {
     resize: boolean;
     previewView?: CropPreView;
@@ -72,23 +76,44 @@ export class CropView extends View<HTMLDivElement> {
     }
     
     activate() {
-        console.log('activate')
+        
         if (this._cropper != null) {
             return this;
         }
+
+        let o = this.options;
         
         let opts: cropperjs.CropperOptions =  {
             crop: e => {
-               this._cropping = e.detail;
-               this.triggerMethod('crop', e.detail)
+                this._cropping = e.detail;
+
+                if (this.options.previewView) {
+                    this.options.previewView.cropping = this._cropping;
+                }
+
+                this.triggerMethod('crop', e.detail)
+                if (isFunction(o.crop)) o.crop(e);
            },
            data: this.cropping,
-           built: () => this.triggerMethod('built')
+           built: () => {
+               this.triggerMethod('built');
+               if (isFunction(o.built)) o.built();
+           },
+           cropstart: e => {
+               this.triggerMethod('cropstart');
+               if (isFunction(o.cropstart)) o.cropstart(e);
+           },
+           cropmove: e => {
+               this.triggerMethod('cropmove', e);
+               if (isFunction(o.cropmove)) o.cropmove(e);
+           },
+           cropend: e => {
+               this.triggerMethod('cropend', e);
+               if (isFunction(o.cropend)) o.cropend(e);
+           }
         };
 
         opts = extend({}, this.options, opts);
-        
-        console.log(opts)
 
         this._cropper = new Cropper(<HTMLImageElement>this.ui['image'], opts);
         
@@ -107,10 +132,10 @@ export class CropView extends View<HTMLDivElement> {
         return this._cropper != null ? this.deactivate() : this.activate();
     }
     
-    onCrop (cropping) {
-        if (this.options.previewView) {
+    onCrop (cropping: cropperjs.Data) {
+        /*if (this.options.previewView) {
             this.options.previewView.cropping = cropping;
-        }
+        }*/
     }
  
     render () {

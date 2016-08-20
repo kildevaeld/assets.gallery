@@ -1,3 +1,4 @@
 node_modules
 .DS_Store
-example/uploads/*typings/
+example/uploads/*
+typings/

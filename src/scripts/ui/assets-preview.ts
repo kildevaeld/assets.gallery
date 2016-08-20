@@ -1,4 +1,4 @@
-import {LayoutView, View, ViewOptions, events} from 'views';
+import {LayoutView, View, ViewOptions, events, attributes} from 'views';
 import {IDataView} from 'views/lib/types';
 import {truncate, humanFileSize} from '../utilities';
 import * as html from 'utilities/lib/html';
@@ -6,9 +6,74 @@ import {AssetsModel} from '../models';
 import {Thumbnailer, MimeList} from './thumbnailer';
 import templates from './templates';
 
+import {getPreviewHandler} from './interfaces';
+
 export interface PreviewInfoOptions extends ViewOptions { }
 
-export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
+
+@attributes({
+    ui: {
+        name: '.name',
+        mime: '.mimetype',
+        size: '.size',
+        download: '.download'
+    },
+    events: {
+        "click a.remove": "onItemRemove"
+    },
+    tagName: 'table',
+    className: 'info',
+    template: templates['preview-info']
+})
+class AssetsInfoPreview extends View<HTMLTableElement> {
+    model: AssetsModel
+    onModel(model: AssetsModel) {
+        if (model == null) {
+            this.clear();
+            return;
+        }
+        this.ui['name'].textContent = model.get('filename')
+        this.ui['mime'].textContent = model.get('mime')
+        this.ui['size'].textContent = humanFileSize(model.get('size'), true);
+        let link = <HTMLAnchorElement>this.ui['download'].querySelector('a');
+        
+        let url = model.getURL();
+        
+        View.prototype.setModel.call(this, model);
+        link.textContent = model.get('name');
+        link.href = url + '?download=true';
+    }
+
+    clear() {
+        if (this.ui['name']) {
+            this.ui['name'].textContent = ""
+        }
+
+        if (this.ui['mime']) {
+            this.ui['mime'].textContent = "";
+        }
+
+        if (this.ui['size']) {
+            this.ui['size'].textContent = "";
+        }
+
+        if (this.ui['download']) {
+            let fp = this.model.fullPath;
+            let link = <HTMLAnchorElement>this.ui['download'].querySelector('a')
+            link.textContent = fp;
+            link.href = fp + '?download=true';
+        }
+    
+    }
+
+    onItemRemove() {
+        this.model.remove().then(() => {
+            let link = this.ui['download'].querySelector('a');
+        });
+    }
+}
+
+/*export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
     ui: {
         name: '.name',
         mime: '.mimetype',
@@ -65,28 +130,11 @@ export var AssetsInfoPreview: typeof View = View.extend<typeof View>({
             let link = this.ui.download.querySelector('a');
         });
     }
-});
+});*/
 
-export type PreviewHandlerConstructor = new (options: ViewOptions) => IDataView
 
-let previewHandlers: { [key: string]: PreviewHandlerConstructor } = {};
 
-export function setPreviewHandler(mime: string | string[], view: PreviewHandlerConstructor) {
-    if (!Array.isArray(mime)) {
-        mime = [<string>mime];
-    }
-    (<string[]>mime).forEach(function(m) {
-        previewHandlers[m] = view;
-    });
-}
 
-export function getPreviewHandler(mime: string): PreviewHandlerConstructor {
-    let reg: RegExp, k: string;
-    for (k in previewHandlers) {
-        if ((new RegExp(k)).test(mime)) return previewHandlers[k];
-    }
-    return null;
-}
 
 export interface AssetsPreviewOptions extends ViewOptions {
     infoView?: new (options?: PreviewInfoOptions) => IDataView;
@@ -149,8 +197,6 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
         return this;
 
     }
-
-
 
     constructor(options: AssetsPreviewOptions = {}) {
         
