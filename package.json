@@ -24,9 +24,13 @@
     "sprity-css": "^1.0.2"
   },
   "dependencies": {
-    "blazy": "^1.5.4",
+    "blazy": "^1.6.2",
     "collection": "git+https://github.com/kildevaeld/collectionjs.git",
-    "cropperjs": "^0.7.0",
+    "cropperjs": "^0.7.2",
+    "event-stream": "^3.3.4",
+    "gulp-stylus": "^2.5.0",
+    "gulp-typescript": "^2.13.6",
+    "nib": "^1.1.2",
     "views": "git+https://github.com/kildevaeld/views.git"
   },
   "typings": "lib/index"

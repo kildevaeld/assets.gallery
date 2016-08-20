@@ -27,12 +27,14 @@ export const AssetsEmptyView = View.extend({
     }
 })
 export class AssetsListView extends CollectionView<HTMLDivElement> {
-    _current: View<HTMLDivElement>;
+    private _current: View<HTMLDivElement>;
     private _blazy: any;
     private _timer: number;
     private index: number;
+
     public options: AssetsListOptions;
     collection: AssetsCollection;
+
     constructor(options?: AssetsListOptions) {
         super(options);
         this.options = options||{};
@@ -86,10 +88,9 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
                 if (elementInView(view.el, this.el)) {
                     this._blazy.load(view.$('img')[0]);
                 }
-                //this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
-                //console.log(elementInView(view.el, this.el))
+                
             }, 100);
-            //this._blazy.load(view.$('img')[0], elementInView(view.el, this.el));
+            
         });
 
         this.listenTo(this.collection, 'before:fetch', () => {
@@ -135,7 +136,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
         this.index = index;
         let el = this.el;
         
-        console.log('SCOLL',this.collection)
+        
         if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
 
         } else if (this.collection.hasNext()) {
@@ -180,8 +181,6 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
     onShow () {
         this._initHeight();
     }
-    
-    
 
 }
 

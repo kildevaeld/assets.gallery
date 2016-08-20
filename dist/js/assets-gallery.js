@@ -3777,6 +3777,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.Model = AssetsModel;
 	        this.comparator = 'name';
 	        options = options || { fetchOnUrl: true };
+	        this._state.size = 30;
 	        this.listenTo(client, 'change:url', function () {
 	            _this.url = client.url;
 	            if (options.fetchOnUrl)
@@ -6458,7 +6459,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	        this.index = index;
 	        var el = this.el;
-	        console.log('SCOLL', this.collection);
 	        if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
 	        }
 	        else if (this.collection.hasNext()) {
@@ -6545,7 +6545,7 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	  hey, [be]Lazy.js - v1.6.1 - 2016.05.02
+	  hey, [be]Lazy.js - v1.6.2 - 2016.05.09
 	  A fast, small and dependency free lazy load script (https://github.com/dinbror/blazy)
 	  (c) Bjoern Klinggaard - @bklinggaard - http://dinbror.dk/blazy
 	*/
@@ -6567,8 +6567,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    'use strict';
 
 	    //private vars
-	    var source, viewport, isRetina, attrSrc = 'src',
-	        attrSrcset = 'srcset';
+	    var _source, _viewport, _isRetina, _attrSrc = 'src',
+	        _attrSrcset = 'srcset';
 
 	    // constructor
 	    return function Blazy(options) {
@@ -6605,11 +6605,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        scope.options.validateDelay = scope.options.validateDelay || 25;
 	        scope.options.saveViewportOffsetDelay = scope.options.saveViewportOffsetDelay || 50;
 	        scope.options.srcset = scope.options.srcset || 'data-srcset';
-	        scope.options.src = source = scope.options.src || 'data-src';
-	        isRetina = window.devicePixelRatio > 1;
-	        viewport = {};
-	        viewport.top = 0 - scope.options.offset;
-	        viewport.left = 0 - scope.options.offset;
+	        scope.options.src = _source = scope.options.src || 'data-src';
+	        _isRetina = window.devicePixelRatio > 1;
+	        _viewport = {};
+	        _viewport.top = 0 - scope.options.offset;
+	        _viewport.left = 0 - scope.options.offset;
 
 
 	        /* public functions
@@ -6655,7 +6655,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        //handle multi-served image src (obsolete)
 	        each(scope.options.breakpoints, function(object) {
 	            if (object.width >= window.screen.width) {
-	                source = object.src;
+	                _source = object.src;
 	                return false;
 	            }
 	        });
@@ -6711,61 +6711,62 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var rect = ele.getBoundingClientRect();
 	        return (
 	            // Intersection
-	            rect.right >= viewport.left && rect.bottom >= viewport.top && rect.left <= viewport.right && rect.top <= viewport.bottom
+	            rect.right >= _viewport.left && rect.bottom >= _viewport.top && rect.left <= _viewport.right && rect.top <= _viewport.bottom
 	        );
 	    }
 
 	    function loadElement(ele, force, options) {
 	        // if element is visible, not loaded or forced
 	        if (!hasClass(ele, options.successClass) && (force || options.loadInvisible || (ele.offsetWidth > 0 && ele.offsetHeight > 0))) {
-	            var dataSrc = ele.getAttribute(source) || ele.getAttribute(options.src); // fallback to default 'data-src'
+	            var dataSrc = ele.getAttribute(_source) || ele.getAttribute(options.src); // fallback to default 'data-src'
 	            if (dataSrc) {
 	                var dataSrcSplitted = dataSrc.split(options.separator);
-	                var src = dataSrcSplitted[isRetina && dataSrcSplitted.length > 1 ? 1 : 0];
+	                var src = dataSrcSplitted[_isRetina && dataSrcSplitted.length > 1 ? 1 : 0];
 	                var isImage = equal(ele, 'img');
 	                // Image or background image
 	                if (isImage || ele.src === undefined) {
 	                    var img = new Image();
-						// using EventListener instead of onError and onLoad
-						// due to bug introduced in chrome v50 (https://productforums.google.com/forum/#!topic/chrome/p51Lk7vnP2o)
-						var onErrorHandler = function(){
+	                    // using EventListener instead of onerror and onload
+	                    // due to bug introduced in chrome v50 
+	                    // (https://productforums.google.com/forum/#!topic/chrome/p51Lk7vnP2o)
+	                    var onErrorHandler = function() {
 	                        if (options.error) options.error(ele, "invalid");
 	                        addClass(ele, options.errorClass);
-							unbindEvent(img, 'error', onErrorHandler);
-							unbindEvent(img, 'load', onLoadHandler);
-						};
-						var onLoadHandler = function() {
+	                        unbindEvent(img, 'error', onErrorHandler);
+	                        unbindEvent(img, 'load', onLoadHandler);
+	                    };
+	                    var onLoadHandler = function() {
 	                        // Is element an image
 	                        if (isImage) {
-	                            handleSource(ele, attrSrc, options.src); //src
-	                            handleSource(ele, attrSrcset, options.srcset); //srcset
+	                            setSrc(ele, src); //src
+	                            handleSource(ele, _attrSrcset, options.srcset); //srcset
 	                            //picture element
 	                            var parent = ele.parentNode;
 	                            if (parent && equal(parent, 'picture')) {
 	                                each(parent.getElementsByTagName('source'), function(source) {
-	                                    handleSource(source, attrSrcset, options.srcset);
+	                                    handleSource(source, _attrSrcset, options.srcset);
 	                                });
 	                            }
-	                            // or background-image
+	                        // or background-image
 	                        } else {
 	                            ele.style.backgroundImage = 'url("' + src + '")';
 	                        }
 	                        itemLoaded(ele, options);
-							unbindEvent(img, 'load', onLoadHandler);
-							unbindEvent(img, 'error', onErrorHandler);
+	                        unbindEvent(img, 'load', onLoadHandler);
+	                        unbindEvent(img, 'error', onErrorHandler);
 	                    };
-						bindEvent(img, 'error', onErrorHandler);
-						bindEvent(img, 'load', onLoadHandler);
-	                    img.src = src; //preload
+	                    bindEvent(img, 'error', onErrorHandler);
+	                    bindEvent(img, 'load', onLoadHandler);
+	                    setSrc(img, src); //preload
 	                } else { // An item with src like iframe, unity, simpelvideo etc
-	                    handleSource(ele, attrSrc, options.src);
+	                    setSrc(ele, src);
 	                    itemLoaded(ele, options);
 	                }
 	            } else {
 	                // video with child source
 	                if (equal(ele, 'video')) {
 	                    each(ele.getElementsByTagName('source'), function(source) {
-	                        handleSource(source, attrSrc, options.src);
+	                        handleSource(source, _attrSrc, options.src);
 	                    });
 	                    ele.load();
 	                    itemLoaded(ele, options);
@@ -6781,9 +6782,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	        addClass(ele, options.successClass);
 	        if (options.success) options.success(ele);
 	        // cleanup markup, remove data source attributes
+	        ele.removeAttribute(options.src);
 	        each(options.breakpoints, function(object) {
 	            ele.removeAttribute(object.src);
 	        });
+	    }
+
+	    function setSrc(ele, src) {
+	        ele[_attrSrc] = src;
 	    }
 
 	    function handleSource(ele, attr, dataAttr) {
@@ -6816,8 +6822,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 
 	    function saveViewportOffset(offset) {
-	        viewport.bottom = (window.innerHeight || document.documentElement.clientHeight) + offset;
-	        viewport.right = (window.innerWidth || document.documentElement.clientWidth) + offset;
+	        _viewport.bottom = (window.innerHeight || document.documentElement.clientHeight) + offset;
+	        _viewport.right = (window.innerWidth || document.documentElement.clientWidth) + offset;
 	    }
 
 	    function bindEvent(ele, type, fn) {
@@ -7342,13 +7348,13 @@ return /******/ (function(modules) { // webpackBootstrap
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
-	 * Cropper.js v0.7.0
+	 * Cropper.js v0.7.2
 	 * https://github.com/fengyuanchen/cropperjs
 	 *
 	 * Copyright (c) 2015-2016 Fengyuan Chen
 	 * Released under the MIT license
 	 *
-	 * Date: 2016-03-20T06:15:36.234Z
+	 * Date: 2016-06-08T12:25:05.932Z
 	 */
 
 	(function (global, factory) {
@@ -7417,6 +7423,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	  var REGEXP_DATA_URL = /^data\:/;
 	  var REGEXP_DATA_URL_HEAD = /^data\:([^\;]+)\;base64,/;
 	  var REGEXP_DATA_URL_JPEG = /^data\:image\/jpeg.*;base64,/;
+	  var REGEXP_HYPHENATE = /([a-z\d])([A-Z])/g;
 
 	  // Data
 	  var DATA_PREVIEW = 'preview';
@@ -7439,7 +7446,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	  // Supports
 	  var SUPPORT_CANVAS = !!document.createElement('canvas').getContext;
-	  var IS_SAFARI = navigator && /safari/i.test(navigator.userAgent) && /apple computer/i.test(navigator.vendor);
+	  var IS_SAFARI_OR_UIWEBVIEW = navigator && /(Macintosh|iPhone|iPod|iPad).*AppleWebKit/i.test(navigator.userAgent);
 
 	  // Maths
 	  var min = Math.min;
@@ -7645,21 +7652,27 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }
 	  }
 
+	  function hyphenate(str) {
+	    return str.replace(REGEXP_HYPHENATE, '$1-$2').toLowerCase();
+	  }
+
 	  function getData(element, name) {
-	    return isObject(element[name]) ?
-	      element[name] :
-	      element.dataset ?
-	        element.dataset[name] :
-	        element.getAttribute('data-' + name);
+	    if (isObject(element[name])) {
+	      return element[name];
+	    } else if (element.dataset) {
+	      return element.dataset[name];
+	    }
+
+	    return element.getAttribute('data-' + hyphenate(name));
 	  }
 
 	  function setData(element, name, data) {
-	    if (isObject(data) && isUndefined(element[name])) {
+	    if (isObject(data)) {
 	      element[name] = data;
 	    } else if (element.dataset) {
 	      element.dataset[name] = data;
 	    } else {
-	      element.setAttribute('data-' + name, data);
+	      element.setAttribute('data-' + hyphenate(name), data);
 	    }
 	  }
 
@@ -7669,7 +7682,23 @@ return /******/ (function(modules) { // webpackBootstrap
 	    } else if (element.dataset) {
 	      delete element.dataset[name];
 	    } else {
-	      element.removeAttribute('data-' + name);
+	      element.removeAttribute('data-' + hyphenate(name));
+	    }
+	  }
+
+	  function removeListener(element, type, handler) {
+	    var types = trim(type).split(REGEXP_SPACES);
+
+	    if (types.length > 1) {
+	      return each(types, function (type) {
+	        removeListener(element, type, handler);
+	      });
+	    }
+
+	    if (element.removeEventListener) {
+	      element.removeEventListener(type, handler, false);
+	    } else if (element.detachEvent) {
+	      element.detachEvent('on' + type, handler);
 	    }
 	  }
 
@@ -7695,22 +7724,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	      element.addEventListener(type, handler, false);
 	    } else if (element.attachEvent) {
 	      element.attachEvent('on' + type, handler);
-	    }
-	  }
-
-	  function removeListener(element, type, handler) {
-	    var types = trim(type).split(REGEXP_SPACES);
-
-	    if (types.length > 1) {
-	      return each(types, function (type) {
-	        removeListener(element, type, handler);
-	      });
-	    }
-
-	    if (element.removeEventListener) {
-	      element.removeEventListener(type, handler, false);
-	    } else if (element.detachEvent) {
-	      element.detachEvent('on' + type, handler);
 	    }
 	  }
 
@@ -7860,7 +7873,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var newImage;
 
 	    // Modern browsers (ignore Safari)
-	    if (image.naturalWidth && !IS_SAFARI) {
+	    if (image.naturalWidth && !IS_SAFARI_OR_UIWEBVIEW) {
 	      return callback(image.naturalWidth, image.naturalHeight);
 	    }
 
@@ -7880,12 +7893,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	    var scaleX = data.scaleX;
 	    var scaleY = data.scaleY;
 
-	    if (isNumber(rotate)) {
-	      transforms.push('rotate(' + rotate + 'deg)');
-	    }
-
+	    // Scale should come first before rotate
 	    if (isNumber(scaleX) && isNumber(scaleY)) {
 	      transforms.push('scale(' + scaleX + ',' + scaleY + ')');
+	    }
+
+	    if (isNumber(rotate)) {
+	      transforms.push('rotate(' + rotate + 'deg)');
 	    }
 
 	    return transforms.length ? transforms.join(' ') : 'none';
@@ -7964,13 +7978,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      context.translate(translateX, translateY);
 	    }
 
-	    if (rotatable) {
-	      context.rotate(rotate * PI / 180);
-	    }
-
-	    // Should call `scale` after rotated
+	    // Scale should come first before rotate as in the "getTransform" function
 	    if (scalable) {
 	      context.scale(scaleX, scaleY);
+	    }
+
+	    if (rotatable) {
+	      context.rotate(rotate * PI / 180);
 	    }
 
 	    context.drawImage(image, floor(dstX), floor(dstY), floor(dstWidth), floor(dstHeight));
@@ -8056,7 +8070,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	          orientation = dataView.getUint16(offset, littleEndian);
 
 	          // Override the orientation with its default value for Safari
-	          if (IS_SAFARI) {
+	          if (IS_SAFARI_OR_UIWEBVIEW) {
 	            dataView.setUint16(offset, 1, littleEndian);
 	          }
 
@@ -8195,6 +8209,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	      xhr.onload = function () {
 	        _this.read(this.response);
 	      };
+
+	      if (options.checkCrossOrigin && isCrossOriginURL(url) && element.crossOrigin) {
+	        url = addTimestamp(url);
+	      }
 
 	      xhr.open('get', url);
 	      xhr.responseType = 'arraybuffer';
@@ -10558,8 +10576,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	      var context;
 	      var data;
 
-	      if (!_this.built || !_this.cropped || !SUPPORT_CANVAS) {
+	      if (!_this.built || !SUPPORT_CANVAS) {
 	        return;
+	      }
+
+	      // Return the whole canvas if not cropped
+	      if (!_this.cropped) {
+	        return getSourceCanvas(_this.image, _this.imageData);
 	      }
 
 	      if (!isPlainObject(options)) {
