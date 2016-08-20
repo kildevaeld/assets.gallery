@@ -1,14 +1,14 @@
-/// <reference path="../../../../typings/main.d.ts" />
 import {View, ViewOptions ,attributes} from 'views';
 import * as Cropper from 'cropperjs';
 import {ICropper, ICropping} from './interfaces';
 import {AssetsModel} from '../../models';
 import {CropPreView} from './crop-preview';
+import {getCropping, getImageSize} from '../utils';
+import {extend} from 'utilities';
 
-export interface CropViewOptions extends ViewOptions {
-    aspectRatio?: number;
+export interface CropViewOptions extends ViewOptions, cropperjs.CropperOptions {
     resize: boolean;
-    preview?: CropPreView;
+    previewView?: CropPreView;
 }
 
 @attributes({
@@ -36,6 +36,7 @@ export class CropView extends View<HTMLDivElement> {
     
     set cropping(cropping: ICropping) {
         this._cropping = cropping
+        if (this.options.previewView) this.options.previewView.cropping = cropping;
     }
     
     setModel (model) {
@@ -43,33 +44,53 @@ export class CropView extends View<HTMLDivElement> {
         if (this.ui['image'] == null) return this;
         
         let image = <HTMLImageElement>this.ui['image'];
+        
+        if (model == null) {
+            image.src = "";
+            if (this.model) this.stopListening(this.model);
+            this._model = model;
+            return;
+         }
+        
         image.src = model.getURL();
         
         super.setModel(model);
         
+        if (this.options.aspectRatio != null) {
+            getImageSize(image).then( size => {
+                this._cropping = getCropping(size, this.options.aspectRatio);
+            }).catch(e => {
+                this.trigger('error', e);
+            });     
+        }
         return this;
     }
     
     constructor(options:CropViewOptions = { resize: false }) {
         super(options);
         this.options = options;
-        
     }
     
     activate() {
+        console.log('activate')
         if (this._cropper != null) {
             return this;
         }
         
-        this._cropper = new Cropper(<HTMLImageElement>this.ui['image'], <any>{
-           aspectRatio: this.options.aspectRatio,
-           crop: (e) => {
+        let opts: cropperjs.CropperOptions =  {
+            crop: e => {
                this._cropping = e.detail;
                this.triggerMethod('crop', e.detail)
            },
            data: this.cropping,
-           built: (e) => this.trigger('built', e)
-        });
+           built: () => this.triggerMethod('built')
+        };
+
+        opts = extend({}, this.options, opts);
+        
+        console.log(opts)
+
+        this._cropper = new Cropper(<HTMLImageElement>this.ui['image'], opts);
         
         return this;
     }
@@ -87,23 +108,29 @@ export class CropView extends View<HTMLDivElement> {
     }
     
     onCrop (cropping) {
-        if (this.options.preview) {
-            this.options.preview.cropping = cropping;
+        if (this.options.previewView) {
+            this.options.previewView.cropping = cropping;
         }
     }
  
     render () {
-        super.render();
+        //super.render();
+        this.triggerMethod('before:render');
         
-        if (this.ui['image'] == null) {
-            this.undelegateEvents();
-            let image = document.createElement('img');
+        this.undelegateEvents();
+        
+        let image = this.el.querySelector('img');
+        
+        if (image == null) {
+            image = document.createElement('img');
             this.el.appendChild(image);
-            this.ui['image'] = image;
-            this.delegateEvents();
         }
         
-        return this;  
+        this.delegateEvents();
+        this.triggerMethod('render');
+        
+        return this;
+       
     }
     
     destroy() {

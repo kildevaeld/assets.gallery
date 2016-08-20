@@ -1359,7 +1359,6 @@
 .assets-button {
   border: 1px solid #ccc;
   background-color: #eee;
-  -webkit-border-radius: 5px;
   border-radius: 5px;
   padding: 5px;
   font-size: 12px;

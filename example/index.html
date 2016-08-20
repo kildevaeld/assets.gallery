@@ -21,13 +21,30 @@
 
 
         var preview = new Assets.CropPreView({
-            el: main
+            el: main,
+            aspectRatio: 3 / 2
         });
 
         var view = new Assets.CropView({
             aspectRatio: 3 / 2,
             el: main,
-            preview: preview
+            previewView: preview,
+            movable: true,
+            responsive: false,
+            modal: true,
+            guides: true,
+            highlight: true,
+            background: true,
+            autoCrop: true,
+            autoCropArea: 0.8,
+            center: true,
+            rotatable: false,
+            scalable: false,
+            zoomable: true,
+            zoomOnTouch: false,
+            zoomOnWheel: true,
+            cropBoxMovable: true,
+            toggleDragModeOnDblclick: true
         });
         //main.appendChild(view.render().el); 
         view.el.style.width = '300px';
@@ -45,6 +62,10 @@
         }, {
             url: '.'
         });
+        
+        view.on('crop', (crop) => {
+            console.log(crop)
+        })
 
         preview.render();
 

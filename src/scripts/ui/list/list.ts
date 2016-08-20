@@ -23,7 +23,7 @@ export const AssetsEmptyView = View.extend({
     childView: AssetsListItemView,
     emptyView: AssetsEmptyView,
     events: {
-        'scroll': '_onSroll'
+        scroll: '_onSroll'
     }
 })
 export class AssetsListView extends CollectionView<HTMLDivElement> {
@@ -135,8 +135,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
         }
         this.index = index;
         let el = this.el;
-        
-        
+
         if (el.scrollTop < (el.scrollHeight - el.clientHeight) - el.clientHeight) {
 
         } else if (this.collection.hasNext()) {

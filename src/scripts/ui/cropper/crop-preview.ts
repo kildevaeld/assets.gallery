@@ -1,20 +1,22 @@
 
-import {View, attributes} from 'views';
+import {View, attributes, ViewOptions} from 'views';
 import {ICropping} from './interfaces';
+import {getCropping, getImageSize} from '../utils';
+
+export interface CropPreViewOptions extends ViewOptions {
+    aspectRatio?: number;
+}
 
 @attributes({
     className: 'assets cropping-preview',
     ui: {
         image: 'img'
-    },
-    events: {
-        'onload @ui.image': '_onImageLoad'
     }
 })
 export class CropPreView extends View<HTMLDivElement> {
     protected _cropping: ICropping;
     private size: { width: number; height: number; };
-
+    options: CropPreViewOptions
     set cropping(cropping: ICropping) {
         this._cropping = cropping;
         this.update();
@@ -23,76 +25,81 @@ export class CropPreView extends View<HTMLDivElement> {
     get cropping() {
         return this._cropping;
     }
+    
+    constructor(options:CropPreViewOptions = {}) {
+        super(options);
+        this.options = options;
+    }
 
     render() {
-        super.render();
 
-        if (this.ui['image'] == null) {
-            this.undelegateEvents();
-            let image = document.createElement('img');
+        this.triggerMethod('before:render');
+        
+        this.undelegateEvents();
+        
+        let image = <HTMLImageElement>this.el.querySelector('img');
+        
+        if (image == null) {
+            image = document.createElement('img');
             this.el.appendChild(image);
-            this.ui['image'] = image;
-            this.delegateEvents();
-
-        }
-
-        let image: any = this.ui['image'];
-        if (image.src !== '') {
-            this.size = {
-                width: image.naturalWidth,
-                height: image.naturalHeight
-            };
         }
         
-        image.style.maxHeight = '';
-        image.style.maxWidth = '';
+        this.delegateEvents();
+        this.triggerMethod('render');
+        
+        if (image.src !== '') {
+            this.update();
+        }
 
         return this;
     }
 
     update() {
-        if (this._cropping == null || this.ui['image'] == null) return this;
-
-        let img = this.ui['image'];
-        let el = this.el;
-
-        let cropping = this._cropping;
-
-        let cw = el.clientWidth,
-            ch = el.clientHeight,
-            rx = cw / cropping.width,
-            ry = ch / cropping.height;
-        let width = 0, height = 0;
-
-        if (this.size) {
-            width = this.size.width;
-            height = this.size.height;
-        }
-
-        let e = {
-            width: Math.round(rx * width) + 'px',
-            height: Math.round(ry * height) + 'px',
-            marginLeft: '-' + Math.round(rx * cropping.x) + 'px',
-            marginTop: '-' + Math.round(ry * cropping.y) + 'px'
-        }
-       
+        this.triggerMethod('before:update');
         
-        for (let key in e) {
-            (<any>img).style[key] = e[key];
-        }
+        var img = <HTMLImageElement>this.ui['image'];
         
-        this.trigger('update');
+        return getImageSize(img)
+            .then(size => {
+
+                if (this.ui['image'] == null) return this;
+                
+                
+                let el = this.el;
+
+                if (this._cropping == null) {
+                    if (this.options.aspectRatio == null) {
+                        return this;
+                    }
+                    
+                    this._cropping = getCropping(size, this.options.aspectRatio);
+                   
+                }
+
+                let cropping = this._cropping;
+
+                let cw = el.clientWidth,
+                    ch = el.clientHeight,
+                    rx = cw / cropping.width,
+                    ry = ch / cropping.height;
+                let width = size.width, height = size.height;
+
+                let e = {
+                    width: Math.round(rx * width) + 'px',
+                    height: Math.round(ry * height) + 'px',
+                    marginLeft: '-' + Math.round(rx * cropping.x) + 'px',
+                    marginTop: '-' + Math.round(ry * cropping.y) + 'px'
+                }
+
+                for (let key in e) {
+                    (<any>img).style[key] = e[key];
+                }
+
+                this.triggerMethod('update');
+            });
 
     }
 
-
-    private _onImageLoad() {
-        let el: any = this.ui['image'];
-        this.size = {
-            width: el.naturalWidth || el.width,
-            height: el.naturalHeight || el.height
-        };
-        this.trigger('onload', this.size);
-    }
+    
 
 }

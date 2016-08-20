@@ -27,7 +27,8 @@ export interface GalleryViewOptions extends ViewOptions {
     tagName: 'div',
     ui: {
         button: '.upload-button',
-        search : ".assets-search-input" },
+        //search : ".assets-search-input" 
+    },
     events: {
         'change @ui.search': '_onSearch'
     }

@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es5",
+    "target": "es6",
     "module": "commonjs",
     "isolatedModules": false,
     "experimentalDecorators": true,
@@ -11,8 +11,9 @@
     "noLib": false,
     "preserveConstEnums": true,
     "suppressImplicitAnyIndexErrors": true,
-    "outDir": "./src/dist",
-    "allowSyntheticDefaultImports": true
+    "outDir": "./lib",
+    "allowSyntheticDefaultImports": true,
+    "rootDir": "src/scripts"
   },
   "filesGlob": [
     "./src/**/*.ts",
@@ -20,11 +21,11 @@
     "!./node_modules/**/*.ts"
   ],
   "files": [
+    "src/scripts/client.ts",
     "src/scripts/fileuploader.ts",
     "src/scripts/index.ts",
     "src/scripts/interface.ts",
     "src/scripts/utilities.ts",
-    "src/scripts/client.ts",
     "src/scripts/models/assets-collection.ts",
     "src/scripts/models/index.ts",
     "src/scripts/ui/assets-preview.ts",
@@ -46,6 +47,7 @@
     "src/scripts/ui/preview-handlers/audio-preview.ts",
     "src/scripts/ui/preview-handlers/image-preview.ts",
     "src/scripts/ui/preview-handlers/index.ts",
-    "src/scripts/ui/preview-handlers/video-preview.ts"
+    "src/scripts/ui/preview-handlers/video-preview.ts",
+    "./typings/index.d.ts"
   ]
 }

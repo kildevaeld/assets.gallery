@@ -1,5 +1,8 @@
 {
   "ambientDependencies": {
     "cropperjs": "registry:dt/cropperjs#0.0.0+20160403142802"
+  },
+  "globalDependencies": {
+    "cropperjs": "registry:dt/cropperjs#0.0.0+20160724062638"
   }
 }

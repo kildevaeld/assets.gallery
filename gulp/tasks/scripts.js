@@ -1,40 +1,52 @@
 'use strict';
 
 const gulp = require('gulp'),
-    webpack = require('gulp-webpack'),
-    tsc = require('gulp-typescript'),
-	merge = require('merge2');
+  webpack = require('gulp-webpack'),
+  tsc = require('gulp-typescript'),
+  merge = require('merge2');
 
 const project = tsc.createProject('./tsconfig.json', {
-    typescript: require('typescript')
+  typescript: require('typescript')
 });
 
 gulp.task('build:typescript', function () {
 
   let result = project.src()
-  .pipe(tsc(project));
+    .pipe(tsc(project));
 
-	return merge([
-		result.js.pipe(gulp.dest('./lib')),
-		result.dts.pipe(gulp.dest('./lib'))
-	]);
+  return merge([
+    result.js.pipe(gulp.dest('./lib')),
+    result.dts.pipe(gulp.dest('./lib'))
+  ]);
 
 
 });
 
 gulp.task('build:javascript', ['build:typescript'], function () {
   return gulp.src('./lib/index.js')
-  .pipe(webpack({
-    output: {
-      library: "Assets",
-      libraryTarget: "umd",
-      filename: 'assets-gallery.js'
-    },
-    externals: {
-    	//views: 'views'
-    }
-  }))
-  .pipe(gulp.dest('dist/js'));
+    .pipe(webpack({
+      output: {
+        library: "Assets",
+        libraryTarget: "umd",
+        filename: 'assets-gallery.js'
+      },
+      module: {
+        loaders: [
+          {
+            test: /\.jsx?$/,
+            exclude: /(node_modules)/,
+            loader: 'babel',
+            query: {
+              presets: ['es2015']
+            }
+          }
+        ]
+      },
+      externals: {
+        //views: 'views'
+      }
+    }))
+    .pipe(gulp.dest('dist/js'));
 });
 
 var fs = require('fs');
@@ -48,11 +60,13 @@ gulp.task('addfiles', (done) => {
       var len = file.length
       return file.substr(len - 3) === '.ts' && file.substr(len - 5) !== ".d.ts";
     }).map(function (file) {
-      return file.replace(process.cwd() +'/', '')
+      return file.replace(process.cwd() + '/', '')
     });
 
-    fs.writeFile('./tsconfig.json', JSON.stringify(tsconfig,null,2), function () {
-      console.log('%s files added',tsconfig.files.length);
+    tsconfig.files.push('./typings/index.d.ts')
+
+    fs.writeFile('./tsconfig.json', JSON.stringify(tsconfig, null, 2), function () {
+      console.log('%s files added', tsconfig.files.length);
       done();
     });
   })
