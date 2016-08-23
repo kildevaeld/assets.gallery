@@ -1,4 +1,4 @@
-import FileUploader from '../fileuploader'
+import {FileUploader} from '../fileuploader'
 import {ViewOptions, View, attributes} from 'views'
 //import {utils} from 'views/lib/utils'
 import * as utils from 'utilities';

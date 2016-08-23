@@ -14,5 +14,4 @@ export interface ICropper {
     getCanvasData(): any;
     getContainerData(): any;
     destroy();
-    
 } 

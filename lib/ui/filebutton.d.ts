@@ -1,4 +1,4 @@
-import FileUploader from '../fileuploader';
+import { FileUploader } from '../fileuploader';
 import { ViewOptions, View } from 'views';
 export interface IProgressView {
     show(): any;

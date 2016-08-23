@@ -22,7 +22,7 @@ export interface FileUploadProgress {
 
 
 
-export default class FileUploader extends EventEmitter {
+export class FileUploader extends EventEmitter {
     options: FileUploaderOptions
     constructor(options: FileUploaderOptions) {
         super()

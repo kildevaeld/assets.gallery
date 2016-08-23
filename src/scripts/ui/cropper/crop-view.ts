@@ -22,7 +22,7 @@ export interface CropViewOptions extends ViewOptions, cropperjs.CropperOptions {
     }
 })
 export class CropView extends View<HTMLDivElement> {
-   
+   model: AssetsModel;
     private _cropper: ICropper;
     protected _cropping: ICropping;
     options: CropViewOptions;

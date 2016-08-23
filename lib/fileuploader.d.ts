@@ -12,7 +12,7 @@ export declare type FileUploadResult = any;
 export interface FileUploadProgress {
     (progress: number, total: number): any;
 }
-export default class FileUploader extends EventEmitter {
+export declare class FileUploader extends EventEmitter {
     options: FileUploaderOptions;
     constructor(options: FileUploaderOptions);
     upload(file: File, progressFn?: FileUploadProgress, attributes?: Object): utils.IPromise<Object>;

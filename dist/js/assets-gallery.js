@@ -3656,8 +3656,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    return FileUploader;
 	}(eventsjs_1.EventEmitter);
 
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = FileUploader;
+	exports.FileUploader = FileUploader;
 	function formatResponse(response) {
 	    var ret = null;
 	    try {
@@ -5627,7 +5626,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        var _this3 = _possibleConstructorReturn(this, Object.getPrototypeOf(UploadButton).call(this, options));
 
 	        utils.extend(_this3, utils.pick(options, ['errorView', 'progressView']));
-	        _this3.uploader = options.uploader || new fileuploader_1.default(options);
+	        _this3.uploader = options.uploader || new fileuploader_1.FileUploader(options);
 	        _this3.options = options;
 	        return _this3;
 	    }
