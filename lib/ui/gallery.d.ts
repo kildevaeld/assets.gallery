@@ -1,7 +1,7 @@
 import { ViewOptions, LayoutView } from 'views';
 import { AssetsListView } from './list';
 import { AssetsPreview } from './assets-preview';
-import { AssetsCollection, AssetsModel } from '../models';
+import { AssetsCollection, AssetsModel } from '../models/index';
 import { AssetsClient } from '../client';
 export interface GalleryViewOptions extends ViewOptions {
     uploadButton?: boolean;

@@ -1,5 +1,5 @@
 import {LayoutView, View, ViewOptions, events, attributes} from 'views';
-import {IDataView} from 'views/lib/types';
+import {IDataView} from 'views';
 import {truncate, humanFileSize} from '../utilities';
 import * as html from 'orange/browser';
 import {AssetsModel} from '../models';

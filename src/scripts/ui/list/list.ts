@@ -4,7 +4,7 @@ import {CollectionView, CollectionViewOptions, View, attributes} from 'views';
 import * as html from 'utilities/lib/html';
 import {bind} from 'utilities';
 import {AssetsListItemView} from './list-item';
-import {AssetsCollection} from '../../models';
+import {AssetsCollection} from '../../models/index';
 const Blazy = require('blazy');
 
 export interface AssetsListOptions extends CollectionViewOptions {

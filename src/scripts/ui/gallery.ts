@@ -2,7 +2,7 @@
 import {BaseObject, ViewOptions, LayoutView, CollectionView, attributes} from 'views';
 import {AssetsListView} from './list';
 import {AssetsPreview} from './assets-preview';
-import {AssetsCollection, AssetsModel} from '../models';
+import {AssetsCollection, AssetsModel} from '../models/index';
 import {UploadButton} from './filebutton';
 import * as utils from 'orange/browser';
 import templates from './templates';

@@ -43,10 +43,11 @@
     "registry": "github",
     "format": "cjs",
     "dependencies": {
-      "blazy": "npm:blazy@1.6.2",
-      "collection": "github:kildevaeld/collectionjs",
-      "cropperjs": "npm:cropperjs@0.7.2",
-      "views": "github:kildevaeld/views"
+      "blazy": "npm:blazy@^1.6.2",
+      "collection": "github:kildevaeld/collectionjs@master",
+      "cropperjs": "npm:cropperjs@^0.7.2",
+      "views": "github:kildevaeld/views@master",
+      "orange": "github:kildevaeld/orange@master"
     }
   }
 }

@@ -8763,7 +8763,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var eventsjs_1 = __webpack_require__(7);
 	var utilities_1 = __webpack_require__(27);
-	var models_1 = __webpack_require__(39);
+	var index_1 = __webpack_require__(39);
 	var utilities_2 = __webpack_require__(50);
 	var interface_1 = __webpack_require__(38);
 
@@ -8787,14 +8787,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _createClass(AssetsClient, [{
 	        key: 'toModel',
 	        value: function toModel(attr) {
-	            return new models_1.AssetsModel(attr, {
+	            return new index_1.AssetsModel(attr, {
 	                url: this.url
 	            });
 	        }
 	    }, {
 	        key: 'getCollection',
 	        value: function getCollection() {
-	            return new models_1.AssetsCollection(this);
+	            return new index_1.AssetsCollection(this);
 	        }
 	    }, {
 	        key: 'getById',
@@ -8805,7 +8805,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                id: id
 	            }).json().then(function (value) {
 	                if (!value.isValid) return null;
-	                return new models_1.AssetsModel(value.body, {
+	                return new index_1.AssetsModel(value.body, {
 	                    url: _this2.url
 	                });
 	            });
@@ -8821,7 +8821,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var url = utilities_2.normalizeURL(this.url, path);
 	            return utilities_1.request.get(url).json().then(function (value) {
 	                if (!value.isValid) return null;
-	                return new models_1.AssetsModel(value.body, {
+	                return new index_1.AssetsModel(value.body, {
 	                    url: _this3.url
 	                });
 	            });

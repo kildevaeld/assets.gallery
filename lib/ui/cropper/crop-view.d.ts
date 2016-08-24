@@ -1,6 +1,6 @@
 import { View, ViewOptions } from 'views';
 import { ICropper, ICropping } from './interfaces';
-import { AssetsModel } from '../../models';
+import { AssetsModel } from '../../models/index';
 import { CropPreView } from './crop-preview';
 export interface CropViewOptions extends ViewOptions, cropperjs.CropperOptions {
     resize: boolean;

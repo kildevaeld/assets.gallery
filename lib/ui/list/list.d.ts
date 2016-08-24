@@ -1,5 +1,5 @@
 import { CollectionView, CollectionViewOptions } from 'views';
-import { AssetsCollection } from '../../models';
+import { AssetsCollection } from '../../models/index';
 export interface AssetsListOptions extends CollectionViewOptions {
     deleteable?: boolean;
 }

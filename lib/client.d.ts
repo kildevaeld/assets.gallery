@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventsjs';
 import { IPromise } from 'utilities';
-import { AssetsCollection, AssetsModel } from './models';
+import { AssetsCollection, AssetsModel } from './models/index';
 export interface AssetsClientOptions {
     url?: string;
 }

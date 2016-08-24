@@ -1,5 +1,5 @@
 import { LayoutView, ViewOptions } from 'views';
-import { IDataView } from 'views/lib/types';
+import { IDataView } from 'views';
 import { AssetsModel } from '../models';
 export interface PreviewInfoOptions extends ViewOptions {
 }

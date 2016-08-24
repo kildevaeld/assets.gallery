@@ -1,7 +1,7 @@
 import {View, ViewOptions ,attributes} from 'views';
 import * as Cropper from 'cropperjs';
 import {ICropper, ICropping} from './interfaces';
-import {AssetsModel} from '../../models';
+import {AssetsModel} from '../../models/index';
 import {CropPreView} from './crop-preview';
 import {getCropping, getImageSize} from '../utils';
 import {extend} from 'orange';

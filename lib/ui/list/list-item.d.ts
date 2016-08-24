@@ -1,5 +1,5 @@
 import { View } from 'views';
-import { AssetsModel } from '../../models';
+import { AssetsModel } from '../../models/index';
 export declare class AssetsListItemView extends View<HTMLDivElement> {
     model: AssetsModel;
     onRender(): void;
