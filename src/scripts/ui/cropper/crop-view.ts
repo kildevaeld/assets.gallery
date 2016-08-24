@@ -4,7 +4,7 @@ import {ICropper, ICropping} from './interfaces';
 import {AssetsModel} from '../../models';
 import {CropPreView} from './crop-preview';
 import {getCropping, getImageSize} from '../utils';
-import {extend} from 'utilities';
+import {extend} from 'orange';
 
 function isFunction(a:any): a is Function {
     return (typeof a === 'function');

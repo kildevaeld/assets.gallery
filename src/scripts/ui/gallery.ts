@@ -4,7 +4,7 @@ import {AssetsListView} from './list';
 import {AssetsPreview} from './assets-preview';
 import {AssetsCollection, AssetsModel} from '../models';
 import {UploadButton} from './filebutton';
-import * as utils from 'utilities';
+import * as utils from 'orange/browser';
 import templates from './templates';
 
 import {AssetsClient} from '../client';
@@ -85,7 +85,9 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
 
         this.listenTo(this._listView, 'selected', this._onItemSelect);
         this.listenTo(this._listView, 'remove', this._onItemRemove)
-        
+        this.listenTo(this._listView, 'dblclick',() => {
+            this.trigger('dblclick');
+        });
    
        
     }

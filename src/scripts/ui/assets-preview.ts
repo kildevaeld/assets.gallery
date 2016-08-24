@@ -1,7 +1,7 @@
 import {LayoutView, View, ViewOptions, events, attributes} from 'views';
 import {IDataView} from 'views/lib/types';
 import {truncate, humanFileSize} from '../utilities';
-import * as html from 'utilities/lib/html';
+import * as html from 'orange/browser';
 import {AssetsModel} from '../models';
 import {Thumbnailer, MimeList} from './thumbnailer';
 import templates from './templates';

@@ -4,6 +4,7 @@ import {extend, request, IPromise, Promise} from 'utilities';
 import {AssetsCollection, AssetsModel, IAsset} from './models'
 import {normalizeURL} from './utilities';
 import {HttpError} from './interface';
+
 export interface AssetsClientOptions {
     url?: string;
 }

@@ -57,7 +57,8 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
             this.trigger('selected', view, model);
         });
 
-        this.listenTo(this, 'childview:dbclick', function (view, model) {
+        this.listenTo(this, 'childview:dblclick', function (view, model) {
+            
             if (this._current) html.removeClass(this._current.el, 'active');
             this._current = view
 

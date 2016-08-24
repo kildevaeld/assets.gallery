@@ -1,6 +1,6 @@
 {
   "name": "assets.gallery",
-  "version": "0.2.6",
+  "version": "0.2.7",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -27,6 +27,8 @@
     "sprity-css": "^1.0.2"
   },
   "dependencies": {
+    "babel-loader": "^6.2.5",
+    "babel-preset-es2015": "^6.13.2",
     "blazy": "^1.6.2",
     "collection": "git+https://github.com/kildevaeld/collectionjs.git",
     "cropperjs": "^0.7.2",

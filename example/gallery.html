@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <link rel="stylesheet" type="text/css" href="../dist/css/assets-gallery.css">
+        <script src="../dist/js/assets-gallery.js"></script>
+        <meta charset="utf8">
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            #gallery {
+                padding: 10px;
+            }
+            .assets-gallery {
+                font-family: 'HelveticaNeue', Arial, Helvetica, sans-serif;
+                height:100vh;
+                
+            }
+            .gallery-toolbar {
+                background-color: #eee;
+            }
+            /*.gallery {
+                font-family: 'HelveticaNeue';
+                width: 700px;
+                height: 300px;
+            }
+            .gallery-list {
+                width: 55%;
+                height: 100%;
+                float: left;
+            }
+            .gallery-preview {
+                width: 45%;
+                height: 100%;
+                float:left;
+            }
+            .assets-list-item {
+                font-size: 11px;
+                font-weight: 500;
+            }*/
+        </style>
+    </head>
+    
+    <body>
+        <div id="gallery"></div>
+        
+        <script>
+            "use strict";
+            
+            var client = Assets.createClient({
+                url: 'http://localhost:5000'
+            });
+            
+            var gallery = new Assets.GalleryView(client, {
+                uploadButton: true,
+                deleteable: true
+            });
+            
+            var container = document.getElementById('gallery');
+            gallery.render().appendTo(container);
+            
+            gallery.collection.fetch();
+            
+        </script>
+    </body>
+</html>
