@@ -2,8 +2,8 @@ import {EventEmitter} from 'eventsjs';
 import * as views from 'views';
 //import './preview-handlers';
 export * from './fileuploader'
-export * from './models'
-export * from './ui';
+export * from './models/index'
+export * from './ui/index';
 export * from './client';
 
 export class View<T extends HTMLElement> extends views.View<T> {
