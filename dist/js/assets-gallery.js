@@ -8591,7 +8591,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
-	var list_1 = __webpack_require__(58);
+	var index_1 = __webpack_require__(58);
 	var assets_preview_1 = __webpack_require__(66);
 	var filebutton_1 = __webpack_require__(57);
 	var utils = __webpack_require__(16);
@@ -8615,7 +8615,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _this._options = options;
 	        _this._client = client;
 	        _this.collection = client.getCollection();
-	        _this._listView = new list_1.AssetsListView({
+	        _this._listView = new index_1.AssetsListView({
 	            collection: _this.collection,
 	            deleteable: true
 	        });

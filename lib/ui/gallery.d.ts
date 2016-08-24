@@ -1,5 +1,5 @@
 import { ViewOptions, LayoutView } from 'views';
-import { AssetsListView } from './list';
+import { AssetsListView } from './list/index';
 import { AssetsPreview } from './assets-preview';
 import { AssetsCollection, AssetsModel } from '../models/index';
 import { AssetsClient } from '../client';
