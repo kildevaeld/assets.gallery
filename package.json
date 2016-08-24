@@ -45,7 +45,7 @@
     "dependencies": {
       "blazy": "npm:blazy@1.6.2",
       "collection": "github:kildevaeld/collectionjs",
-      "cropperjs": "npm:0.7.2",
+      "cropperjs": "npm:cropperjs@0.7.2",
       "views": "github:kildevaeld/views"
     }
   }
