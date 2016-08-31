@@ -9011,6 +9011,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var Cropper = __webpack_require__(73);
 	var utils_1 = __webpack_require__(60);
 	var orange_1 = __webpack_require__(8);
+	var emptyImage = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 	function isFunction(a) {
 	    return typeof a === 'function';
 	}
@@ -9036,7 +9037,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (this.ui['image'] == null) return this;
 	            var image = this.ui['image'];
 	            if (model == null) {
-	                image.src = "";
+	                image.src = emptyImage;
 	                if (this.model) this.stopListening(this.model);
 	                this._model = model;
 	                return;

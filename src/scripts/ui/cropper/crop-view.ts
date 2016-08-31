@@ -6,6 +6,9 @@ import {CropPreView} from './crop-preview';
 import {getCropping, getImageSize} from '../utils';
 import {extend} from 'orange';
 
+
+const emptyImage = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
+
 function isFunction(a:any): a is Function {
     return (typeof a === 'function');
 }
@@ -50,7 +53,7 @@ export class CropView extends View<HTMLDivElement> {
         let image = <HTMLImageElement>this.ui['image'];
         
         if (model == null) {
-            image.src = "";
+            image.src = emptyImage;
             if (this.model) this.stopListening(this.model);
             this._model = model;
             return;
