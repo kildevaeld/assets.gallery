@@ -8591,7 +8591,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
 	var views_1 = __webpack_require__(1);
-	var list_1 = __webpack_require__(58);
+	var index_1 = __webpack_require__(58);
 	var assets_preview_1 = __webpack_require__(66);
 	var filebutton_1 = __webpack_require__(57);
 	var utils = __webpack_require__(16);
@@ -8615,7 +8615,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        _this._options = options;
 	        _this._client = client;
 	        _this.collection = client.getCollection();
-	        _this._listView = new list_1.AssetsListView({
+	        _this._listView = new index_1.AssetsListView({
 	            collection: _this.collection,
 	            deleteable: true
 	        });
@@ -8763,7 +8763,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	var eventsjs_1 = __webpack_require__(7);
 	var utilities_1 = __webpack_require__(27);
-	var models_1 = __webpack_require__(39);
+	var index_1 = __webpack_require__(39);
 	var utilities_2 = __webpack_require__(50);
 	var interface_1 = __webpack_require__(38);
 
@@ -8787,14 +8787,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    _createClass(AssetsClient, [{
 	        key: 'toModel',
 	        value: function toModel(attr) {
-	            return new models_1.AssetsModel(attr, {
+	            return new index_1.AssetsModel(attr, {
 	                url: this.url
 	            });
 	        }
 	    }, {
 	        key: 'getCollection',
 	        value: function getCollection() {
-	            return new models_1.AssetsCollection(this);
+	            return new index_1.AssetsCollection(this);
 	        }
 	    }, {
 	        key: 'getById',
@@ -8805,7 +8805,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                id: id
 	            }).json().then(function (value) {
 	                if (!value.isValid) return null;
-	                return new models_1.AssetsModel(value.body, {
+	                return new index_1.AssetsModel(value.body, {
 	                    url: _this2.url
 	                });
 	            });
@@ -8821,7 +8821,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var url = utilities_2.normalizeURL(this.url, path);
 	            return utilities_1.request.get(url).json().then(function (value) {
 	                if (!value.isValid) return null;
-	                return new models_1.AssetsModel(value.body, {
+	                return new index_1.AssetsModel(value.body, {
 	                    url: _this3.url
 	                });
 	            });
@@ -9011,6 +9011,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	var Cropper = __webpack_require__(73);
 	var utils_1 = __webpack_require__(60);
 	var orange_1 = __webpack_require__(8);
+	var emptyImage = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 	function isFunction(a) {
 	    return typeof a === 'function';
 	}
@@ -9034,18 +9035,22 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var _this2 = this;
 
 	            if (this.ui['image'] == null) return this;
+	            this.deactivate();
 	            var image = this.ui['image'];
 	            if (model == null) {
-	                image.src = "";
+	                image.src = emptyImage;
 	                if (this.model) this.stopListening(this.model);
 	                this._model = model;
 	                return;
 	            }
 	            image.src = model.getURL();
 	            _get(Object.getPrototypeOf(CropView.prototype), "setModel", this).call(this, model);
-	            if (this.options.aspectRatio != null) {
+	            var cropping = model.get('meta.cropping');
+	            if (cropping) {
+	                this.cropping = cropping;
+	            } else if (this.options.aspectRatio != null) {
 	                utils_1.getImageSize(image).then(function (size) {
-	                    _this2._cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
+	                    _this2.cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
 	                }).catch(function (e) {
 	                    _this2.trigger('error', e);
 	                });
@@ -9064,9 +9069,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var opts = {
 	                crop: function crop(e) {
 	                    _this3._cropping = e.detail;
-	                    if (_this3.options.previewView) {
-	                        _this3.options.previewView.cropping = _this3._cropping;
-	                    }
 	                    _this3.triggerMethod('crop', e.detail);
 	                    if (isFunction(o.crop)) o.crop(e);
 	                },
@@ -9095,7 +9097,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: "deactivate",
 	        value: function deactivate() {
-	            if (this.cropper) {
+	            if (this._cropper) {
 	                this._cropper.destroy();
 	                this._cropper = void 0;
 	            }
@@ -9108,7 +9110,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }, {
 	        key: "onCrop",
-	        value: function onCrop(cropping) {}
+	        value: function onCrop(cropping) {
+	            if (this.options.previewView) {
+	                this.options.previewView.cropping = cropping;
+	            }
+	        }
 	    }, {
 	        key: "render",
 	        value: function render() {

@@ -16,6 +16,7 @@ function isFunction(a:any): a is Function {
 export interface CropViewOptions extends ViewOptions, cropperjs.CropperOptions {
     resize: boolean;
     previewView?: CropPreView;
+
 }
 
 @attributes({
@@ -55,7 +56,7 @@ export class CropView extends View<HTMLDivElement> {
         let image = <HTMLImageElement>this.ui['image'];
         
         if (model == null) {
-            image.src = emptyImage;
+            //image.src = emptyImage;
             if (this.model) this.stopListening(this.model);
             this._model = model;
             return;
@@ -71,6 +72,7 @@ export class CropView extends View<HTMLDivElement> {
             //this.triggerMethod('crop', cropping);
 
         } else if (this.options.aspectRatio != null) {
+
             getImageSize(image).then( size => {
                 this.cropping = getCropping(size, this.options.aspectRatio);
                

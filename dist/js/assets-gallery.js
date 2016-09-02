@@ -9038,7 +9038,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            this.deactivate();
 	            var image = this.ui['image'];
 	            if (model == null) {
-	                image.src = emptyImage;
 	                if (this.model) this.stopListening(this.model);
 	                this._model = model;
 	                return;
