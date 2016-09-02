@@ -9047,12 +9047,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	            _get(Object.getPrototypeOf(CropView.prototype), "setModel", this).call(this, model);
 	            var cropping = model.get('meta.cropping');
 	            if (cropping) {
-	                this._cropping = cropping;
-	                this.triggerMethod('crop', cropping);
+	                this.cropping = cropping;
 	            } else if (this.options.aspectRatio != null) {
 	                utils_1.getImageSize(image).then(function (size) {
-	                    _this2._cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
-	                    _this2.triggerMethod('crop', cropping);
+	                    _this2.cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
 	                }).catch(function (e) {
 	                    _this2.trigger('error', e);
 	                });
@@ -9099,7 +9097,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: "deactivate",
 	        value: function deactivate() {
-	            if (this.cropper) {
+	            if (this._cropper) {
 	                this._cropper.destroy();
 	                this._cropper = void 0;
 	            }
