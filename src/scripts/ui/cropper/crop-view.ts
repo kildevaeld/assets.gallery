@@ -49,6 +49,8 @@ export class CropView extends View<HTMLDivElement> {
     setModel (model) {
         
         if (this.ui['image'] == null) return this;
+
+        this.deactivate();
         
         let image = <HTMLImageElement>this.ui['image'];
         
@@ -62,10 +64,16 @@ export class CropView extends View<HTMLDivElement> {
         image.src = model.getURL();
         
         super.setModel(model);
-        
-        if (this.options.aspectRatio != null) {
+
+        let cropping = model.get('meta.cropping');
+        if (cropping) {
+            this._cropping = cropping;
+            this.triggerMethod('crop', cropping);
+
+        } else if (this.options.aspectRatio != null) {
             getImageSize(image).then( size => {
                 this._cropping = getCropping(size, this.options.aspectRatio);
+                this.triggerMethod('crop', cropping);
             }).catch(e => {
                 this.trigger('error', e);
             });     
@@ -90,9 +98,7 @@ export class CropView extends View<HTMLDivElement> {
             crop: e => {
                 this._cropping = e.detail;
 
-                if (this.options.previewView) {
-                    this.options.previewView.cropping = this._cropping;
-                }
+                
 
                 this.triggerMethod('crop', e.detail)
                 if (isFunction(o.crop)) o.crop(e);
@@ -136,9 +142,10 @@ export class CropView extends View<HTMLDivElement> {
     }
     
     onCrop (cropping: cropperjs.Data) {
-        /*if (this.options.previewView) {
+
+        if (this.options.previewView) {
             this.options.previewView.cropping = cropping;
-        }*/
+        }
     }
  
     render () {

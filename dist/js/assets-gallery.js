@@ -9035,6 +9035,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var _this2 = this;
 
 	            if (this.ui['image'] == null) return this;
+	            this.deactivate();
 	            var image = this.ui['image'];
 	            if (model == null) {
 	                image.src = emptyImage;
@@ -9044,9 +9045,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	            }
 	            image.src = model.getURL();
 	            _get(Object.getPrototypeOf(CropView.prototype), "setModel", this).call(this, model);
-	            if (this.options.aspectRatio != null) {
+	            var cropping = model.get('meta.cropping');
+	            if (cropping) {
+	                this._cropping = cropping;
+	                this.triggerMethod('crop', cropping);
+	            } else if (this.options.aspectRatio != null) {
 	                utils_1.getImageSize(image).then(function (size) {
 	                    _this2._cropping = utils_1.getCropping(size, _this2.options.aspectRatio);
+	                    _this2.triggerMethod('crop', cropping);
 	                }).catch(function (e) {
 	                    _this2.trigger('error', e);
 	                });
@@ -9065,9 +9071,6 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var opts = {
 	                crop: function crop(e) {
 	                    _this3._cropping = e.detail;
-	                    if (_this3.options.previewView) {
-	                        _this3.options.previewView.cropping = _this3._cropping;
-	                    }
 	                    _this3.triggerMethod('crop', e.detail);
 	                    if (isFunction(o.crop)) o.crop(e);
 	                },
@@ -9109,7 +9112,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        }
 	    }, {
 	        key: "onCrop",
-	        value: function onCrop(cropping) {}
+	        value: function onCrop(cropping) {
+	            if (this.options.previewView) {
+	                this.options.previewView.cropping = cropping;
+	            }
+	        }
 	    }, {
 	        key: "render",
 	        value: function render() {
