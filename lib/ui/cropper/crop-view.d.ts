@@ -13,12 +13,13 @@ export declare class CropView extends View<HTMLDivElement> {
     options: CropViewOptions;
     cropper: ICropper;
     cropping: ICropping;
-    setModel(model: any): this;
+    setModel(model: any): any;
     constructor(options?: CropViewOptions);
     activate(): this;
     deactivate(): this;
     toggle(): this;
     onCrop(cropping: cropperjs.Data): void;
     render(): this;
+    private _updateImage();
     destroy(): void;
 }

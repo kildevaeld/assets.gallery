@@ -4,7 +4,7 @@ import {ICropper, ICropping} from './interfaces';
 import {AssetsModel} from '../../models/index';
 import {CropPreView} from './crop-preview';
 import {getCropping, getImageSize} from '../utils';
-import {extend} from 'orange';
+import {extend, imageLoaded} from 'orange/browser';
 
 
 const emptyImage = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
@@ -55,16 +55,23 @@ export class CropView extends View<HTMLDivElement> {
         
         let image = <HTMLImageElement>this.ui['image'];
         
+        image.style.display = 'none';
         if (model == null) {
-            //image.src = emptyImage;
+            image.src = null;
             if (this.model) this.stopListening(this.model);
             this._model = model;
             return;
          }
+
+         super.setModel(model);
         
-        image.src = model.getURL();
+        //image.src = model.getURL();
         
-        super.setModel(model);
+        
+        return this._updateImage()
+        .then((loaded) => {
+            if (loaded) image.style.display = 'block';
+        });
 
         let cropping = model.get('meta.cropping');
         if (cropping) {
@@ -100,9 +107,6 @@ export class CropView extends View<HTMLDivElement> {
         let opts: cropperjs.CropperOptions =  {
             crop: e => {
                 this._cropping = e.detail;
-
-                
-
                 this.triggerMethod('crop', e.detail)
                 if (isFunction(o.crop)) o.crop(e);
            },
@@ -152,7 +156,7 @@ export class CropView extends View<HTMLDivElement> {
     }
  
     render () {
-        //super.render();
+        
         this.triggerMethod('before:render');
         
         this.undelegateEvents();
@@ -169,6 +173,23 @@ export class CropView extends View<HTMLDivElement> {
         
         return this;
        
+    }
+
+    private _updateImage() {
+        let img = <HTMLImageElement>this.el.querySelector('img');
+        if (this.model === null) {
+            img.src = emptyImage;
+            return Promise.resolve(false);
+        } 
+        this.triggerMethod('before:image');
+        img.src = this.model.getURL();
+        return imageLoaded(img).then( (loaded) => {
+            this.triggerMethod('image', loaded)
+            return loaded;
+        }).catch( e => {
+            this.triggerMethod('error', new Error('image not loaded'))
+            throw e;
+        })
     }
     
     destroy() {
