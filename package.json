@@ -36,7 +36,8 @@
     "collection": "git+https://github.com/kildevaeld/collectionjs.git",
     "cropperjs": "^0.7.2", 
     "views": "git+https://github.com/kildevaeld/views.git",
-    "orange": "git+https://github.com/kildevaeld/orange.git"
+    "orange": "git+https://github.com/kildevaeld/orange.git",
+    "orange.dom": "git+https://github.com/kildevaeld/orange.dom.git"
   },
   "typings": "lib/index",
   "jspm": {
@@ -47,7 +48,8 @@
       "collection": "github:kildevaeld/collectionjs@master",
       "cropperjs": "npm:cropperjs@^0.7.2",
       "views": "github:kildevaeld/views@master",
-      "orange": "github:kildevaeld/orange@master"
+      "orange": "github:kildevaeld/orange@master",
+      "orange.dom": "github:kildevaeld/orange.dom@master"
     }
   }
 }

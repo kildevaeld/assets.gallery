@@ -1,7 +1,7 @@
 
 import {View, attributes} from 'views';
 import {template} from '../utils';
-import * as utils from 'orange/browser';
+import * as utils from 'orange';
 import {getMimeIcon} from '../mime-types';
 import {AssetsModel} from '../../models/index'
 

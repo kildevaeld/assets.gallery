@@ -1,7 +1,7 @@
 import {LayoutView, View, ViewOptions, events, attributes} from 'views';
 import {IDataView} from 'views';
 import {truncate, humanFileSize} from '../utilities';
-import * as html from 'orange/browser';
+import {addClass} from 'orange.dom';
 import {AssetsModel} from '../models';
 import {Thumbnailer, MimeList} from './thumbnailer';
 import templates from './templates';
@@ -171,7 +171,7 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
         if (Handler) {
            
             let view = new Handler({ model: model })
-            html.addClass(view.el, 'preview')
+            addClass(view.el, 'preview')
             region.show(view)
 
         } else {
@@ -179,7 +179,7 @@ export class AssetsPreview extends LayoutView<HTMLDivElement> {
             let image = new Image();
 
             let div = document.createElement('div')
-            html.addClass(div, 'preview');
+            addClass(div, 'preview');
 
             region.el.innerHTML = ''
             region.el.appendChild(div);
