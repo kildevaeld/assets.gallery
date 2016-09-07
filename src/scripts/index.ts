@@ -1,4 +1,3 @@
-import 'whatwg-fetch';
 import {EventEmitter} from 'eventsjs';
 import * as views from 'views';
 //import './preview-handlers';

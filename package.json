@@ -1,6 +1,6 @@
 {
   "name": "assets.gallery",
-  "version": "0.2.14",
+  "version": "0.2.15",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -31,8 +31,7 @@
     "orange": "git+https://github.com/kildevaeld/orange.git",
     "orange.dom": "git+https://github.com/kildevaeld/orange.dom.git",
     "orange.request": "git+https://github.com/kildevaeld/orange.request.git",
-    "views": "git+https://github.com/kildevaeld/views.git",
-    "whatwg-fetch": "^1.0.0"
+    "views": "git+https://github.com/kildevaeld/views.git"
   },
   "typings": "lib/index",
   "jspm": {
