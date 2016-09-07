@@ -1,7 +1,7 @@
 declare var require: any;
 
 import {CollectionView, CollectionViewOptions, View, attributes} from 'views';
-import * as html from 'utilities/lib/html';
+import {removeClass, addClass} from 'orange.dom';
 import {bind} from 'utilities';
 import {AssetsListItemView} from './list-item';
 import {AssetsCollection} from '../../models/index';
@@ -50,19 +50,19 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
 
     private _initEvents () {
         this.listenTo(this, 'childview:click', function (view, model) {
-            if (this._current) html.removeClass(this._current.el, 'active');
+            if (this._current) removeClass(this._current.el, 'active');
             this._current = view
 
-            html.addClass(view.el, 'active')
+            addClass(view.el, 'active')
             this.trigger('selected', view, model);
         });
 
         this.listenTo(this, 'childview:dblclick', function (view, model) {
             
-            if (this._current) html.removeClass(this._current.el, 'active');
+            if (this._current) removeClass(this._current.el, 'active');
             this._current = view
 
-            html.addClass(view.el, 'active')
+            addClass(view.el, 'active')
             this.trigger('selected', view, model);
             this.trigger('dblclick', view, model);
         })
@@ -98,7 +98,7 @@ export class AssetsListView extends CollectionView<HTMLDivElement> {
             let loader = <HTMLElement>this.el.querySelector('.loader');
             if (loader) return;
             loader = document.createElement('div');
-            html.addClass(loader, 'loader');
+            addClass(loader, 'loader');
             this.el.appendChild(loader)
         });
 

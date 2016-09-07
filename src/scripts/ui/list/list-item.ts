@@ -1,10 +1,10 @@
 
 import {View, attributes} from 'views';
 import {template} from '../utils';
-import * as utils from 'orange';
 import {getMimeIcon} from '../mime-types';
 import {AssetsModel} from '../../models/index'
-
+import {truncate} from 'orange';
+import {addClass, removeClass} from 'orange.dom';
 
 @template('list-item')
 @attributes({
@@ -32,12 +32,12 @@ export class AssetsListItemView extends View<HTMLDivElement> {
 		let mime = model.get('mime') //.replace(/\//, '-')
        
 		//mime = MimeList[mime]
-        utils.removeClass(this.ui['mime'], 'mime-unknown')
+        removeClass(this.ui['mime'], 'mime-unknown')
         mime = getMimeIcon(mime.replace(/\//, '-'));
 
-		utils.addClass(this.ui['mime'], mime);
+		addClass(this.ui['mime'], mime);
 
-		this.ui['name'].textContent = utils.truncate(model.get('name')||model.get('filename'), 25)
+		this.ui['name'].textContent = truncate(model.get('name')||model.get('filename'), 25)
 
         let url = model.getURL();
 
