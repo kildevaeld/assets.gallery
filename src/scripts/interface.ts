@@ -1,4 +1,4 @@
-import {isString} from 'utilities';
+import {isString} from 'orange';
 
 export enum HttpMethod {
   GET, POST, PUT, DELETE

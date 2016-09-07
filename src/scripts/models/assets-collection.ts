@@ -2,7 +2,7 @@ import {RestCollectionOptions, RestModel, RestCollection, PaginatedCollection} f
 //import {request} from '../request';
 import {normalizeURL} from '../utilities';
 import {AssetsClient} from '../client';
-import * as utils from 'utilities';
+import {result} from 'orange';
 
 export interface IAsset {
     filename: string;
@@ -32,7 +32,7 @@ export class AssetsModel extends RestModel {
 
     getURL(): string {
         
-        let baseURL = utils.result(this, 'rootURL');
+        let baseURL = result(this, 'rootURL');
         if (this.collection) {
             baseURL = this.collection.getURL();    
         }

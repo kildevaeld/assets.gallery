@@ -1,6 +1,6 @@
 import { EventEmitter } from 'eventsjs';
-import * as utils from 'utilities';
-import { HttpMethod } from './interface';
+import { HttpMethod } from 'orange.request';
+import { IPromise } from 'orange';
 export interface FileUploaderOptions {
     url: string;
     method?: HttpMethod;
@@ -15,6 +15,6 @@ export interface FileUploadProgress {
 export declare class FileUploader extends EventEmitter {
     options: FileUploaderOptions;
     constructor(options: FileUploaderOptions);
-    upload(file: File, progressFn?: FileUploadProgress, attributes?: Object): utils.IPromise<Object>;
+    upload(file: File, progressFn?: FileUploadProgress, attributes?: Object): IPromise<Object>;
     validateFile(file: File): void;
 }

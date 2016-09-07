@@ -1,11 +1,9 @@
 
 import {EventEmitter} from 'eventsjs';
-//import {ajax} from './utilities';
-//import {Request} from './request';
-import * as utils from 'utilities';
-import {HttpMethod} from './interface';
-
-
+import {HttpMethod} from 'orange.request';
+import * as request from 'orange.request';
+import {extend, Promise, IPromise} from 'orange';
+import {HttpError} from './interface';
 export interface FileUploaderOptions {
     url: string
     method?: HttpMethod
@@ -26,19 +24,19 @@ export class FileUploader extends EventEmitter {
     options: FileUploaderOptions
     constructor(options: FileUploaderOptions) {
         super()
-        this.options = utils.extend({}, {
+        this.options = extend({}, {
           parameter: 'file',
           method: HttpMethod.POST,
           maxSize: 2048
         }, options)
     }
 
-    upload(file: File, progressFn?:FileUploadProgress, attributes?:Object): utils.IPromise<Object> {
+    upload(file: File, progressFn?:FileUploadProgress, attributes?:Object): IPromise<Object> {
 
         try {
           this.validateFile(file);
         } catch (e) {
-          return utils.Promise.reject(e)
+          return Promise.reject(e)
           //return Promise.reject<FileUploadResult>(e)
         }
 
@@ -54,7 +52,7 @@ export class FileUploader extends EventEmitter {
         });
 
         
-        return utils.request.post(this.options.url)
+        return request.post(this.options.url)
         .header({
             'Content-Type': file.type, 
         })
@@ -72,10 +70,10 @@ export class FileUploader extends EventEmitter {
         })
         .end<string>(file)
         .then( (res) => {
-            if (!res.isValid) {
-                throw new utils.HttpError(res.status, res.statusText, res.body);
+            if (!res.ok) {
+                throw new HttpError(res.status, res.statusText);
             }
-            return JSON.parse(res.body);
+            return res.json();
         })
 
 

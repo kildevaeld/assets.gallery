@@ -1,5 +1,5 @@
 import { EventEmitter } from 'eventsjs';
-import { IPromise } from 'utilities';
+import { IPromise } from 'orange';
 import { AssetsCollection, AssetsModel } from './models/index';
 export interface AssetsClientOptions {
     url?: string;

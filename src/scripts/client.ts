@@ -1,6 +1,7 @@
 
 import {EventEmitter} from 'eventsjs';
-import {extend, request, IPromise, Promise} from 'utilities';
+import {extend, IPromise, Promise} from 'orange';
+import * as request from 'orange.request';
 import {AssetsCollection, AssetsModel, IAsset} from './models/index'
 import {normalizeURL} from './utilities';
 import {HttpError} from './interface';
@@ -52,9 +53,8 @@ export class AssetsClient extends EventEmitter {
         return request.get(this.url)
         .params({
             id: id
-        }).json<IAsset>().then( value => {
-           if (!value.isValid) return null;
-           return new AssetsModel(value.body, {
+        }).json<IAsset>(null, true).then( value => {
+           return new AssetsModel(value, {
                url: this.url
            }); 
         });
@@ -67,9 +67,8 @@ export class AssetsClient extends EventEmitter {
         let url = normalizeURL(this.url, path);
         
         return request.get(url)
-        .json<IAsset>().then( value => {
-            if (!value.isValid) return null;
-            return new AssetsModel(value.body, {
+        .json<IAsset>(null, true).then( value => {
+            return new AssetsModel(value, {
                 url: this.url
             });   
         });

@@ -1,6 +1,6 @@
 {
   "name": "assets.gallery",
-  "version": "0.2.13",
+  "version": "0.2.14",
   "description": "",
   "main": "lib/index.js",
   "scripts": {
@@ -9,35 +9,30 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "babel-loader": "^6.2.4",
+    "babel-loader": "^6.2.5",
     "babel-plugin-transform-decorators-legacy": "^1.3.4",
-    "babel-preset-es2015": "^6.6.0",
-    "event-stream": "^3.3.2",
+    "babel-preset-es2015": "^6.13.2",
+    "event-stream": "^3.3.4",
     "gulp": "^3.9.1",
     "gulp-if": "^2.0.0",
     "gulp-rename": "^1.2.2",
-    "gulp-stylus": "^2.3.1",
-    "gulp-typescript": "^2.12.1",
-    "gulp-webpack": "^1.5.0",
-    "merge2": "^1.0.1",
-    "nib": "^1.1.0",
-    "recursive-readdir": "^1.3.0",
-    "requiredir": "^1.0.7",
-    
-    "babel-loader": "^6.2.5",
-    "babel-preset-es2015": "^6.13.2",
-    "event-stream": "^3.3.4",
     "gulp-stylus": "^2.5.0",
     "gulp-typescript": "^2.13.6",
-    "nib": "^1.1.2"
+    "gulp-webpack": "^1.5.0",
+    "merge2": "^1.0.1",
+    "nib": "^1.1.2",
+    "recursive-readdir": "^1.3.0",
+    "requiredir": "^1.0.7"
   },
-  "dependencies": {    
+  "dependencies": {
     "blazy": "^1.6.2",
     "collection": "git+https://github.com/kildevaeld/collectionjs.git",
-    "cropperjs": "^0.7.2", 
-    "views": "git+https://github.com/kildevaeld/views.git",
+    "cropperjs": "^0.7.2",
     "orange": "git+https://github.com/kildevaeld/orange.git",
-    "orange.dom": "git+https://github.com/kildevaeld/orange.dom.git"
+    "orange.dom": "git+https://github.com/kildevaeld/orange.dom.git",
+    "orange.request": "git+https://github.com/kildevaeld/orange.request.git",
+    "views": "git+https://github.com/kildevaeld/views.git",
+    "whatwg-fetch": "^1.0.0"
   },
   "typings": "lib/index",
   "jspm": {
@@ -49,7 +44,8 @@
       "cropperjs": "npm:cropperjs@^0.7.2",
       "views": "github:kildevaeld/views@master",
       "orange": "github:kildevaeld/orange@master",
-      "orange.dom": "github:kildevaeld/orange.dom@master"
+      "orange.dom": "github:kildevaeld/orange.dom@master",
+      "orange.request": "github:kildevaeld/orange.request@master"
     }
   }
 }

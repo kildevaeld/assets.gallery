@@ -5,6 +5,7 @@ import {AssetsPreview} from './assets-preview';
 import {AssetsCollection, AssetsModel} from '../models/index';
 import {UploadButton} from './filebutton';
 import * as utils from 'orange';
+import {transitionEnd} from 'orange.dom';
 import templates from './templates';
 
 import {AssetsClient} from '../client';
@@ -132,9 +133,9 @@ export class GalleryView extends LayoutView<HTMLDivElement> {
     private _onItemCreate(asset) {
         setTimeout(() => {
             let elm: HTMLElement = this.$('.upload-progress')[0];
-            utils.transitionEnd(elm, (e) => {
+            transitionEnd(elm, (e) => {
                 elm.style.width = '0';
-                utils.transitionEnd(elm, e => {
+                transitionEnd(elm, e => {
                     elm.style.opacity = '1'
                 }, 1000);
             }, 600);

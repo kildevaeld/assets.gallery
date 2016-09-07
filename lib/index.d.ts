@@ -1,3 +1,4 @@
+import 'whatwg-fetch';
 import * as views from 'views';
 export * from './fileuploader';
 export * from './models/index';

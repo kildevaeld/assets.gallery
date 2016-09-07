@@ -67,11 +67,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	    }
 	}
-	var views = __webpack_require__(1);
-	__export(__webpack_require__(23));
-	__export(__webpack_require__(36));
-	__export(__webpack_require__(48));
-	__export(__webpack_require__(68));
+	__webpack_require__(1);
+	var views = __webpack_require__(2);
+	__export(__webpack_require__(27));
+	__export(__webpack_require__(33));
+	__export(__webpack_require__(51));
+	__export(__webpack_require__(73));
 
 	var View = function (_views$View) {
 	    _inherits(View, _views$View);
@@ -86,7 +87,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}(views.View);
 
 	exports.View = View;
-	var client_2 = __webpack_require__(68);
+	var client_2 = __webpack_require__(73);
 	function createClient(options) {
 	    return new client_2.AssetsClient(options);
 	}
@@ -94,21 +95,460 @@ return /******/ (function(modules) { // webpackBootstrap
 
 /***/ },
 /* 1 */
+/***/ function(module, exports) {
+
+	(function(self) {
+	  'use strict';
+
+	  if (self.fetch) {
+	    return
+	  }
+
+	  var support = {
+	    searchParams: 'URLSearchParams' in self,
+	    iterable: 'Symbol' in self && 'iterator' in Symbol,
+	    blob: 'FileReader' in self && 'Blob' in self && (function() {
+	      try {
+	        new Blob()
+	        return true
+	      } catch(e) {
+	        return false
+	      }
+	    })(),
+	    formData: 'FormData' in self,
+	    arrayBuffer: 'ArrayBuffer' in self
+	  }
+
+	  function normalizeName(name) {
+	    if (typeof name !== 'string') {
+	      name = String(name)
+	    }
+	    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
+	      throw new TypeError('Invalid character in header field name')
+	    }
+	    return name.toLowerCase()
+	  }
+
+	  function normalizeValue(value) {
+	    if (typeof value !== 'string') {
+	      value = String(value)
+	    }
+	    return value
+	  }
+
+	  // Build a destructive iterator for the value list
+	  function iteratorFor(items) {
+	    var iterator = {
+	      next: function() {
+	        var value = items.shift()
+	        return {done: value === undefined, value: value}
+	      }
+	    }
+
+	    if (support.iterable) {
+	      iterator[Symbol.iterator] = function() {
+	        return iterator
+	      }
+	    }
+
+	    return iterator
+	  }
+
+	  function Headers(headers) {
+	    this.map = {}
+
+	    if (headers instanceof Headers) {
+	      headers.forEach(function(value, name) {
+	        this.append(name, value)
+	      }, this)
+
+	    } else if (headers) {
+	      Object.getOwnPropertyNames(headers).forEach(function(name) {
+	        this.append(name, headers[name])
+	      }, this)
+	    }
+	  }
+
+	  Headers.prototype.append = function(name, value) {
+	    name = normalizeName(name)
+	    value = normalizeValue(value)
+	    var list = this.map[name]
+	    if (!list) {
+	      list = []
+	      this.map[name] = list
+	    }
+	    list.push(value)
+	  }
+
+	  Headers.prototype['delete'] = function(name) {
+	    delete this.map[normalizeName(name)]
+	  }
+
+	  Headers.prototype.get = function(name) {
+	    var values = this.map[normalizeName(name)]
+	    return values ? values[0] : null
+	  }
+
+	  Headers.prototype.getAll = function(name) {
+	    return this.map[normalizeName(name)] || []
+	  }
+
+	  Headers.prototype.has = function(name) {
+	    return this.map.hasOwnProperty(normalizeName(name))
+	  }
+
+	  Headers.prototype.set = function(name, value) {
+	    this.map[normalizeName(name)] = [normalizeValue(value)]
+	  }
+
+	  Headers.prototype.forEach = function(callback, thisArg) {
+	    Object.getOwnPropertyNames(this.map).forEach(function(name) {
+	      this.map[name].forEach(function(value) {
+	        callback.call(thisArg, value, name, this)
+	      }, this)
+	    }, this)
+	  }
+
+	  Headers.prototype.keys = function() {
+	    var items = []
+	    this.forEach(function(value, name) { items.push(name) })
+	    return iteratorFor(items)
+	  }
+
+	  Headers.prototype.values = function() {
+	    var items = []
+	    this.forEach(function(value) { items.push(value) })
+	    return iteratorFor(items)
+	  }
+
+	  Headers.prototype.entries = function() {
+	    var items = []
+	    this.forEach(function(value, name) { items.push([name, value]) })
+	    return iteratorFor(items)
+	  }
+
+	  if (support.iterable) {
+	    Headers.prototype[Symbol.iterator] = Headers.prototype.entries
+	  }
+
+	  function consumed(body) {
+	    if (body.bodyUsed) {
+	      return Promise.reject(new TypeError('Already read'))
+	    }
+	    body.bodyUsed = true
+	  }
+
+	  function fileReaderReady(reader) {
+	    return new Promise(function(resolve, reject) {
+	      reader.onload = function() {
+	        resolve(reader.result)
+	      }
+	      reader.onerror = function() {
+	        reject(reader.error)
+	      }
+	    })
+	  }
+
+	  function readBlobAsArrayBuffer(blob) {
+	    var reader = new FileReader()
+	    reader.readAsArrayBuffer(blob)
+	    return fileReaderReady(reader)
+	  }
+
+	  function readBlobAsText(blob) {
+	    var reader = new FileReader()
+	    reader.readAsText(blob)
+	    return fileReaderReady(reader)
+	  }
+
+	  function Body() {
+	    this.bodyUsed = false
+
+	    this._initBody = function(body) {
+	      this._bodyInit = body
+	      if (typeof body === 'string') {
+	        this._bodyText = body
+	      } else if (support.blob && Blob.prototype.isPrototypeOf(body)) {
+	        this._bodyBlob = body
+	      } else if (support.formData && FormData.prototype.isPrototypeOf(body)) {
+	        this._bodyFormData = body
+	      } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
+	        this._bodyText = body.toString()
+	      } else if (!body) {
+	        this._bodyText = ''
+	      } else if (support.arrayBuffer && ArrayBuffer.prototype.isPrototypeOf(body)) {
+	        // Only support ArrayBuffers for POST method.
+	        // Receiving ArrayBuffers happens via Blobs, instead.
+	      } else {
+	        throw new Error('unsupported BodyInit type')
+	      }
+
+	      if (!this.headers.get('content-type')) {
+	        if (typeof body === 'string') {
+	          this.headers.set('content-type', 'text/plain;charset=UTF-8')
+	        } else if (this._bodyBlob && this._bodyBlob.type) {
+	          this.headers.set('content-type', this._bodyBlob.type)
+	        } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
+	          this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8')
+	        }
+	      }
+	    }
+
+	    if (support.blob) {
+	      this.blob = function() {
+	        var rejected = consumed(this)
+	        if (rejected) {
+	          return rejected
+	        }
+
+	        if (this._bodyBlob) {
+	          return Promise.resolve(this._bodyBlob)
+	        } else if (this._bodyFormData) {
+	          throw new Error('could not read FormData body as blob')
+	        } else {
+	          return Promise.resolve(new Blob([this._bodyText]))
+	        }
+	      }
+
+	      this.arrayBuffer = function() {
+	        return this.blob().then(readBlobAsArrayBuffer)
+	      }
+
+	      this.text = function() {
+	        var rejected = consumed(this)
+	        if (rejected) {
+	          return rejected
+	        }
+
+	        if (this._bodyBlob) {
+	          return readBlobAsText(this._bodyBlob)
+	        } else if (this._bodyFormData) {
+	          throw new Error('could not read FormData body as text')
+	        } else {
+	          return Promise.resolve(this._bodyText)
+	        }
+	      }
+	    } else {
+	      this.text = function() {
+	        var rejected = consumed(this)
+	        return rejected ? rejected : Promise.resolve(this._bodyText)
+	      }
+	    }
+
+	    if (support.formData) {
+	      this.formData = function() {
+	        return this.text().then(decode)
+	      }
+	    }
+
+	    this.json = function() {
+	      return this.text().then(JSON.parse)
+	    }
+
+	    return this
+	  }
+
+	  // HTTP methods whose capitalization should be normalized
+	  var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT']
+
+	  function normalizeMethod(method) {
+	    var upcased = method.toUpperCase()
+	    return (methods.indexOf(upcased) > -1) ? upcased : method
+	  }
+
+	  function Request(input, options) {
+	    options = options || {}
+	    var body = options.body
+	    if (Request.prototype.isPrototypeOf(input)) {
+	      if (input.bodyUsed) {
+	        throw new TypeError('Already read')
+	      }
+	      this.url = input.url
+	      this.credentials = input.credentials
+	      if (!options.headers) {
+	        this.headers = new Headers(input.headers)
+	      }
+	      this.method = input.method
+	      this.mode = input.mode
+	      if (!body) {
+	        body = input._bodyInit
+	        input.bodyUsed = true
+	      }
+	    } else {
+	      this.url = input
+	    }
+
+	    this.credentials = options.credentials || this.credentials || 'omit'
+	    if (options.headers || !this.headers) {
+	      this.headers = new Headers(options.headers)
+	    }
+	    this.method = normalizeMethod(options.method || this.method || 'GET')
+	    this.mode = options.mode || this.mode || null
+	    this.referrer = null
+
+	    if ((this.method === 'GET' || this.method === 'HEAD') && body) {
+	      throw new TypeError('Body not allowed for GET or HEAD requests')
+	    }
+	    this._initBody(body)
+	  }
+
+	  Request.prototype.clone = function() {
+	    return new Request(this)
+	  }
+
+	  function decode(body) {
+	    var form = new FormData()
+	    body.trim().split('&').forEach(function(bytes) {
+	      if (bytes) {
+	        var split = bytes.split('=')
+	        var name = split.shift().replace(/\+/g, ' ')
+	        var value = split.join('=').replace(/\+/g, ' ')
+	        form.append(decodeURIComponent(name), decodeURIComponent(value))
+	      }
+	    })
+	    return form
+	  }
+
+	  function headers(xhr) {
+	    var head = new Headers()
+	    var pairs = (xhr.getAllResponseHeaders() || '').trim().split('\n')
+	    pairs.forEach(function(header) {
+	      var split = header.trim().split(':')
+	      var key = split.shift().trim()
+	      var value = split.join(':').trim()
+	      head.append(key, value)
+	    })
+	    return head
+	  }
+
+	  Body.call(Request.prototype)
+
+	  function Response(bodyInit, options) {
+	    if (!options) {
+	      options = {}
+	    }
+
+	    this.type = 'default'
+	    this.status = options.status
+	    this.ok = this.status >= 200 && this.status < 300
+	    this.statusText = options.statusText
+	    this.headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers)
+	    this.url = options.url || ''
+	    this._initBody(bodyInit)
+	  }
+
+	  Body.call(Response.prototype)
+
+	  Response.prototype.clone = function() {
+	    return new Response(this._bodyInit, {
+	      status: this.status,
+	      statusText: this.statusText,
+	      headers: new Headers(this.headers),
+	      url: this.url
+	    })
+	  }
+
+	  Response.error = function() {
+	    var response = new Response(null, {status: 0, statusText: ''})
+	    response.type = 'error'
+	    return response
+	  }
+
+	  var redirectStatuses = [301, 302, 303, 307, 308]
+
+	  Response.redirect = function(url, status) {
+	    if (redirectStatuses.indexOf(status) === -1) {
+	      throw new RangeError('Invalid status code')
+	    }
+
+	    return new Response(null, {status: status, headers: {location: url}})
+	  }
+
+	  self.Headers = Headers
+	  self.Request = Request
+	  self.Response = Response
+
+	  self.fetch = function(input, init) {
+	    return new Promise(function(resolve, reject) {
+	      var request
+	      if (Request.prototype.isPrototypeOf(input) && !init) {
+	        request = input
+	      } else {
+	        request = new Request(input, init)
+	      }
+
+	      var xhr = new XMLHttpRequest()
+
+	      function responseURL() {
+	        if ('responseURL' in xhr) {
+	          return xhr.responseURL
+	        }
+
+	        // Avoid security warnings on getResponseHeader when not allowed by CORS
+	        if (/^X-Request-URL:/m.test(xhr.getAllResponseHeaders())) {
+	          return xhr.getResponseHeader('X-Request-URL')
+	        }
+
+	        return
+	      }
+
+	      xhr.onload = function() {
+	        var options = {
+	          status: xhr.status,
+	          statusText: xhr.statusText,
+	          headers: headers(xhr),
+	          url: responseURL()
+	        }
+	        var body = 'response' in xhr ? xhr.response : xhr.responseText
+	        resolve(new Response(body, options))
+	      }
+
+	      xhr.onerror = function() {
+	        reject(new TypeError('Network request failed'))
+	      }
+
+	      xhr.ontimeout = function() {
+	        reject(new TypeError('Network request failed'))
+	      }
+
+	      xhr.open(request.method, request.url, true)
+
+	      if (request.credentials === 'include') {
+	        xhr.withCredentials = true
+	      }
+
+	      if ('responseType' in xhr && support.blob) {
+	        xhr.responseType = 'blob'
+	      }
+
+	      request.headers.forEach(function(value, name) {
+	        xhr.setRequestHeader(name, value)
+	      })
+
+	      xhr.send(typeof request._bodyInit === 'undefined' ? null : request._bodyInit)
+	    })
+	  }
+	  self.fetch.polyfill = true
+	})(typeof self !== 'undefined' ? self : this);
+
+
+/***/ },
+/* 2 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	function __export(m) {
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
-	var baseview_1 = __webpack_require__(2);
-	__export(__webpack_require__(6));
-	__export(__webpack_require__(2));
-	__export(__webpack_require__(17));
-	__export(__webpack_require__(18));
-	__export(__webpack_require__(19));
-	__export(__webpack_require__(20));
+	var baseview_1 = __webpack_require__(3);
+	__export(__webpack_require__(7));
+	__export(__webpack_require__(3));
 	__export(__webpack_require__(21));
 	__export(__webpack_require__(22));
+	__export(__webpack_require__(23));
+	__export(__webpack_require__(24));
+	__export(__webpack_require__(25));
+	__export(__webpack_require__(26));
 	exports.Version = '0.3.1';
 	function debug(debug) {
 	    if (window.localStorage) {
@@ -124,7 +564,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 2 */
+/* 3 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -133,11 +573,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Debug = __webpack_require__(3);
+	var Debug = __webpack_require__(4);
 	var debug = Debug('views:baseview');
-	var object_1 = __webpack_require__(6);
-	var utils = __webpack_require__(8);
-	var util_1 = __webpack_require__(16);
+	var object_1 = __webpack_require__(7);
+	var orange_1 = __webpack_require__(9);
+	var orange_dom_1 = __webpack_require__(17);
+	var util_1 = __webpack_require__(20);
 	var paddedLt = /^\s*</;
 	var unbubblebles = 'focus blur change'.split(' ');
 	var viewOptions = ['el', 'id', 'attributes', 'className', 'tagName', 'events', 'triggers', 'ui'];
@@ -151,8 +592,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function BaseView(options) {
 	        if (options === void 0) { options = {}; }
 	        _super.call(this);
-	        this._cid = utils.uniqueId('view');
-	        utils.extend(this, utils.pick(options, viewOptions));
+	        this._cid = orange_1.uniqueId('view');
+	        orange_1.extend(this, orange_1.pick(options, viewOptions));
 	        this._domEvents = [];
 	        if (this.el == null) {
 	            this._ensureElement();
@@ -175,14 +616,14 @@ return /******/ (function(modules) { // webpackBootstrap
 	    BaseView.prototype.delegateEvents = function (events) {
 	        var _this = this;
 	        this._bindUIElements();
-	        events = events || utils.result(this, 'events');
+	        events = events || orange_1.result(this, 'events');
 	        events = util_1.normalizeUIKeys(events, this._ui);
 	        var triggers = this._configureTriggers();
-	        events = utils.extend({}, events, triggers);
+	        events = orange_1.extend({}, events, triggers);
 	        debug('%s delegate events %j', this, events);
 	        if (!events)
 	            return this;
-	        //if (!(events || (events = utils.result(this, 'events')))) return this;
+	        //if (!(events || (events = result(this, 'events')))) return this;
 	        //this.undelegateEvents();
 	        var dels = [];
 	        for (var key in events) {
@@ -191,7 +632,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                method = this[method];
 	            var match = key.match(/^(\S+)\s*(.*)$/);
 	            // Set delegates immediately and defer event on this.el
-	            var boundFn = utils.bind(method, this);
+	            var boundFn = orange_1.bind(method, this);
 	            if (match[2]) {
 	                this.delegate(match[1], match[2], boundFn);
 	            }
@@ -211,7 +652,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (this.el) {
 	            for (var i = 0, len = this._domEvents.length; i < len; i++) {
 	                var item = this._domEvents[i];
-	                utils.removeEventListener(this.el, item.eventName, item.handler);
+	                orange_dom_1.removeEventListener(this.el, item.eventName, item.handler);
 	            }
 	            this._domEvents.length = 0;
 	        }
@@ -229,7 +670,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            if (e.delegateTarget)
 	                return;
 	            for (; node && node != root; node = node.parentNode) {
-	                if (utils.matches(node, selector)) {
+	                if (orange_dom_1.matches(node, selector)) {
 	                    e.delegateTarget = node;
 	                    listener(e);
 	                }
@@ -242,7 +683,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        /*jshint bitwise: false*/
 	        var useCap = !!~unbubblebles.indexOf(eventName) && selector != null;
 	        debug('%s delegate event %s ', this, eventName);
-	        utils.addEventListener(this.el, eventName, handler, useCap);
+	        orange_dom_1.addEventListener(this.el, eventName, handler, useCap);
 	        this._domEvents.push({ eventName: eventName, handler: handler, listener: listener, selector: selector });
 	        return handler;
 	    };
@@ -260,8 +701,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    (selector ? item.selector === selector : true);
 	                if (!match)
 	                    continue;
-	                utils.removeEventListener(this.el, item.eventName, item.handler);
-	                this._domEvents.splice(utils.indexOf(handlers, item), 1);
+	                orange_dom_1.removeEventListener(this.el, item.eventName, item.handler);
+	                this._domEvents.splice(orange_1.indexOf(handlers, item), 1);
 	            }
 	        }
 	        return this;
@@ -353,7 +794,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!this._ui) {
 	            this._ui = ui;
 	        }
-	        ui = utils.result(this, '_ui');
+	        ui = orange_1.result(this, '_ui');
 	        this.ui = {};
 	        Object.keys(ui).forEach(function (k) {
 	            var elm = _this.$(ui[k]);
@@ -407,7 +848,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    BaseView.prototype._buildViewTrigger = function (triggerDef) {
 	        if (typeof triggerDef === 'string')
 	            triggerDef = { event: triggerDef };
-	        var options = utils.extend({
+	        var options = orange_1.extend({
 	            preventDefault: true,
 	            stopPropagation: true
 	        }, triggerDef);
@@ -432,17 +873,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	    };
 	    BaseView.prototype._ensureElement = function () {
 	        if (!this.el) {
-	            var attrs = utils.extend({}, utils.result(this, 'attributes'));
+	            var attrs = orange_1.extend({}, orange_1.result(this, 'attributes'));
 	            if (this.id)
-	                attrs.id = utils.result(this, 'id');
+	                attrs.id = orange_1.result(this, 'id');
 	            if (this.className)
-	                attrs['class'] = utils.result(this, 'className');
-	            debug('%s created element: %s', this, utils.result(this, 'tagName') || 'div');
-	            this.setElement(this._createElement(utils.result(this, 'tagName') || 'div'), false);
+	                attrs['class'] = orange_1.result(this, 'className');
+	            debug('%s created element: %s', this, orange_1.result(this, 'tagName') || 'div');
+	            this.setElement(this._createElement(orange_1.result(this, 'tagName') || 'div'), false);
 	            this._setAttributes(attrs);
 	        }
 	        else {
-	            this.setElement(utils.result(this, 'el'), false);
+	            this.setElement(orange_1.result(this, 'el'), false);
 	        }
 	    };
 	    BaseView.prototype._removeElement = function () {
@@ -479,7 +920,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 3 */
+/* 4 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -489,7 +930,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	 * Expose `debug()` as the module.
 	 */
 
-	exports = module.exports = __webpack_require__(4);
+	exports = module.exports = __webpack_require__(5);
 	exports.log = log;
 	exports.formatArgs = formatArgs;
 	exports.save = save;
@@ -653,7 +1094,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 4 */
+/* 5 */
 /***/ function(module, exports, __webpack_require__) {
 
 	
@@ -669,7 +1110,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.disable = disable;
 	exports.enable = enable;
 	exports.enabled = enabled;
-	exports.humanize = __webpack_require__(5);
+	exports.humanize = __webpack_require__(6);
 
 	/**
 	 * The currently active debug mode names, and names to skip.
@@ -856,7 +1297,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 5 */
+/* 6 */
 /***/ function(module, exports) {
 
 	/**
@@ -987,7 +1428,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 6 */
+/* 7 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -996,10 +1437,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Debug = __webpack_require__(3);
+	var Debug = __webpack_require__(4);
 	var debug = Debug('views:object');
-	var eventsjs_1 = __webpack_require__(7);
-	var orange_1 = __webpack_require__(8);
+	var eventsjs_1 = __webpack_require__(8);
+	var orange_1 = __webpack_require__(9);
 	/** Base object */
 	var BaseObject = (function (_super) {
 	    __extends(BaseObject, _super);
@@ -1066,14 +1507,38 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 7 */
+/* 8 */
 /***/ function(module, exports) {
 
 	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
 	var idCounter = 0;
 	function getID() {
 	    return "" + (++idCounter);
 	}
+	var EventEmitterError = (function (_super) {
+	    __extends(EventEmitterError, _super);
+	    function EventEmitterError(message, method, klass, ctx) {
+	        _super.call(this, message);
+	        this.message = message;
+	        this.method = method;
+	        this.klass = klass;
+	        this.ctx = ctx;
+	    }
+	    EventEmitterError.prototype.toString = function () {
+	        var prefix = "EventEmitterError";
+	        if (this.method && this.method != "") {
+	            prefix = "EventEmitter#" + this.method;
+	        }
+	        return prefix + ": " + this.message;
+	    };
+	    return EventEmitterError;
+	}(Error));
+	exports.EventEmitterError = EventEmitterError;
 	function callFunc(fn, args) {
 	    if (args === void 0) { args = []; }
 	    var l = fn.length, i = -1, a1 = args[0], a2 = args[1], a3 = args[2], a4 = args[3];
@@ -1110,7 +1575,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.isFunction = isFunction;
 	function isEventEmitter(a) {
-	    return a instanceof EventEmitter || (isFunction(a.on) && isFunction(a.off) && isFunction(a.trigger));
+	    return a && (a instanceof EventEmitter || (isFunction(a.on) && isFunction(a.once) && isFunction(a.off) && isFunction(a.trigger)));
 	}
 	exports.isEventEmitter = isEventEmitter;
 	var EventEmitter = (function () {
@@ -1156,48 +1621,52 @@ return /******/ (function(modules) { // webpackBootstrap
 	                }
 	            }
 	        }
+	        return this;
 	    };
 	    EventEmitter.prototype.trigger = function (eventName) {
 	        var args = [];
 	        for (var _i = 1; _i < arguments.length; _i++) {
 	            args[_i - 1] = arguments[_i];
 	        }
-	        //let events = (this._listeners|| (this._listeners = {}))[eventName]||(this._listeners[eventName]=[])
-	        //.concat(this._listeners['all']||[])
 	        this._listeners = this._listeners || {};
-	        var events = (this._listeners[eventName] || []).concat(this._listeners['all'] || []);
+	        var events = (this._listeners[eventName] || []).concat(this._listeners['all'] || []).concat(this._listeners["*"] || []);
 	        if (EventEmitter.debugCallback)
 	            EventEmitter.debugCallback(this.constructor.name, this.name, eventName, args, events);
 	        var event, a, len = events.length, index;
 	        var calls = [];
+	        var alls = [];
 	        for (var i = 0, ii = events.length; i < ii; i++) {
 	            event = events[i];
 	            a = args;
-	            if (event.name == 'all') {
-	                a = [eventName].concat(args);
-	                callFunc([event], a);
+	            if (events[i].name == 'all' || events[i].name == '*') {
+	                alls.push(events[i]);
 	            }
 	            else {
-	                calls.push(event);
+	                calls.push(events[i]);
 	            }
-	            if (event.once === true) {
-	                index = this._listeners[event.name].indexOf(event);
-	                this._listeners[event.name].splice(index, 1);
+	            if (events[i].once === true) {
+	                index = this._listeners[events[i].name].indexOf(events[i]);
+	                this._listeners[events[i].name].splice(index, 1);
 	            }
+	        }
+	        if (alls.length) {
+	            var a_1 = [eventName].concat(args);
+	            this._executeListener(alls, a_1);
 	        }
 	        if (calls.length)
 	            this._executeListener(calls, args);
 	        return this;
 	    };
 	    EventEmitter.prototype._executeListener = function (func, args) {
-	        var executor = callFunc;
-	        if (this.constructor.executeListenerFunction) {
-	            executor = this.constructor.executeListenerFunction;
-	        }
-	        executor(func, args);
+	        EventEmitter.executeListenerFunction(func, args);
 	    };
 	    EventEmitter.prototype.listenTo = function (obj, event, fn, ctx, once) {
 	        if (once === void 0) { once = false; }
+	        if (!isEventEmitter(obj)) {
+	            if (EventEmitter.throwOnError)
+	                throw new EventEmitterError("obj is not an EventEmitter", once ? "listenToOnce" : "listenTo", this, obj);
+	            return this;
+	        }
 	        var listeningTo, id, meth;
 	        listeningTo = this._listeningTo || (this._listeningTo = {});
 	        id = obj.listenId || (obj.listenId = getID());
@@ -1210,6 +1679,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        return this.listenTo(obj, event, fn, ctx, true);
 	    };
 	    EventEmitter.prototype.stopListening = function (obj, event, callback) {
+	        if (obj && !isEventEmitter(obj)) {
+	            if (EventEmitter.throwOnError)
+	                throw new EventEmitterError("obj is not an EventEmitter", "stopListening", this, obj);
+	            return this;
+	        }
 	        var listeningTo = this._listeningTo;
 	        if (!listeningTo)
 	            return this;
@@ -1230,13 +1704,17 @@ return /******/ (function(modules) { // webpackBootstrap
 	        this.stopListening();
 	        this.off();
 	    };
+	    EventEmitter.throwOnError = true;
+	    EventEmitter.executeListenerFunction = function (func, args) {
+	        callFunc(func, args);
+	    };
 	    return EventEmitter;
 	}());
 	exports.EventEmitter = EventEmitter;
 
 
 /***/ },
-/* 8 */
+/* 9 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -1246,16 +1724,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	    }
 	}
-	__export(__webpack_require__(9));
 	__export(__webpack_require__(10));
-	__export(__webpack_require__(13));
 	__export(__webpack_require__(11));
 	__export(__webpack_require__(14));
 	__export(__webpack_require__(12));
 	__export(__webpack_require__(15));
+	__export(__webpack_require__(13));
+	__export(__webpack_require__(16));
 
 /***/ },
-/* 9 */
+/* 10 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1477,16 +1955,16 @@ return /******/ (function(modules) { // webpackBootstrap
 	;
 
 /***/ },
-/* 10 */
+/* 11 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
 	function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-	var arrays_1 = __webpack_require__(11);
-	var strings_1 = __webpack_require__(12);
-	var objects_1 = __webpack_require__(13);
+	var arrays_1 = __webpack_require__(12);
+	var strings_1 = __webpack_require__(13);
+	var objects_1 = __webpack_require__(14);
 	var nativeBind = Function.prototype.bind;
 	function proxy(from, to, fns) {
 	    if (!Array.isArray(fns)) fns = [fns];
@@ -1579,7 +2057,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.inherits = inherits;
 
 /***/ },
-/* 11 */
+/* 12 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1745,7 +2223,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.sortBy = sortBy;
 
 /***/ },
-/* 12 */
+/* 13 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -1780,13 +2258,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.humanFileSize = humanFileSize;
 
 /***/ },
-/* 13 */
+/* 14 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 
-	var utils_1 = __webpack_require__(9);
-	var arrays_1 = __webpack_require__(11);
+	var utils_1 = __webpack_require__(10);
+	var arrays_1 = __webpack_require__(12);
 	/**
 	 * Takes a nested object and returns a shallow object keyed with the path names
 	 * e.g. { "level1.level2": "value" }
@@ -1984,13 +2462,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.intersection = intersection;
 
 /***/ },
-/* 14 */
+/* 15 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
 
-	var arrays_1 = __webpack_require__(11);
-	var utils_1 = __webpack_require__(9);
+	var arrays_1 = __webpack_require__(12);
+	var utils_1 = __webpack_require__(10);
 	exports.Promise = typeof window === 'undefined' ? global.Promise : window.Promise;
 	// Promises
 	function isPromise(obj) {
@@ -2143,7 +2621,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 15 */
+/* 16 */
 /***/ function(module, exports) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
@@ -2320,7 +2798,507 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 16 */
+/* 17 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function __export(m) {
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
+	}
+	__export(__webpack_require__(18));
+	__export(__webpack_require__(19));
+
+/***/ },
+/* 18 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	// TODO: CreateHTML
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var orange_1 = __webpack_require__(9);
+	var ElementProto = typeof Element !== 'undefined' && Element.prototype || {};
+	var matchesSelector = ElementProto.matches || ElementProto.webkitMatchesSelector || ElementProto.mozMatchesSelector || ElementProto.msMatchesSelector || ElementProto.oMatchesSelector || function (selector) {
+	    var nodeList = (this.parentNode || document).querySelectorAll(selector) || [];
+	    return !!~orange_1.indexOf(nodeList, this);
+	};
+	var elementAddEventListener = ElementProto.addEventListener || function (eventName, listener) {
+	    return this.attachEvent('on' + eventName, listener);
+	};
+	var elementRemoveEventListener = ElementProto.removeEventListener || function (eventName, listener) {
+	    return this.detachEvent('on' + eventName, listener);
+	};
+	var transitionEndEvent = function transitionEnd() {
+	    var el = document.createElement('bootstrap');
+	    var transEndEventNames = {
+	        'WebkitTransition': 'webkitTransitionEnd',
+	        'MozTransition': 'transitionend',
+	        'OTransition': 'oTransitionEnd otransitionend',
+	        'transition': 'transitionend'
+	    };
+	    for (var name in transEndEventNames) {
+	        if (el.style[name] !== undefined) {
+	            return transEndEventNames[name];
+	        }
+	    }
+	    return null;
+	};
+	var animationEndEvent = function animationEnd() {
+	    var el = document.createElement('bootstrap');
+	    var transEndEventNames = {
+	        'WebkitAnimation': 'webkitAnimationEnd',
+	        'MozAnimation': 'animationend',
+	        'OAnimation': 'oAnimationEnd oanimationend',
+	        'animation': 'animationend'
+	    };
+	    for (var name in transEndEventNames) {
+	        if (el.style[name] !== undefined) {
+	            return transEndEventNames[name];
+	        }
+	    }
+	    return null;
+	};
+	function matches(elm, selector) {
+	    return matchesSelector.call(elm, selector);
+	}
+	exports.matches = matches;
+	function addEventListener(elm, eventName, listener) {
+	    var useCap = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
+
+	    elementAddEventListener.call(elm, eventName, listener, useCap);
+	}
+	exports.addEventListener = addEventListener;
+	function removeEventListener(elm, eventName, listener) {
+	    elementRemoveEventListener.call(elm, eventName, listener);
+	}
+	exports.removeEventListener = removeEventListener;
+	var unbubblebles = 'focus blur change load error'.split(' ');
+	var domEvents = [];
+	function delegate(elm, selector, eventName, callback, ctx) {
+	    var root = elm;
+	    var handler = function handler(e) {
+	        var node = e.target || e.srcElement;
+	        // Already handled
+	        if (e.delegateTarget) return;
+	        for (; node && node != root; node = node.parentNode) {
+	            if (matches(node, selector)) {
+	                e.delegateTarget = node;
+	                callback(e);
+	            }
+	        }
+	    };
+	    var useCap = !!~unbubblebles.indexOf(eventName);
+	    addEventListener(elm, eventName, handler, useCap);
+	    domEvents.push({ eventName: eventName, handler: handler, listener: callback, selector: selector });
+	    return handler;
+	}
+	exports.delegate = delegate;
+	function undelegate(elm, selector, eventName, callback) {
+	    /*if (typeof selector === 'function') {
+	        listener = <Function>selector;
+	        selector = null;
+	      }*/
+	    var handlers = domEvents.slice();
+	    for (var i = 0, len = handlers.length; i < len; i++) {
+	        var item = handlers[i];
+	        var match = item.eventName === eventName && (callback ? item.listener === callback : true) && (selector ? item.selector === selector : true);
+	        if (!match) continue;
+	        removeEventListener(elm, item.eventName, item.handler);
+	        domEvents.splice(orange_1.indexOf(handlers, item), 1);
+	    }
+	}
+	exports.undelegate = undelegate;
+	function addClass(elm, className) {
+	    if (elm.classList) {
+	        var split = className.split(' ');
+	        for (var i = 0, ii = split.length; i < ii; i++) {
+	            if (elm.classList.contains(split[i].trim())) continue;
+	            elm.classList.add(split[i].trim());
+	        }
+	    } else {
+	        elm.className = orange_1.unique(elm.className.split(' ').concat(className.split(' '))).join(' ');
+	    }
+	}
+	exports.addClass = addClass;
+	function removeClass(elm, className) {
+	    if (elm.classList) {
+	        var split = className.split(' ');
+	        for (var i = 0, ii = split.length; i < ii; i++) {
+	            elm.classList.remove(split[i].trim());
+	        }
+	    } else {
+	        var _split = elm.className.split(' '),
+	            classNames = className.split(' '),
+	            tmp = _split,
+	            index = void 0;
+	        for (var _i = 0, _ii = classNames.length; _i < _ii; _i++) {
+	            index = _split.indexOf(classNames[_i]);
+	            if (!!~index) _split = _split.splice(index, 1);
+	        }
+	    }
+	}
+	exports.removeClass = removeClass;
+	function hasClass(elm, className) {
+	    if (elm.classList) {
+	        return elm.classList.contains(className);
+	    }
+	    var reg = new RegExp('\b' + className);
+	    return reg.test(elm.className);
+	}
+	exports.hasClass = hasClass;
+	function selectionStart(elm) {
+	    if ('selectionStart' in elm) {
+	        // Standard-compliant browsers
+	        return elm.selectionStart;
+	    } else if (document.selection) {
+	        // IE
+	        elm.focus();
+	        var sel = document.selection.createRange();
+	        var selLen = document.selection.createRange().text.length;
+	        sel.moveStart('character', -elm.value.length);
+	        return sel.text.length - selLen;
+	    }
+	}
+	exports.selectionStart = selectionStart;
+	var _events = {
+	    animationEnd: null,
+	    transitionEnd: null
+	};
+	function transitionEnd(elm, fn, ctx, duration) {
+	    var event = _events.transitionEnd || (_events.transitionEnd = transitionEndEvent());
+	    var callback = function callback(e) {
+	        removeEventListener(elm, event, callback);
+	        fn.call(ctx, e);
+	    };
+	    addEventListener(elm, event, callback);
+	}
+	exports.transitionEnd = transitionEnd;
+	function animationEnd(elm, fn, ctx, duration) {
+	    var event = _events.animationEnd || (_events.animationEnd = animationEndEvent());
+	    var callback = function callback(e) {
+	        removeEventListener(elm, event, callback);
+	        fn.call(ctx, e);
+	    };
+	    addEventListener(elm, event, callback);
+	}
+	exports.animationEnd = animationEnd;
+	exports.domReady = function () {
+	    var fns = [],
+	        _listener,
+	        doc = document,
+	        hack = doc.documentElement.doScroll,
+	        domContentLoaded = 'DOMContentLoaded',
+	        loaded = (hack ? /^loaded|^c/ : /^loaded|^i|^c/).test(doc.readyState);
+	    if (!loaded) {
+	        doc.addEventListener(domContentLoaded, _listener = function listener() {
+	            doc.removeEventListener(domContentLoaded, _listener);
+	            loaded = true;
+	            while (_listener = fns.shift()) {
+	                _listener();
+	            }
+	        });
+	    }
+	    return function (fn) {
+	        loaded ? setTimeout(fn, 0) : fns.push(fn);
+	    };
+	}();
+	function createElement(tag, attr) {
+	    var elm = document.createElement(tag);
+	    if (attr) {
+	        for (var key in attr) {
+	            elm.setAttribute(key, attr[key]);
+	        }
+	    }
+	    return elm;
+	}
+	exports.createElement = createElement;
+
+	var LoadedImage = function () {
+	    function LoadedImage(img) {
+	        _classCallCheck(this, LoadedImage);
+
+	        this.img = img;
+	    }
+
+	    _createClass(LoadedImage, [{
+	        key: 'check',
+	        value: function check(fn) {
+	            this.fn = fn;
+	            var isComplete = this.getIsImageComplete();
+	            if (isComplete) {
+	                // report based on naturalWidth
+	                this.confirm(this.img.naturalWidth !== 0, 'naturalWidth');
+	                return;
+	            }
+	            this.img.addEventListener('load', this);
+	            this.img.addEventListener('error', this);
+	        }
+	    }, {
+	        key: 'confirm',
+	        value: function confirm(loaded, msg, err) {
+	            this.isLoaded = loaded;
+	            if (this.fn) this.fn(err);
+	        }
+	    }, {
+	        key: 'getIsImageComplete',
+	        value: function getIsImageComplete() {
+	            return this.img.complete && this.img.naturalWidth !== undefined && this.img.naturalWidth !== 0;
+	        }
+	    }, {
+	        key: 'handleEvent',
+	        value: function handleEvent(e) {
+	            var method = 'on' + event.type;
+	            if (this[method]) {
+	                this[method](event);
+	            }
+	        }
+	    }, {
+	        key: 'onload',
+	        value: function onload(e) {
+	            this.confirm(true, 'onload');
+	            this.unbindEvents();
+	        }
+	    }, {
+	        key: 'onerror',
+	        value: function onerror(e) {
+	            this.confirm(false, 'onerror', new Error(e.error));
+	            this.unbindEvents();
+	        }
+	    }, {
+	        key: 'unbindEvents',
+	        value: function unbindEvents() {
+	            this.img.removeEventListener('load', this);
+	            this.img.removeEventListener('error', this);
+	            this.fn = void 0;
+	        }
+	    }]);
+
+	    return LoadedImage;
+	}();
+
+	function imageLoaded(img) {
+	    return new orange_1.Promise(function (resolve, reject) {
+	        var i = new LoadedImage(img);
+	        i.check(function (err) {
+	            if (err) return reject(err);
+	            resolve(i.isLoaded);
+	        });
+	    });
+	}
+	exports.imageLoaded = imageLoaded;
+
+/***/ },
+/* 19 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var orange_1 = __webpack_require__(9);
+	var dom = __webpack_require__(18);
+	var domEvents;
+	var singleTag = /^<([a-z][^\/\0>:\x20\t\r\n\f]*)[\x20\t\r\n\f]*\/?>(?:<\/\1>|)$/i;
+	function parseHTML(html) {
+	    var parsed = singleTag.exec(html);
+	    if (parsed) {
+	        return document.createElement(parsed[0]);
+	    }
+	    var div = document.createElement('div');
+	    div.innerHTML = html;
+	    var element = div.firstChild;
+	    return element;
+	}
+
+	var Html = function () {
+	    function Html(el) {
+	        _classCallCheck(this, Html);
+
+	        if (!Array.isArray(el)) el = [el];
+	        this._elements = el || [];
+	    }
+
+	    _createClass(Html, [{
+	        key: 'get',
+	        value: function get(n) {
+	            n = n === undefined ? 0 : n;
+	            return n >= this.length ? undefined : this._elements[n];
+	        }
+	    }, {
+	        key: 'addClass',
+	        value: function addClass(str) {
+	            return this.forEach(function (e) {
+	                dom.addClass(e, str);
+	            });
+	        }
+	    }, {
+	        key: 'removeClass',
+	        value: function removeClass(str) {
+	            return this.forEach(function (e) {
+	                dom.removeClass(e, str);
+	            });
+	        }
+	    }, {
+	        key: 'hasClass',
+	        value: function hasClass(str) {
+	            return this._elements.reduce(function (p, c) {
+	                return dom.hasClass(c, str);
+	            }, false);
+	        }
+	    }, {
+	        key: 'attr',
+	        value: function attr(key, value) {
+	            var attr = void 0;
+	            if (typeof key === 'string' && value) {
+	                attr = _defineProperty({}, key, value);
+	            } else if (typeof key == 'string') {
+	                if (this.length) return this.get(0).getAttribute(key);
+	            } else if (orange_1.isObject(key)) {
+	                attr = key;
+	            }
+	            return this.forEach(function (e) {
+	                for (var k in attr) {
+	                    e.setAttribute(k, attr[k]);
+	                }
+	            });
+	        }
+	    }, {
+	        key: 'text',
+	        value: function text(str) {
+	            if (arguments.length === 0) {
+	                return this.length > 0 ? this.get(0).textContent : null;
+	            }
+	            return this.forEach(function (e) {
+	                return e.textContent = str;
+	            });
+	        }
+	    }, {
+	        key: 'html',
+	        value: function html(_html) {
+	            if (arguments.length === 0) {
+	                return this.length > 0 ? this.get(0).innerHTML : null;
+	            }
+	            return this.forEach(function (e) {
+	                return e.innerHTML = _html;
+	            });
+	        }
+	    }, {
+	        key: 'css',
+	        value: function css(attr, value) {
+	            if (arguments.length === 2) {
+	                return this.forEach(function (e) {
+	                    if (attr in e.style) e.style[attr] = String(value);
+	                });
+	            } else {
+	                return this.forEach(function (e) {
+	                    for (var k in attr) {
+	                        if (k in e.style) e.style[k] = String(attr[k]);
+	                    }
+	                });
+	            }
+	        }
+	    }, {
+	        key: 'parent',
+	        value: function parent() {
+	            var out = [];
+	            this.forEach(function (e) {
+	                if (e.parentElement) {
+	                    out.push(e.parentElement);
+	                }
+	            });
+	            return new Html(out);
+	        }
+	    }, {
+	        key: 'remove',
+	        value: function remove() {
+	            return this.forEach(function (e) {
+	                if (e.parentElement) e.parentElement.removeChild(e);
+	            });
+	        }
+	    }, {
+	        key: 'clone',
+	        value: function clone() {
+	            return new Html(this.map(function (m) {
+	                return m.cloneNode();
+	            }));
+	        }
+	    }, {
+	        key: 'find',
+	        value: function find(str) {
+	            var out = [];
+	            this.forEach(function (e) {
+	                out = out.concat(orange_1.slice(e.querySelectorAll(str)));
+	            });
+	            return new Html(out);
+	        }
+	    }, {
+	        key: 'map',
+	        value: function map(fn) {
+	            var out = new Array(this.length);
+	            this.forEach(function (e, i) {
+	                out[i] = fn(e, i);
+	            });
+	            return out;
+	        }
+	    }, {
+	        key: 'forEach',
+	        value: function forEach(fn) {
+	            this._elements.forEach(fn);
+	            return this;
+	        }
+	    }, {
+	        key: 'length',
+	        get: function get() {
+	            return this._elements.length;
+	        }
+	    }], [{
+	        key: 'query',
+	        value: function query(_query, context) {
+	            if (typeof context === 'string') {
+	                context = document.querySelectorAll(context);
+	            }
+	            var html = void 0;
+	            var els = void 0;
+	            if (typeof _query === 'string') {
+	                if (_query.length > 0 && _query[0] === '<' && _query[_query.length - 1] === ">" && _query.length >= 3) {
+	                    return new Html([parseHTML(_query)]);
+	                }
+	                if (context) {
+	                    if (context instanceof HTMLElement) {
+	                        els = orange_1.slice(context.querySelectorAll(_query));
+	                    } else {
+	                        html = new Html(orange_1.slice(context));
+	                        return html.find(_query);
+	                    }
+	                } else {
+	                    els = orange_1.slice(document.querySelectorAll(_query));
+	                }
+	            } else if (_query && _query instanceof Element) {
+	                els = [_query];
+	            } else if (_query && _query instanceof NodeList) {
+	                els = orange_1.slice(_query);
+	            }
+	            return new Html(els);
+	        }
+	    }]);
+
+	    return Html;
+	}();
+
+	exports.Html = Html;
+
+/***/ },
+/* 20 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -2344,7 +3322,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 17 */
+/* 21 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2353,10 +3331,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Debug = __webpack_require__(3);
+	var Debug = __webpack_require__(4);
 	var debug = Debug('views:region');
-	var object_1 = __webpack_require__(6);
-	var orange_1 = __webpack_require__(8);
+	var object_1 = __webpack_require__(7);
+	var orange_1 = __webpack_require__(9);
 	/** Region  */
 	var Region = (function (_super) {
 	    __extends(Region, _super);
@@ -2495,7 +3473,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 18 */
+/* 22 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* global BaseClass, __has */
@@ -2505,9 +3483,9 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var object_1 = __webpack_require__(6);
-	var region_1 = __webpack_require__(17);
-	var utils = __webpack_require__(8);
+	var object_1 = __webpack_require__(7);
+	var region_1 = __webpack_require__(21);
+	var utils = __webpack_require__(9);
 	var RegionManager = (function (_super) {
 	    __extends(RegionManager, _super);
 	    /** Region manager
@@ -2600,7 +3578,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 19 */
+/* 23 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2610,10 +3588,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
 	/*global View, RegionManager, Region*/
-	var view_1 = __webpack_require__(20);
-	var region_manager_1 = __webpack_require__(18);
-	var orange_1 = __webpack_require__(8);
-	var region_1 = __webpack_require__(17);
+	var view_1 = __webpack_require__(24);
+	var region_manager_1 = __webpack_require__(22);
+	var orange_1 = __webpack_require__(9);
+	var region_1 = __webpack_require__(21);
 	var LayoutView = (function (_super) {
 	    __extends(LayoutView, _super);
 	    /**
@@ -2680,7 +3658,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 20 */
+/* 24 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2689,10 +3667,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Debug = __webpack_require__(3);
+	var Debug = __webpack_require__(4);
 	var debug = Debug('views:view');
-	var baseview_1 = __webpack_require__(2);
-	var orange_1 = __webpack_require__(8);
+	var baseview_1 = __webpack_require__(3);
+	var orange_1 = __webpack_require__(9);
 	var View = (function (_super) {
 	    __extends(View, _super);
 	    /**
@@ -2846,7 +3824,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 21 */
+/* 25 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -2855,11 +3833,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	    function __() { this.constructor = d; }
 	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 	};
-	var Debug = __webpack_require__(3);
+	var Debug = __webpack_require__(4);
 	var debug = Debug('views:collectionview');
-	var view_1 = __webpack_require__(20);
-	var orange_1 = __webpack_require__(8);
-	var eventsjs_1 = __webpack_require__(7);
+	var view_1 = __webpack_require__(24);
+	var orange_1 = __webpack_require__(9);
+	var eventsjs_1 = __webpack_require__(8);
 	var Buffer = (function () {
 	    function Buffer() {
 	        this.children = [];
@@ -3182,11 +4160,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 22 */
+/* 26 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var orange_1 = __webpack_require__(8);
+	var orange_1 = __webpack_require__(9);
 	function attributes(attrs) {
 	    return function (target) {
 	        orange_1.extend(target.prototype, attrs);
@@ -3208,7 +4186,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 23 */
+/* 27 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -3221,9 +4199,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var eventsjs_1 = __webpack_require__(7);
-	var utils = __webpack_require__(24);
-	var interface_1 = __webpack_require__(35);
+	var eventsjs_1 = __webpack_require__(8);
+	var orange_request_1 = __webpack_require__(28);
+	var request = __webpack_require__(28);
+	var orange_1 = __webpack_require__(9);
+	var interface_1 = __webpack_require__(32);
 
 	var FileUploader = function (_eventsjs_1$EventEmit) {
 	    _inherits(FileUploader, _eventsjs_1$EventEmit);
@@ -3233,9 +4213,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        var _this = _possibleConstructorReturn(this, (FileUploader.__proto__ || Object.getPrototypeOf(FileUploader)).call(this));
 
-	        _this.options = utils.extend({}, {
+	        _this.options = orange_1.extend({}, {
 	            parameter: 'file',
-	            method: interface_1.HttpMethod.POST,
+	            method: orange_request_1.HttpMethod.POST,
 	            maxSize: 2048
 	        }, options);
 	        return _this;
@@ -3249,7 +4229,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	            try {
 	                this.validateFile(file);
 	            } catch (e) {
-	                return utils.Promise.reject(e);
+	                return orange_1.Promise.reject(e);
 	            }
 	            var formData = new FormData();
 	            formData.append(this.options.parameter, file);
@@ -3258,7 +4238,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	                var value = attributes[key];
 	                formData.append(key, value);
 	            });
-	            return utils.request.post(this.options.url).header({
+	            return request.post(this.options.url).header({
 	                'Content-Type': file.type
 	            }).params({ filename: file.name }).uploadProgress(function (event) {
 	                if (event.lengthComputable) {
@@ -3269,10 +4249,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	                    }
 	                }
 	            }).end(file).then(function (res) {
-	                if (!res.isValid) {
-	                    throw new utils.HttpError(res.status, res.statusText, res.body);
+	                if (!res.ok) {
+	                    throw new interface_1.HttpError(res.status, res.statusText);
 	                }
-	                return JSON.parse(res.body);
+	                return res.json();
 	            });
 	        }
 	    }, {
@@ -3312,119 +4292,1287 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 
 /***/ },
-/* 24 */
+/* 28 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function __export(m) {
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
+	}
+	__export(__webpack_require__(29));
+	__export(__webpack_require__(30));
+	__export(__webpack_require__(31));
+
+/***/ },
+/* 29 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var orange_1 = __webpack_require__(9);
+	var support = {
+	    searchParams: 'URLSearchParams' in self,
+	    iterable: 'Symbol' in self && 'iterator' in Symbol,
+	    blob: 'FileReader' in self && 'Blob' in self && function () {
+	        try {
+	            new Blob();
+	            return true;
+	        } catch (e) {
+	            return false;
+	        }
+	    }(),
+	    formData: 'FormData' in self,
+	    arrayBuffer: 'ArrayBuffer' in self
+	};
+	function normalizeName(name) {
+	    if (typeof name !== 'string') {
+	        name = String(name);
+	    }
+	    if (/[^a-z0-9\-#$%&'*+.\^_`|~]/i.test(name)) {
+	        throw new TypeError('Invalid character in header field name');
+	    }
+	    return name.toLowerCase();
+	}
+	function normalizeValue(value) {
+	    if (typeof value !== 'string') {
+	        value = String(value);
+	    }
+	    return value;
+	}
+	// Build a destructive iterator for the value list
+	function iteratorFor(items) {
+	    var iterator = {
+	        next: function next() {
+	            var value = items.shift();
+	            return { done: value === undefined, value: value };
+	        }
+	    };
+	    if (support.iterable) {
+	        iterator[Symbol.iterator] = function () {
+	            return iterator;
+	        };
+	    }
+	    return iterator;
+	}
+
+	var Headers = function () {
+	    function Headers(headers) {
+	        _classCallCheck(this, Headers);
+
+	        this.map = {};
+	        if (headers instanceof Headers) {
+	            for (var key in headers.map) {
+	                this.append(key, headers.map[key]);
+	            }
+	        } else if (headers) {
+	            var names = Object.getOwnPropertyNames(headers);
+	            for (var i = 0, ii = names.length; i < ii; i++) {
+	                this.append(names[i], headers[names[i]]);
+	            }
+	        }
+	    }
+
+	    _createClass(Headers, [{
+	        key: Symbol.iterator,
+	        value: function value() {
+	            return this.entries();
+	        }
+	    }, {
+	        key: 'append',
+	        value: function append(name, value) {
+	            name = normalizeName(name);
+	            value = normalizeValue(value);
+	            var list = this.map[name];
+	            if (!list) {
+	                list = [];
+	                this.map[name] = list;
+	            }
+	            list.push(value);
+	        }
+	    }, {
+	        key: 'delete',
+	        value: function _delete(name) {
+	            delete this.map[normalizeName(name)];
+	        }
+	    }, {
+	        key: 'get',
+	        value: function get(name) {
+	            var values = this.map[normalizeName(name)];
+	            return values ? values[0] : null;
+	        }
+	    }, {
+	        key: 'getAll',
+	        value: function getAll(name) {
+	            return this.map[normalizeName(name)] || [];
+	        }
+	    }, {
+	        key: 'has',
+	        value: function has(name) {
+	            return this.map.hasOwnProperty(normalizeName(name));
+	        }
+	    }, {
+	        key: 'set',
+	        value: function set(name, value) {
+	            this.map[normalizeName(name)] = [normalizeValue(value)];
+	        }
+	    }, {
+	        key: 'forEach',
+	        value: function forEach(callback, thisArg) {
+	            Object.getOwnPropertyNames(this.map).forEach(function (name) {
+	                this.map[name].forEach(function (value) {
+	                    callback.call(thisArg, value, name, this);
+	                }, this);
+	            }, this);
+	        }
+	    }, {
+	        key: 'keys',
+	        value: function keys() {
+	            var items = [];
+	            this.forEach(function (value, name) {
+	                items.push(name);
+	            });
+	            return iteratorFor(items);
+	        }
+	    }, {
+	        key: 'values',
+	        value: function values() {
+	            var items = [];
+	            this.forEach(function (value) {
+	                items.push(value);
+	            });
+	            return iteratorFor(items);
+	        }
+	    }, {
+	        key: 'entries',
+	        value: function entries() {
+	            var items = [];
+	            this.forEach(function (value, name) {
+	                items.push([name, value]);
+	            });
+	            return iteratorFor(items);
+	        }
+	    }]);
+
+	    return Headers;
+	}();
+
+	exports.Headers = Headers;
+	function consumed(body) {
+	    if (body.bodyUsed) {
+	        return orange_1.Promise.reject(new TypeError('Already read'));
+	    }
+	    body._bodyUsed = true;
+	}
+	function fileReaderReady(reader) {
+	    return new orange_1.Promise(function (resolve, reject) {
+	        reader.onload = function () {
+	            resolve(reader.result);
+	        };
+	        reader.onerror = function () {
+	            reject(reader.error);
+	        };
+	    });
+	}
+	function readBlobAsArrayBuffer(blob) {
+	    var reader = new FileReader();
+	    reader.readAsArrayBuffer(blob);
+	    return fileReaderReady(reader);
+	}
+	function readBlobAsText(blob) {
+	    var reader = new FileReader();
+	    reader.readAsText(blob);
+	    return fileReaderReady(reader);
+	}
+	var BodyType;
+	(function (BodyType) {
+	    BodyType[BodyType["Blob"] = 0] = "Blob";
+	    BodyType[BodyType["Text"] = 1] = "Text";
+	    BodyType[BodyType["FormData"] = 2] = "FormData";
+	    BodyType[BodyType["None"] = 3] = "None";
+	})(BodyType || (BodyType = {}));
+	var redirectStatuses = [301, 302, 303, 307, 308];
+
+	var Response = function () {
+	    function Response(body, options) {
+	        _classCallCheck(this, Response);
+
+	        this._bodyUsed = false;
+	        this._bodyType = BodyType.None;
+	        options = options || {};
+	        this.type = 'default';
+	        this.status = options.status;
+	        this.ok = this.status >= 200 && this.status < 300;
+	        this.statusText = options.statusText;
+	        this.headers = options.headers instanceof Headers ? options.headers : new Headers(options.headers);
+	        this.url = options.url || '';
+	        this._initBody(body);
+	    }
+
+	    _createClass(Response, [{
+	        key: '_initBody',
+	        value: function _initBody(body) {
+	            if (typeof body === 'string' || support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
+	                this._bodyType = BodyType.Text;
+	            } else if (support.blob && Blob.prototype.isPrototypeOf(body)) {
+	                this._bodyType = BodyType.Blob;
+	            } else if (support.formData && FormData.prototype.isPrototypeOf(body)) {
+	                this._bodyType = BodyType.FormData;
+	            } else if (!body) {
+	                this._bodyType = BodyType.None;
+	            } else if (support.arrayBuffer && ArrayBuffer.prototype.isPrototypeOf(body)) {} else {
+	                throw new Error('unsupported BodyInit type');
+	            }
+	            this._body = body ? body : "";
+	            if (!this.headers.get('content-type')) {
+	                if (this._bodyType == BodyType.Text) {
+	                    this.headers.set('content-type', 'text/plain;charset=UTF-8');
+	                } else if (this._bodyType == BodyType.Blob && this._body.type) {
+	                    this.headers.set('content-type', this._body.type);
+	                } else if (support.searchParams && URLSearchParams.prototype.isPrototypeOf(body)) {
+	                    this.headers.set('content-type', 'application/x-www-form-urlencoded;charset=UTF-8');
+	                }
+	            }
+	        }
+	    }, {
+	        key: 'text',
+	        value: function text() {
+	            var rejected = consumed(this);
+	            if (rejected) return rejected;
+	            if (this._bodyType == BodyType.Blob) {
+	                return readBlobAsText(this._body);
+	            } else if (this._bodyType == BodyType.FormData) {
+	                throw new Error('could not read FormData body as text');
+	            } else {
+	                return orange_1.Promise.resolve(this._body);
+	            }
+	        }
+	    }, {
+	        key: 'arrayBuffer',
+	        value: function arrayBuffer() {
+	            return this.blob().then(readBlobAsArrayBuffer);
+	        }
+	    }, {
+	        key: 'blob',
+	        value: function blob() {
+	            if (!support.blob) {
+	                return orange_1.Promise.reject(new Error("blob not supported"));
+	            }
+	            var rejected = consumed(this);
+	            if (rejected) {
+	                return rejected;
+	            }
+	            if (this._bodyType == BodyType.Blob) {
+	                return orange_1.Promise.resolve(this._body);
+	            } else if (this._bodyType == BodyType.FormData) {
+	                throw new Error('could not read FormData body as blob');
+	            } else {
+	                return orange_1.Promise.resolve(new Blob([this._body]));
+	            }
+	        }
+	    }, {
+	        key: 'formData',
+	        value: function formData() {
+	            if (!support.formData) {
+	                return orange_1.Promise.reject(new Error("form data not supported"));
+	            }
+	            return this.text().then(decode);
+	        }
+	    }, {
+	        key: 'json',
+	        value: function json() {
+	            return this.text().then(JSON.parse);
+	        }
+	    }, {
+	        key: 'clone',
+	        value: function clone() {
+	            return new Response(this._body, {
+	                status: this.status,
+	                statusText: this.statusText,
+	                headers: new Headers(this.headers),
+	                url: this.url
+	            });
+	        }
+	    }, {
+	        key: 'bodyUsed',
+	        get: function get() {
+	            return this._bodyUsed;
+	        }
+	    }], [{
+	        key: 'error',
+	        value: function error() {
+	            var response = new Response(null, { status: 0, statusText: '' });
+	            response.type = 'error';
+	            return response;
+	        }
+	    }, {
+	        key: 'redirect',
+	        value: function redirect(url, status) {
+	            if (redirectStatuses.indexOf(status) === -1) {
+	                throw new RangeError('Invalid status code');
+	            }
+	            return new Response(null, { status: status, headers: { location: url } });
+	        }
+	    }]);
+
+	    return Response;
+	}();
+
+	exports.Response = Response;
+	// HTTP methods whose capitalization should be normalized
+	var methods = ['DELETE', 'GET', 'HEAD', 'OPTIONS', 'POST', 'PUT'];
+	function normalizeMethod(method) {
+	    var upcased = method.toUpperCase();
+	    return methods.indexOf(upcased) > -1 ? upcased : method;
+	}
+	function isRequest(a) {
+	    return Request.prototype.isPrototypeOf(a) || a instanceof Request;
+	}
+	exports.isRequest = isRequest;
+
+	var Request = function () {
+	    function Request(input) {
+	        var options = arguments.length <= 1 || arguments[1] === undefined ? {} : arguments[1];
+
+	        _classCallCheck(this, Request);
+
+	        options = options || {};
+	        var body = options.body;
+	        if (isRequest(input)) {
+	            this.url = input.url;
+	            this.credentials = input.credentials;
+	            if (!options.headers) {
+	                this.headers = new Headers(options.headers);
+	            }
+	            this.method = input.method;
+	            this.mode = input.mode;
+	        } else {
+	            this.url = input;
+	        }
+	        this.credentials = options.credentials || this.credentials || 'omit';
+	        if (options.headers || !this.headers) {
+	            this.headers = new Headers(options.headers);
+	        }
+	        this.method = normalizeMethod(options.method || this.method || 'GET');
+	        this.mode = options.mode || this.mode || null;
+	        this.referrer = null;
+	        if ((this.method === 'GET' || this.method === 'HEAD') && body) {
+	            throw new TypeError('Body not allowed for GET or HEAD requests');
+	        }
+	        this.body = body;
+	    }
+
+	    _createClass(Request, [{
+	        key: 'clone',
+	        value: function clone() {
+	            return new Request(this);
+	        }
+	    }]);
+
+	    return Request;
+	}();
+
+	exports.Request = Request;
+	function decode(body) {
+	    var form = new FormData();
+	    body.trim().split('&').forEach(function (bytes) {
+	        if (bytes) {
+	            var split = bytes.split('=');
+	            var name = split.shift().replace(/\+/g, ' ');
+	            var value = split.join('=').replace(/\+/g, ' ');
+	            form.append(decodeURIComponent(name), decodeURIComponent(value));
+	        }
+	    });
+	    return form;
+	}
+	function headers(xhr) {
+	    var head = new Headers();
+	    var pairs = (xhr.getAllResponseHeaders() || '').trim().split('\n');
+	    for (var i = 0, ii = pairs.length; i < ii; i++) {
+	        var split = pairs[i].trim().split(':');
+	        var key = split.shift().trim();
+	        var value = split.join(':').trim();
+	        head.append(key, value);
+	    }
+	    return head;
+	}
+	function fetch(input, init) {
+	    return new orange_1.Promise(function (resolve, reject) {
+	        var request;
+	        if (isRequest(input) && !init) {
+	            request = input;
+	        } else {
+	            request = new Request(input, init);
+	        }
+	        init = init || {};
+	        var xhr = orange_1.xmlHttpRequest();
+	        function responseURL() {
+	            if ('responseURL' in xhr) {
+	                return xhr.responseURL;
+	            }
+	            // Avoid security warnings on getResponseHeader when not allowed by CORS
+	            if (/^X-Request-URL:/m.test(xhr.getAllResponseHeaders())) {
+	                return xhr.getResponseHeader('X-Request-URL');
+	            }
+	            return;
+	        }
+	        xhr.onload = function () {
+	            var options = {
+	                status: xhr.status,
+	                statusText: xhr.statusText,
+	                headers: headers(xhr),
+	                url: responseURL()
+	            };
+	            var body = 'response' in xhr ? xhr.response : xhr.responseText;
+	            resolve(new Response(body, options));
+	        };
+	        xhr.onerror = function () {
+	            reject(new TypeError('Network request failed'));
+	        };
+	        xhr.ontimeout = function () {
+	            reject(new TypeError('Network request failed: timeout'));
+	        };
+	        xhr.open(request.method, request.url, true);
+	        if (request.credentials === 'include') {
+	            xhr.withCredentials = true;
+	        }
+	        if ('responseType' in xhr && support.blob) {
+	            xhr.responseType = 'blob';
+	        }
+	        request.headers.forEach(function (value, name) {
+	            xhr.setRequestHeader(name, value);
+	        });
+	        if (init.downloadProgress) {
+	            xhr.onprogress = init.downloadProgress;
+	        }
+	        if (init.uploadProgress || xhr.upload) {
+	            xhr.upload.onprogress = init.uploadProgress;
+	        }
+	        xhr.send(typeof request._body === 'undefined' ? null : request._body);
+	    });
+	}
+	exports.fetch = fetch;
+
+/***/ },
+/* 30 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	function queryStringToParams(qs) {
+	    var kvp,
+	        k,
+	        v,
+	        ls,
+	        params = {},
+	        decode = decodeURIComponent;
+	    var kvps = qs.split('&');
+	    for (var i = 0, l = kvps.length; i < l; i++) {
+	        var param = kvps[i];
+	        kvp = param.split('='), k = kvp[0], v = kvp[1];
+	        if (v == null) v = true;
+	        k = decode(k), v = decode(v), ls = params[k];
+	        if (Array.isArray(ls)) ls.push(v);else if (ls) params[k] = [ls, v];else params[k] = v;
+	    }
+	    return params;
+	}
+	exports.queryStringToParams = queryStringToParams;
+	function queryParam(obj) {
+	    return Object.keys(obj).reduce(function (a, k) {
+	        a.push(k + '=' + encodeURIComponent(obj[k]));return a;
+	    }, []).join('&');
+	}
+	exports.queryParam = queryParam;
+	var fileProto = /^file:/;
+	function isValid(xhr, url) {
+	    return xhr.status >= 200 && xhr.status < 300 || xhr.status === 304 || xhr.status === 0 && fileProto.test(url) || xhr.status === 0 && window.location.protocol === 'file:';
+	}
+	exports.isValid = isValid;
+	;
+
+/***/ },
+/* 31 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	var orange_1 = __webpack_require__(9);
+	var utils_1 = __webpack_require__(30);
+	var fetch_1 = __webpack_require__(29);
+	(function (HttpMethod) {
+	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
+	    HttpMethod[HttpMethod["PUT"] = 1] = "PUT";
+	    HttpMethod[HttpMethod["POST"] = 2] = "POST";
+	    HttpMethod[HttpMethod["DELETE"] = 3] = "DELETE";
+	    HttpMethod[HttpMethod["HEAD"] = 4] = "HEAD";
+	    HttpMethod[HttpMethod["PATCH"] = 5] = "PATCH";
+	})(exports.HttpMethod || (exports.HttpMethod = {}));
+	var HttpMethod = exports.HttpMethod;
+
+	var HttpRequest = function () {
+	    function HttpRequest(_method, _url) {
+	        _classCallCheck(this, HttpRequest);
+
+	        this._method = _method;
+	        this._url = _url;
+	        this._params = {};
+	        this._headers = new fetch_1.Headers();
+	        this._request = {};
+	        this._headers.append('X-Requested-With', 'XMLHttpRequest');
+	        this._request.method = HttpMethod[this._method];
+	    }
+
+	    _createClass(HttpRequest, [{
+	        key: 'uploadProgress',
+	        value: function uploadProgress(fn) {
+	            this._request.uploadProgress = fn;
+	            return this;
+	        }
+	    }, {
+	        key: 'downloadProgress',
+	        value: function downloadProgress(fn) {
+	            this._request.downloadProgress = fn;
+	            return this;
+	        }
+	    }, {
+	        key: 'header',
+	        value: function header(field, value) {
+	            if (orange_1.isString(field) && orange_1.isString(value)) {
+	                this._headers.append(field, value);
+	            } else if (orange_1.isObject(field)) {
+	                for (var key in field) {
+	                    this._headers.append(key, field[key]);
+	                }
+	            }
+	            return this;
+	        }
+	    }, {
+	        key: 'params',
+	        value: function params(key, value) {
+	            if (arguments.length === 1 && orange_1.isObject(key)) {
+	                orange_1.extend(this._params, key);
+	            } else if (arguments.length === 2) {
+	                this._params[key] = value;
+	            }
+	            return this;
+	        }
+	    }, {
+	        key: 'withCredentials',
+	        value: function withCredentials(ret) {
+	            this._xhr.withCredentials = ret;
+	            return this;
+	        }
+	    }, {
+	        key: 'json',
+	        value: function json(data) {
+	            var throwOnInvalid = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+	            this.header('content-type', 'application/json; charset=utf-8');
+	            if (!orange_1.isString(data)) {
+	                data = JSON.stringify(data);
+	            }
+	            return this.end(data, throwOnInvalid).then(function (res) {
+	                return res.json();
+	            });
+	        }
+	    }, {
+	        key: 'end',
+	        value: function end(data) {
+	            var throwOnInvalid = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+	            /*data = data || this._data;
+	             let defer = deferred();
+	             this._xhr.addEventListener('readystatechange', () => {
+	                if (this._xhr.readyState !== XMLHttpRequest.DONE) return;
+	                 let resp: Response<T> = {
+	                    status: this._xhr.status,
+	                    statusText: this._xhr.statusText,
+	                    body: null,
+	                    headers: {},
+	                    isValid: false,
+	                    contentLength: 0,
+	                    contentType: null
+	                };
+	                 let headers = this._xhr.getAllResponseHeaders().split('\r\n');
+	                 if (headers.length) {
+	                    for (let i = 0, ii = headers.length; i < ii; i++) {
+	                        if (headers[i] === '') continue;
+	                         let split = headers[i].split(':');
+	                        resp.headers[split[0].trim()] = split[1].trim();
+	                    }
+	                }
+	                 resp.contentType = resp.headers['Content-Type'];
+	                resp.contentLength = parseInt(resp.headers['Content-Length']);
+	                 if (isNaN(resp.contentLength)) resp.contentLength = 0;
+	                 resp.body = this._xhr.response;
+	                resp.isValid = isValid(this._xhr, this._url);
+	                 if (!resp.isValid && throwOnInvalid) {
+	                    return defer.reject(new HttpError(resp));
+	                }
+	                 defer.resolve(resp);
+	              });*/
+	            //let method = HttpMethod[this._method];
+	            //data = this._data;
+	            var url = this._url;
+	            if (data && data === Object(data) && this._method == HttpMethod.GET /* && check for content-type */) {
+	                    var sep = url.indexOf('?') === -1 ? '?' : '&';
+	                    var d = sep + utils_1.queryParam(data);
+	                    url += d;
+	                    data = null;
+	                }
+	            url = this._apply_params(url);
+	            return fetch_1.fetch(url, this._request).then(function (res) {
+	                if (!res.ok && throwOnInvalid) {
+	                    throw new Error(res.statusText);
+	                }
+	                return res;
+	            });
+	            /*this._xhr.open(method, url, true);
+	             for (let key in this._headers) {
+	                this._xhr.setRequestHeader(key, this._headers[key]);
+	            }
+	             this._xhr.send(data);
+	             return defer.promise;*/
+	        }
+	        /*public result<T>(data: any) : Result<T> {
+	           
+	            return <Result<T>{
+	                then (resolve, reject) {
+	                    
+	                },
+	                catch (reject) {
+	                    
+	                },
+	                json () {
+	                    
+	                }
+	            }
+	            
+	        }*/
+
+	    }, {
+	        key: '_apply_params',
+	        value: function _apply_params(url) {
+	            var params = {};
+	            var idx = url.indexOf('?');
+	            if (idx > -1) {
+	                params = orange_1.extend(params, utils_1.queryStringToParams(url.substr(idx + 1)));
+	                url = url.substr(0, idx);
+	            }
+	            orange_1.extend(params, this._params);
+	            if (!orange_1.isEmpty(params)) {
+	                var sep = url.indexOf('?') === -1 ? '?' : '&';
+	                url += sep + utils_1.queryParam(params);
+	            }
+	            return url;
+	        }
+	    }]);
+
+	    return HttpRequest;
+	}();
+
+	exports.HttpRequest = HttpRequest;
+	function get(url) {
+	    return new HttpRequest(HttpMethod.GET, url);
+	}
+	exports.get = get;
+	function post(url) {
+	    return new HttpRequest(HttpMethod.POST, url);
+	}
+	exports.post = post;
+	function put(url) {
+	    return new HttpRequest(HttpMethod.PUT, url);
+	}
+	exports.put = put;
+	function del(url) {
+	    return new HttpRequest(HttpMethod.DELETE, url);
+	}
+	exports.del = del;
+	function patch(url) {
+	    return new HttpRequest(HttpMethod.PATCH, url);
+	}
+	exports.patch = patch;
+	function head(url) {
+	    return new HttpRequest(HttpMethod.HEAD, url);
+	}
+	exports.head = head;
+
+/***/ },
+/* 32 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var orange_1 = __webpack_require__(9);
+	(function (HttpMethod) {
+	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
+	    HttpMethod[HttpMethod["POST"] = 1] = "POST";
+	    HttpMethod[HttpMethod["PUT"] = 2] = "PUT";
+	    HttpMethod[HttpMethod["DELETE"] = 3] = "DELETE";
+	})(exports.HttpMethod || (exports.HttpMethod = {}));
+	var HttpMethod = exports.HttpMethod;
+
+	var AssetsError = function (_Error) {
+	    _inherits(AssetsError, _Error);
+
+	    function AssetsError(status, message) {
+	        _classCallCheck(this, AssetsError);
+
+	        if (orange_1.isString(status)) {
+	            message = status;
+	            status = 200;
+	        } else if (arguments.length === 1) {
+	            message = "";
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (AssetsError.__proto__ || Object.getPrototypeOf(AssetsError)).call(this, message));
+
+	        _this.message = message;
+	        _this.status = status;
+	        return _this;
+	    }
+
+	    _createClass(AssetsError, [{
+	        key: "toJSON",
+	        value: function toJSON() {
+	            var out = {
+	                status: this.status,
+	                message: this.message
+	            };
+	            if (this.name) out.name = this.name;
+	            return out;
+	        }
+	    }]);
+
+	    return AssetsError;
+	}(Error);
+
+	exports.AssetsError = AssetsError;
+
+	var HttpError = function (_AssetsError) {
+	    _inherits(HttpError, _AssetsError);
+
+	    function HttpError() {
+	        _classCallCheck(this, HttpError);
+
+	        return _possibleConstructorReturn(this, (HttpError.__proto__ || Object.getPrototypeOf(HttpError)).apply(this, arguments));
+	    }
+
+	    return HttpError;
+	}(AssetsError);
+
+	exports.HttpError = HttpError;
+
+/***/ },
+/* 33 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function __export(m) {
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
+	}
+	__export(__webpack_require__(34));
+
+/***/ },
+/* 34 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var collection_1 = __webpack_require__(35);
+	var utilities_1 = __webpack_require__(50);
+	var orange_1 = __webpack_require__(9);
+
+	var AssetsModel = function (_collection_1$RestMod) {
+	    _inherits(AssetsModel, _collection_1$RestMod);
+
+	    function AssetsModel(data, options) {
+	        _classCallCheck(this, AssetsModel);
+
+	        var _this = _possibleConstructorReturn(this, (AssetsModel.__proto__ || Object.getPrototypeOf(AssetsModel)).call(this, data, options));
+
+	        _this.idAttribute = "id";
+	        return _this;
+	    }
+
+	    _createClass(AssetsModel, [{
+	        key: 'getURL',
+	        value: function getURL() {
+	            var baseURL = orange_1.result(this, 'rootURL');
+	            if (this.collection) {
+	                baseURL = this.collection.getURL();
+	            }
+	            if (baseURL == null) throw new Error("no url");
+	            var path = this.get('path');
+	            path = utilities_1.normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
+	            return path;
+	        }
+	    }, {
+	        key: 'toJSON',
+	        value: function toJSON() {
+	            return _get(AssetsModel.prototype.__proto__ || Object.getPrototypeOf(AssetsModel.prototype), 'toJSON', this).call(this);
+	        }
+	    }, {
+	        key: 'fullPath',
+	        get: function get() {
+	            var path = this.get('path');
+	            if (path !== '/') {
+	                if (path[path.length - 1] !== '/') path += '/';
+	            }
+	            path = path + this.get('filename');
+	            return path;
+	        }
+	    }]);
+
+	    return AssetsModel;
+	}(collection_1.RestModel);
+
+	exports.AssetsModel = AssetsModel;
+
+	var AssetsCollection = function (_collection_1$Paginat) {
+	    _inherits(AssetsCollection, _collection_1$Paginat);
+
+	    function AssetsCollection(client, options) {
+	        _classCallCheck(this, AssetsCollection);
+
+	        var _this2 = _possibleConstructorReturn(this, (AssetsCollection.__proto__ || Object.getPrototypeOf(AssetsCollection)).call(this, null, {
+	            url: client.url
+	        }));
+
+	        _this2.Model = AssetsModel;
+	        _this2.comparator = 'name';
+	        options = options || { fetchOnUrl: true };
+	        _this2._state.size = 30;
+	        _this2.listenTo(client, 'change:url', function () {
+	            _this2.url = client.url;
+	            if (options.fetchOnUrl) _this2.fetch();
+	        });
+	        return _this2;
+	    }
+
+	    return AssetsCollection;
+	}(collection_1.PaginatedCollection);
+
+	exports.AssetsCollection = AssetsCollection;
+
+/***/ },
+/* 35 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	function __export(m) {
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
-	__export(__webpack_require__(25));
-	__export(__webpack_require__(27));
-	__export(__webpack_require__(29));
-	__export(__webpack_require__(26));
-	__export(__webpack_require__(28));
-	__export(__webpack_require__(30));
-	__export(__webpack_require__(34));
+	__export(__webpack_require__(36));
+	__export(__webpack_require__(42));
+	__export(__webpack_require__(43));
+	__export(__webpack_require__(44));
+	__export(__webpack_require__(45));
+	__export(__webpack_require__(49));
+	var collection_2 = __webpack_require__(36);
+	var rest_collection_2 = __webpack_require__(44);
+	var model_2 = __webpack_require__(42);
+	function isCollection(a) {
+	    if (a == null)
+	        return false;
+	    return (a instanceof collection_2.Collection) || a.__classType == 'Collection' || a.__classType == 'RestCollection';
+	}
+	exports.isCollection = isCollection;
+	function isRestCollection(a) {
+	    if (a == null)
+	        return false;
+	    return (a instanceof rest_collection_2.RestCollection) || a.__classType == 'RestCollection';
+	}
+	exports.isRestCollection = isRestCollection;
+	function isModel(a) {
+	    if (a == null)
+	        return false;
+	    return (a instanceof model_2.Model) || a.__classType === 'Model' || a.__classType === 'RestModel';
+	}
+	exports.isModel = isModel;
+	function isRestModel(a) {
+	    if (a == null)
+	        return false;
+	    return (a instanceof model_2.Model) || a.__classType === 'RestModel';
+	}
+	exports.isRestModel = isRestModel;
 
 
 /***/ },
-/* 25 */
+/* 36 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var utils_1 = __webpack_require__(26);
-	var __slice = Array.prototype.slice;
-	function isArray(array) {
-	    return Array.isArray(array);
-	}
-	exports.isArray = isArray;
-	function unique(array) {
-	    return array.filter(function (e, i) {
-	        for (i += 1; i < array.length; i += 1) {
-	            if (utils_1.equal(e, array[i])) {
-	                return false;
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var object_1 = __webpack_require__(37);
+	var model_1 = __webpack_require__(42);
+	var objects_1 = __webpack_require__(39);
+	var arrays_1 = __webpack_require__(40);
+	var utils_1 = __webpack_require__(38);
+	var setOptions = { add: true, remove: true, merge: true };
+	var addOptions = { add: true, remove: false };
+	var Collection = (function (_super) {
+	    __extends(Collection, _super);
+	    function Collection(models, options) {
+	        if (options === void 0) { options = {}; }
+	        _super.call(this);
+	        this.options = options;
+	        if (this.options.model) {
+	            this.Model = this.options.model;
+	        }
+	        if (models) {
+	            this.add(models);
+	        }
+	    }
+	    Object.defineProperty(Collection.prototype, "__classType", {
+	        get: function () { return 'Collection'; },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    ;
+	    Object.defineProperty(Collection.prototype, "length", {
+	        get: function () {
+	            return this.models.length;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Object.defineProperty(Collection.prototype, "Model", {
+	        get: function () {
+	            if (!this._model) {
+	                this._model = model_1.Model;
+	            }
+	            return this._model;
+	        },
+	        set: function (con) {
+	            this._model = con;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Object.defineProperty(Collection.prototype, "models", {
+	        get: function () {
+	            return this._models || (this._models = []);
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Collection.prototype.add = function (models, options) {
+	        var _this = this;
+	        if (options === void 0) { options = {}; }
+	        if (!Array.isArray(models)) {
+	            if (!(models instanceof this.Model)) {
+	                models = this._prepareModel(models);
 	            }
 	        }
-	        return true;
-	    });
-	}
-	exports.unique = unique;
-	function any(array, predicate) {
-	    for (var i = 0, ii = array.length; i < ii; i++) {
-	        if (predicate(array[i]))
-	            return true;
-	    }
-	    return false;
-	}
-	exports.any = any;
-	function indexOf(array, item) {
-	    for (var i = 0, len = array.length; i < len; i++)
-	        if (array[i] === item)
-	            return i;
-	    return -1;
-	}
-	exports.indexOf = indexOf;
-	function find(array, callback, ctx) {
-	    var v;
-	    for (var i = 0, ii = array.length; i < ii; i++) {
-	        if (callback.call(ctx, array[i]))
-	            return array[i];
-	    }
-	    return null;
-	}
-	exports.find = find;
-	function filter(array, callback, ctx) {
-	    return array.filter(function (e, i) {
-	        return callback.call(ctx, e, i);
-	    });
-	}
-	exports.filter = filter;
-	function slice(array, begin, end) {
-	    return __slice.call(array, begin, end);
-	}
-	exports.slice = slice;
-	function flatten(arr) {
-	    return arr.reduce(function (flat, toFlatten) {
-	        return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
-	    }, []);
-	}
-	exports.flatten = flatten;
-	function sortBy(obj, value, context) {
-	    var iterator = typeof value === 'function' ? value : function (obj) { return obj[value]; };
-	    return obj
-	        .map(function (value, index, list) {
-	        return {
-	            value: value,
-	            index: index,
-	            criteria: iterator.call(context, value, index, list)
-	        };
-	    })
-	        .sort(function (left, right) {
-	        var a = left.criteria, b = right.criteria;
-	        if (a !== b) {
-	            if (a > b || a === void 0)
-	                return 1;
-	            if (a < b || b === void 0)
-	                return -1;
+	        else {
+	            models = models.map(function (item) {
+	                return (item instanceof _this.Model) ? item : (_this._prepareModel(item));
+	            });
 	        }
-	        return left.index - right.index;
-	    })
-	        .map(function (item) {
-	        return item.value;
-	    });
-	}
-	exports.sortBy = sortBy;
+	        this.set(models, objects_1.extend({ merge: false }, options, addOptions));
+	    };
+	    Collection.prototype.set = function (items, options) {
+	        if (options === void 0) { options = {}; }
+	        options = objects_1.extend({}, setOptions, options);
+	        if (options.parse)
+	            items = this.parse(items, options);
+	        var singular = !Array.isArray(items);
+	        var models = (singular ? (items ? [items] : []) : items.slice());
+	        var i, l, id, model, attrs, existing, sort;
+	        var at = options.at;
+	        var sortable = this.comparator && (at == null) && options.sort !== false;
+	        var sortAttr = typeof this.comparator === 'string' ? this.comparator : null;
+	        var toAdd = [], toRemove = [], modelMap = {};
+	        var add = options.add, merge = options.merge, remove = options.remove;
+	        var order = !sortable && add && remove ? [] : null;
+	        for (i = 0, l = models.length; i < l; i++) {
+	            model = models[i];
+	            model = this._prepareModel(model);
+	            id = model.get(model.idAttribute) || model.uid;
+	            if (existing = this.get(id)) {
+	                if (remove)
+	                    modelMap[existing.uid] = true;
+	                if (merge) {
+	                    attrs = model.toJSON();
+	                    existing.set(attrs, options);
+	                    if (sortable && !sort && existing.hasChanged(sortAttr))
+	                        sort = true;
+	                }
+	                models[i] = existing;
+	            }
+	            else if (add) {
+	                models[i] = model;
+	                if (!model)
+	                    continue;
+	                toAdd.push(model);
+	                this._addReference(model, options);
+	            }
+	            model = existing || model;
+	            if (order && !modelMap[model.id])
+	                order.push(model);
+	            modelMap[model.uid] = true;
+	        }
+	        if (remove) {
+	            for (i = 0, l = this.length; i < l; ++i) {
+	                if (!modelMap[(model = this.models[i]).uid])
+	                    toRemove.push(model);
+	            }
+	            if (toRemove.length)
+	                this.remove(toRemove, options);
+	        }
+	        if (toAdd.length || (order && order.length)) {
+	            if (sortable)
+	                sort = true;
+	            if (at != null) {
+	                for (i = 0, l = toAdd.length; i < l; i++) {
+	                    this.models.splice(at + i, 0, toAdd[i]);
+	                }
+	            }
+	            else {
+	                if (order)
+	                    this.models.length = 0;
+	                var orderedModels = order || toAdd;
+	                for (i = 0, l = orderedModels.length; i < l; i++) {
+	                    this.models.push(orderedModels[i]);
+	                }
+	            }
+	        }
+	        if (sort)
+	            this.sort({ silent: true });
+	        if (!options.silent) {
+	            for (i = 0, l = toAdd.length; i < l; i++) {
+	                (model = toAdd[i]).trigger('add', model, this, options);
+	            }
+	            if (sort || (order && order.length))
+	                this.trigger('sort', this, options);
+	            if (toAdd.length || toRemove.length)
+	                this.trigger('update', this, options);
+	        }
+	        return singular ? models[0] : models;
+	    };
+	    Collection.prototype.remove = function (models, options) {
+	        if (options === void 0) { options = {}; }
+	        var singular = !Array.isArray(models);
+	        models = (singular ? [models] : models.slice());
+	        var i, l, index, model;
+	        for (i = 0, l = models.length; i < l; i++) {
+	            model = models[i] = this.get(models[i]);
+	            if (!model)
+	                continue;
+	            index = this.indexOf(model);
+	            this.models.splice(index, 1);
+	            if (!options.silent) {
+	                options.index = index;
+	                model.trigger('remove', model, this, options);
+	            }
+	            this._removeReference(model, options);
+	        }
+	        return singular ? models[0] : models;
+	    };
+	    Collection.prototype.get = function (id) {
+	        return this.find(id);
+	    };
+	    Collection.prototype.at = function (index) {
+	        return this.models[index];
+	    };
+	    Collection.prototype.clone = function (options) {
+	        options = options || this.options;
+	        return new this.constructor(this.models, options);
+	    };
+	    Collection.prototype.sort = function (options) {
+	        if (options === void 0) { options = {}; }
+	        if (!this.comparator)
+	            throw new Error('Cannot sort a set without a comparator');
+	        if (typeof this.comparator === 'string' || this.comparator.length === 1) {
+	            this._models = this.sortBy(this.comparator, this);
+	        }
+	        else {
+	            this.models.sort(this.comparator.bind(this));
+	        }
+	        if (!options.silent)
+	            this.trigger('sort', this, options);
+	        return this;
+	    };
+	    Collection.prototype.sortBy = function (key, context) {
+	        return arrays_1.sortBy(this._models, key, context);
+	    };
+	    Collection.prototype.push = function (model, options) {
+	        if (options === void 0) { options = {}; }
+	        return this.add(model, objects_1.extend({ at: this.length }, options));
+	    };
+	    Collection.prototype.reset = function (models, options) {
+	        var _this = this;
+	        if (options === void 0) { options = {}; }
+	        this.forEach(function (model) {
+	            _this._removeReference(model, options);
+	        });
+	        options.previousModels = this.models;
+	        this._reset();
+	        models = this.add(models, options);
+	        if (!options.silent)
+	            this.trigger('reset', this, options);
+	        return models;
+	    };
+	    Collection.prototype.create = function (values, options) {
+	        if (options === void 0) { options = { add: true }; }
+	        var model = new this.Model(values, options);
+	        if (options.add)
+	            this.add(model);
+	        return model;
+	    };
+	    Collection.prototype.parse = function (models, options) {
+	        if (options === void 0) { options = {}; }
+	        return models;
+	    };
+	    Collection.prototype.find = function (nidOrFn) {
+	        var model;
+	        if (typeof nidOrFn === 'function') {
+	            model = arrays_1.find(this.models, nidOrFn);
+	        }
+	        else {
+	            model = arrays_1.find(this.models, function (model) {
+	                return model.id == nidOrFn || model.uid == nidOrFn || nidOrFn === model;
+	            });
+	        }
+	        return model;
+	    };
+	    Collection.prototype.forEach = function (iterator, ctx) {
+	        for (var i = 0, l = this.models.length; i < l; i++) {
+	            iterator.call(ctx || this, this.models[i], i);
+	        }
+	        return this;
+	    };
+	    Collection.prototype.map = function (iterator, thisArgs) {
+	        var out = [];
+	        for (var i = 0, ii = this.length; i < ii; i++) {
+	            out.push(iterator.call(thisArgs, this.models[i], i, this));
+	        }
+	        return out;
+	    };
+	    Collection.prototype.filter = function (fn) {
+	        var out = [];
+	        this.forEach(function (m, i) {
+	            if (fn(m, i))
+	                out.push(m);
+	        });
+	        return out;
+	    };
+	    Collection.prototype.indexOf = function (model) {
+	        return this.models.indexOf(model);
+	    };
+	    Collection.prototype.toJSON = function () {
+	        return this.models.map(function (m) { return m.toJSON(); });
+	    };
+	    Collection.prototype._prepareModel = function (value) {
+	        if (value instanceof model_1.Model)
+	            return value;
+	        if (objects_1.isObject(value))
+	            return new this.Model(value, { parse: true });
+	        throw new Error('Value not an Object or an instance of a model, but was: ' + typeof value);
+	    };
+	    Collection.prototype._removeReference = function (model, options) {
+	        if (this === model.collection)
+	            delete model.collection;
+	        this.stopListening(model);
+	    };
+	    Collection.prototype._addReference = function (model, options) {
+	        if (!model.collection)
+	            model.collection = this;
+	        this.listenTo(model, 'all', this._onModelEvent);
+	    };
+	    Collection.prototype._reset = function () {
+	        this._models = [];
+	    };
+	    Collection.prototype._onModelEvent = function (event, model, collection, options) {
+	        if ((event === 'add' || event === 'remove') && collection !== this)
+	            return;
+	        if (event === 'destroy')
+	            this.remove(model, options);
+	        utils_1.callFunc(this.trigger, this, arrays_1.slice(arguments));
+	    };
+	    Collection.prototype.destroy = function () {
+	        var _this = this;
+	        this.models.forEach(function (m) {
+	            if (typeof m.destroy === 'function' &&
+	                m.collection == _this)
+	                m.destroy();
+	        });
+	        _super.prototype.destroy.call(this);
+	    };
+	    return Collection;
+	}(object_1.BaseObject));
+	exports.Collection = Collection;
 
 
 /***/ },
-/* 26 */
+/* 37 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var objects_1 = __webpack_require__(27);
-	var arrays_1 = __webpack_require__(25);
-	var strings_1 = __webpack_require__(28);
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var eventsjs_1 = __webpack_require__(8);
+	var utils_1 = __webpack_require__(38);
+	var BaseObject = (function (_super) {
+	    __extends(BaseObject, _super);
+	    function BaseObject() {
+	        _super.apply(this, arguments);
+	    }
+	    BaseObject.extend = function (proto, stat) {
+	        return utils_1.inherits(this, proto, stat);
+	    };
+	    return BaseObject;
+	}(eventsjs_1.EventEmitter));
+	exports.BaseObject = BaseObject;
+
+
+/***/ },
+/* 38 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var objects_1 = __webpack_require__(39);
+	var arrays_1 = __webpack_require__(40);
+	var strings_1 = __webpack_require__(41);
 	var idCounter = 0;
 	var nativeBind = Function.prototype.bind;
 	function ajax() {
@@ -3651,11 +5799,11 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 27 */
+/* 39 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var utils_1 = __webpack_require__(26);
+	var utils_1 = __webpack_require__(38);
 	var __has = Object.prototype.hasOwnProperty;
 	function objToPaths(obj, separator) {
 	    if (separator === void 0) { separator = "."; }
@@ -3804,7 +5952,96 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 28 */
+/* 40 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var utils_1 = __webpack_require__(38);
+	var __slice = Array.prototype.slice;
+	function isArray(array) {
+	    return Array.isArray(array);
+	}
+	exports.isArray = isArray;
+	function unique(array) {
+	    return array.filter(function (e, i) {
+	        for (i += 1; i < array.length; i += 1) {
+	            if (utils_1.equal(e, array[i])) {
+	                return false;
+	            }
+	        }
+	        return true;
+	    });
+	}
+	exports.unique = unique;
+	function any(array, predicate) {
+	    for (var i = 0, ii = array.length; i < ii; i++) {
+	        if (predicate(array[i]))
+	            return true;
+	    }
+	    return false;
+	}
+	exports.any = any;
+	function indexOf(array, item) {
+	    for (var i = 0, len = array.length; i < len; i++)
+	        if (array[i] === item)
+	            return i;
+	    return -1;
+	}
+	exports.indexOf = indexOf;
+	function find(array, callback, ctx) {
+	    var v;
+	    for (var i = 0, ii = array.length; i < ii; i++) {
+	        if (callback.call(ctx, array[i]))
+	            return array[i];
+	    }
+	    return null;
+	}
+	exports.find = find;
+	function filter(array, callback, ctx) {
+	    return array.filter(function (e, i) {
+	        return callback.call(ctx, e, i);
+	    });
+	}
+	exports.filter = filter;
+	function slice(array, begin, end) {
+	    return __slice.call(array, begin, end);
+	}
+	exports.slice = slice;
+	function flatten(arr) {
+	    return arr.reduce(function (flat, toFlatten) {
+	        return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten);
+	    }, []);
+	}
+	exports.flatten = flatten;
+	function sortBy(obj, value, context) {
+	    var iterator = typeof value === 'function' ? value : function (obj) { return obj[value]; };
+	    return obj
+	        .map(function (value, index, list) {
+	        return {
+	            value: value,
+	            index: index,
+	            criteria: iterator.call(context, value, index, list)
+	        };
+	    })
+	        .sort(function (left, right) {
+	        var a = left.criteria, b = right.criteria;
+	        if (a !== b) {
+	            if (a > b || a === void 0)
+	                return 1;
+	            if (a < b || b === void 0)
+	                return -1;
+	        }
+	        return left.index - right.index;
+	    })
+	        .map(function (item) {
+	        return item.value;
+	    });
+	}
+	exports.sortBy = sortBy;
+
+
+/***/ },
+/* 41 */
 /***/ function(module, exports) {
 
 	"use strict";
@@ -3844,13 +6081,754 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 29 */
+/* 42 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var object_1 = __webpack_require__(37);
+	var utils_1 = __webpack_require__(38);
+	var objects_1 = __webpack_require__(39);
+	var Model = (function (_super) {
+	    __extends(Model, _super);
+	    function Model(attributes, options) {
+	        if (attributes === void 0) { attributes = {}; }
+	        if (options === void 0) { options = {}; }
+	        _super.call(this);
+	        options = options || {};
+	        this._attributes = {};
+	        this.options = options;
+	        if (options.parse)
+	            attributes = this.parse(attributes);
+	        this.set(attributes, { silent: true, array: false });
+	        this.uid = utils_1.uniqueId('uid');
+	        this._changed = {};
+	        this.collection = options.collection;
+	        this.idAttribute = options.idAttribute || this.idAttribute || 'id';
+	    }
+	    Object.defineProperty(Model.prototype, "__classType", {
+	        get: function () { return 'Model'; },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    ;
+	    Object.defineProperty(Model.prototype, "id", {
+	        get: function () {
+	            if (this.idAttribute in this._attributes)
+	                return this._attributes[this.idAttribute];
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Object.defineProperty(Model.prototype, "isNew", {
+	        get: function () {
+	            return this.id == null;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Object.defineProperty(Model.prototype, "isDirty", {
+	        get: function () {
+	            return this.hasChanged();
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Model.prototype.set = function (key, val, options) {
+	        if (options === void 0) { options = {}; }
+	        var attr, attrs = {}, unset, changes, silent, changing, prev, current;
+	        if (key == null)
+	            return this;
+	        if (typeof key === 'object') {
+	            attrs = key;
+	            options = val;
+	        }
+	        else {
+	            attrs[key] = val;
+	        }
+	        options || (options = {});
+	        unset = options.unset;
+	        silent = options.silent;
+	        changes = [];
+	        changing = this._changing;
+	        this._changing = true;
+	        if (!changing) {
+	            this._previousAttributes = objects_1.extend(Object.create(null), this._attributes);
+	            this._changed = {};
+	        }
+	        current = this._attributes, prev = this._previousAttributes;
+	        for (attr in attrs) {
+	            val = attrs[attr];
+	            if (!utils_1.equal(current[attr], val))
+	                changes.push(attr);
+	            if (!utils_1.equal(prev[attr], val)) {
+	                this._changed[attr] = val;
+	            }
+	            else {
+	                delete this._changed[attr];
+	            }
+	            unset ? delete current[attr] : current[attr] = val;
+	        }
+	        if (!silent) {
+	            if (changes.length)
+	                this._pending = !!options;
+	            for (var i = 0, l = changes.length; i < l; i++) {
+	                this.trigger('change:' + changes[i], this, current[changes[i]], options);
+	            }
+	        }
+	        if (changing)
+	            return this;
+	        if (!silent) {
+	            while (this._pending) {
+	                options = this._pending;
+	                this._pending = false;
+	                this.trigger('change', this, options);
+	            }
+	        }
+	        this._pending = false;
+	        this._changing = false;
+	        return this;
+	    };
+	    Model.prototype.get = function (key) {
+	        return this._attributes[key];
+	    };
+	    Model.prototype.unset = function (key, options) {
+	        this.set(key, void 0, objects_1.extend({}, options, { unset: true }));
+	    };
+	    Model.prototype.has = function (attr) {
+	        return this.get(attr) != null;
+	    };
+	    Model.prototype.hasChanged = function (attr) {
+	        if (attr == null)
+	            return !!Object.keys(this.changed).length;
+	        return objects_1.has(this.changed, attr);
+	    };
+	    Model.prototype.clear = function (options) {
+	        var attrs = {};
+	        for (var key in this._attributes)
+	            attrs[key] = void 0;
+	        return this.set(attrs, objects_1.extend({}, options, { unset: true }));
+	    };
+	    Object.defineProperty(Model.prototype, "changed", {
+	        get: function () {
+	            return objects_1.extend({}, this._changed);
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    Model.prototype.changedAttributes = function (diff) {
+	        if (!diff)
+	            return this.hasChanged() ? objects_1.extend(Object.create(null), this.changed) : false;
+	        var val, changed = {};
+	        var old = this._changing ? this._previousAttributes : this._attributes;
+	        for (var attr in diff) {
+	            if (utils_1.equal(old[attr], (val = diff[attr])))
+	                continue;
+	            (changed || (changed = {}))[attr] = val;
+	        }
+	        return changed;
+	    };
+	    Model.prototype.previous = function (attr) {
+	        if (attr == null || !this._previousAttributes)
+	            return null;
+	        return this._previousAttributes[attr];
+	    };
+	    Model.prototype.previousAttributes = function () {
+	        return objects_1.extend(Object.create(null), this._previousAttributes);
+	    };
+	    Model.prototype.toJSON = function () {
+	        return JSON.parse(JSON.stringify(this._attributes));
+	    };
+	    Model.prototype.clone = function () {
+	        return new (this.constructor)(this._attributes, this.options);
+	    };
+	    Model.prototype.parse = function (attr, options) {
+	        return attr;
+	    };
+	    Model.prototype.remove = function (options) {
+	        this.trigger('remove', this, this.collection, options);
+	    };
+	    Model.prototype.pick = function (attr) {
+	        var attrs = [];
+	        for (var _i = 1; _i < arguments.length; _i++) {
+	            attrs[_i - 1] = arguments[_i];
+	        }
+	        if (arguments.length === 1) {
+	            if (!Array.isArray(attr)) {
+	                attrs = [attr];
+	            }
+	            else {
+	                attrs = attr;
+	            }
+	        }
+	        else {
+	            attrs = [attr].concat(attrs);
+	        }
+	        var out = {};
+	        for (var i = 0, ii = attrs.length; i < ii; i++) {
+	            if (this.has(attrs[i]))
+	                out[attrs[i]] = this.get(attrs[i]);
+	        }
+	        return out;
+	    };
+	    return Model;
+	}(object_1.BaseObject));
+	exports.Model = Model;
+
+
+/***/ },
+/* 43 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var utils_1 = __webpack_require__(38);
+	var objects_1 = __webpack_require__(39);
+	var model_1 = __webpack_require__(42);
+	function objToPaths(obj, separator, array) {
+	    if (separator === void 0) { separator = "."; }
+	    if (array === void 0) { array = true; }
+	    var ret = {};
+	    if (!obj)
+	        return obj;
+	    for (var key in obj) {
+	        var val = obj[key];
+	        if (val && (val.constructor === Object || (array && val.constructor === Array)) && !objects_1.isEmpty(val)) {
+	            var obj2 = objToPaths(val);
+	            for (var key2 in obj2) {
+	                var val2 = obj2[key2];
+	                ret[key + separator + key2] = val2;
+	            }
+	        }
+	        else {
+	            ret[key] = val;
+	        }
+	    }
+	    return ret;
+	}
+	exports.objToPaths = objToPaths;
+	function isOnNestedModel(obj, path, separator) {
+	    if (separator === void 0) { separator = "."; }
+	    var fields = path ? path.split(separator) : [];
+	    if (!obj)
+	        return false;
+	    var result = obj;
+	    for (var i = 0, n = fields.length; i < n; i++) {
+	        if (result instanceof model_1.Model)
+	            return true;
+	        if (!result)
+	            return false;
+	        result = result[fields[i]];
+	    }
+	    return false;
+	}
+	function getNested(obj, path, return_exists, separator) {
+	    if (separator === void 0) { separator = "."; }
+	    if (!obj)
+	        return null;
+	    var fields = path ? path.split(separator) : [];
+	    var result = obj;
+	    return_exists || (return_exists === false);
+	    for (var i = 0, n = fields.length; i < n; i++) {
+	        if (return_exists && !objects_1.has(result, fields[i])) {
+	            return false;
+	        }
+	        result = result instanceof model_1.Model ? result.get(fields[i]) : result[fields[i]];
+	        if (result == null && i < n - 1) {
+	            result = {};
+	        }
+	        if (typeof result === 'undefined') {
+	            if (return_exists) {
+	                return true;
+	            }
+	            return result;
+	        }
+	    }
+	    if (return_exists) {
+	        return true;
+	    }
+	    return result;
+	}
+	exports.getNested = getNested;
+	function setNested(obj, path, val, options) {
+	    options = options || {};
+	    if (!obj)
+	        return null;
+	    var separator = options.separator || ".";
+	    var fields = path ? path.split(separator) : [];
+	    var result = obj;
+	    for (var i = 0, n = fields.length; i < n && result !== undefined; i++) {
+	        var field = fields[i];
+	        if (i === n - 1) {
+	            options.unset ? delete result[field] : result[field] = val;
+	        }
+	        else {
+	            if (typeof result[field] === 'undefined' || !objects_1.isObject(result[field])) {
+	                if (options.unset) {
+	                    delete result[field];
+	                    return;
+	                }
+	                var nextField = fields[i + 1];
+	                result[field] = /^\d+$/.test(nextField) ? [] : {};
+	            }
+	            result = result[field];
+	            if (result instanceof model_1.Model) {
+	                var rest = fields.slice(i + 1);
+	                return result.set(rest.join('.'), val, options);
+	            }
+	        }
+	    }
+	}
+	function deleteNested(obj, path) {
+	    setNested(obj, path, null, {
+	        unset: true
+	    });
+	}
+	var NestedModel = (function (_super) {
+	    __extends(NestedModel, _super);
+	    function NestedModel() {
+	        _super.apply(this, arguments);
+	    }
+	    NestedModel.prototype.get = function (attr) {
+	        return getNested(this._attributes, attr);
+	    };
+	    NestedModel.prototype.set = function (key, val, options) {
+	        var _this = this;
+	        var attr, attrs, unset, changes, silent, changing, prev, current;
+	        if (key == null)
+	            return this;
+	        if (typeof key === 'object') {
+	            attrs = key;
+	            options = val || {};
+	        }
+	        else {
+	            (attrs = {})[key] = val;
+	        }
+	        options || (options = {});
+	        unset = options.unset;
+	        silent = options.silent;
+	        changes = [];
+	        changing = this._changing;
+	        this._changing = true;
+	        if (!changing) {
+	            this._previousAttributes = objects_1.extend({}, this._attributes);
+	            this._changed = {};
+	        }
+	        current = this._attributes, prev = this._previousAttributes;
+	        var separator = NestedModel.keyPathSeparator;
+	        attrs = objToPaths(attrs, separator, options.array);
+	        var alreadyTriggered = {};
+	        if (!this._nestedListener)
+	            this._nestedListener = {};
+	        for (attr in attrs) {
+	            val = attrs[attr];
+	            var curVal = getNested(current, attr);
+	            if (!utils_1.equal(curVal, val)) {
+	                changes.push(attr);
+	                this._changed[attr] = val;
+	            }
+	            if (!utils_1.equal(getNested(prev, attr), val)) {
+	                setNested(this.changed, attr, val, options);
+	            }
+	            else {
+	                deleteNested(this.changed, attr);
+	            }
+	            if (curVal instanceof model_1.Model) {
+	                var fn = this._nestedListener[attr];
+	                if (fn) {
+	                    curVal.off('change', fn);
+	                    delete this._nestedListener[attr];
+	                }
+	            }
+	            if (unset) {
+	                deleteNested(current, attr);
+	            }
+	            else {
+	                if (!isOnNestedModel(current, attr, separator)) {
+	                    if (val instanceof model_1.Model) {
+	                        var fn = function (model) {
+	                            if (model.changed == undefined || objects_1.isEmpty(model.changed))
+	                                return;
+	                            for (var key_1 in model.changed) {
+	                                _this._changed[attr + separator + key_1] = model.changed[key_1];
+	                                _this.trigger('change:' + attr + separator + key_1, model.changed[key_1]);
+	                            }
+	                            _this.trigger('change', _this, options);
+	                        };
+	                        this._nestedListener[attr] = fn;
+	                        val.on('change', fn);
+	                    }
+	                }
+	                else {
+	                    alreadyTriggered[attr] = true;
+	                }
+	                setNested(current, attr, val, options);
+	            }
+	        }
+	        if (!silent) {
+	            if (changes.length)
+	                this._pending = true;
+	            for (var i = 0, l = changes.length; i < l; i++) {
+	                var key_2 = changes[i];
+	                if (!alreadyTriggered.hasOwnProperty(key_2) || !alreadyTriggered[key_2]) {
+	                    alreadyTriggered[key_2] = true;
+	                    this.trigger('change:' + key_2, this, getNested(current, key_2), options);
+	                }
+	                var fields = key_2.split(separator);
+	                for (var n = fields.length - 1; n > 0; n--) {
+	                    var parentKey = fields.slice(0, n).join(separator), wildcardKey = parentKey + separator + '*';
+	                    if (!alreadyTriggered.hasOwnProperty(wildcardKey) || !alreadyTriggered[wildcardKey]) {
+	                        alreadyTriggered[wildcardKey] = true;
+	                        this.trigger('change:' + wildcardKey, this, getNested(current, parentKey), options);
+	                    }
+	                    if (!alreadyTriggered.hasOwnProperty(parentKey) || !alreadyTriggered[parentKey]) {
+	                        alreadyTriggered[parentKey] = true;
+	                        this.trigger('change:' + parentKey, this, getNested(current, parentKey), options);
+	                    }
+	                }
+	            }
+	        }
+	        if (changing)
+	            return this;
+	        if (!silent) {
+	            while (this._pending) {
+	                this._pending = false;
+	                this.trigger('change', this, options);
+	            }
+	        }
+	        this._pending = false;
+	        this._changing = false;
+	        return this;
+	    };
+	    NestedModel.prototype.clear = function (options) {
+	        var attrs = {};
+	        var shallowAttributes = objToPaths(this._attributes);
+	        for (var key in shallowAttributes)
+	            attrs[key] = void 0;
+	        return this.set(attrs, objects_1.extend({}, options, {
+	            unset: true
+	        }));
+	    };
+	    NestedModel.prototype.hasChanged = function (attr) {
+	        if (attr == null) {
+	            return !Object.keys(this.changed).length;
+	        }
+	        return getNested(this.changed, attr) !== undefined;
+	    };
+	    NestedModel.prototype.changedAttributes = function (diff) {
+	        if (!diff)
+	            return this.hasChanged() ? objToPaths(this.changed) : false;
+	        var old = this._changing ? this._previousAttributes : this._attributes;
+	        diff = objToPaths(diff);
+	        old = objToPaths(old);
+	        var val, changed = false;
+	        for (var attr in diff) {
+	            if (utils_1.equal(old[attr], (val = diff[attr])))
+	                continue;
+	            (changed || (changed = {}))[attr] = val;
+	        }
+	        return changed;
+	    };
+	    NestedModel.prototype.previous = function (attr) {
+	        if (attr == null || !this._previousAttributes) {
+	            return null;
+	        }
+	        return getNested(this._previousAttributes, attr);
+	    };
+	    NestedModel.prototype.previousAttributes = function () {
+	        return objects_1.extend({}, this._previousAttributes);
+	    };
+	    NestedModel.prototype.pick = function (attr) {
+	        var attrs = [];
+	        for (var _i = 1; _i < arguments.length; _i++) {
+	            attrs[_i - 1] = arguments[_i];
+	        }
+	        if (arguments.length === 1) {
+	            attr = !Array.isArray(attr) ? [attr] : attr;
+	        }
+	        else {
+	            attrs = [attr].concat(attrs);
+	        }
+	        var out = {};
+	        for (var i = 0, ii = attrs.length; i < ii; i++) {
+	            if (this.has(attrs[i])) {
+	                setNested(out, attrs[i], this.get(attrs[i]));
+	            }
+	        }
+	        return out;
+	    };
+	    NestedModel.prototype.destroy = function () {
+	        for (var key in this._nestedListener) {
+	            var fn = this._nestedListener[key];
+	            if (fn) {
+	                var m = this.get(key);
+	                if (m)
+	                    m.off(key, fn);
+	            }
+	        }
+	        _super.prototype.destroy.call(this);
+	    };
+	    NestedModel.keyPathSeparator = '.';
+	    return NestedModel;
+	}(model_1.Model));
+	exports.NestedModel = NestedModel;
+
+
+/***/ },
+/* 44 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var objects_1 = __webpack_require__(39);
+	var collection_1 = __webpack_require__(36);
+	var rest_model_1 = __webpack_require__(45);
+	var promises_1 = __webpack_require__(46);
+	var persistence_1 = __webpack_require__(47);
+	var RestCollection = (function (_super) {
+	    __extends(RestCollection, _super);
+	    function RestCollection(models, options) {
+	        if (options === void 0) { options = {}; }
+	        _super.call(this, models, options);
+	        if (options.url)
+	            this.url = options.url;
+	        this.options.queryParameter = this.options.queryParameter || 'q';
+	    }
+	    Object.defineProperty(RestCollection.prototype, "__classType", {
+	        get: function () { return 'RestCollection'; },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    ;
+	    RestCollection.prototype.getURL = function () {
+	        return typeof this.url === 'function' ? this.url() : this.url;
+	    };
+	    RestCollection.prototype.fetch = function (options) {
+	        var _this = this;
+	        options = options ? objects_1.extend({}, options) : {};
+	        var url = this.getURL();
+	        if (url == null)
+	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
+	        options.url = url;
+	        this.trigger('before:fetch');
+	        return this.sync(persistence_1.RestMethod.Read, this, options)
+	            .then(function (results) {
+	            _this[options.reset ? 'reset' : 'set'](results.content, options);
+	            _this.trigger('fetch');
+	            return _this;
+	        }).catch(function (e) {
+	            _this.trigger('error', e);
+	            throw e;
+	        });
+	    };
+	    RestCollection.prototype.create = function (value, options) {
+	        var _this = this;
+	        options = options ? objects_1.extend({}, options) : {};
+	        var model;
+	        var url = this.getURL();
+	        if (url == null)
+	            throw new Error('Url or rootURL no specified');
+	        options.url = url;
+	        if (value instanceof rest_model_1.RestModel) {
+	            model = value;
+	        }
+	        else {
+	            model = new this.Model(value, { parse: true, url: this.getURL() });
+	        }
+	        if (options.wait === void 0)
+	            options.wait = true;
+	        if (!options.wait)
+	            this.add(model, options);
+	        this.trigger('before:create', this, model, value, options);
+	        model.save().then(function () {
+	            if (!options.wait)
+	                _this.add(model, options);
+	            _this.trigger('create', _this, model, value, options);
+	            if (options.complete)
+	                options.complete(null, model);
+	        }).catch(function (e) {
+	            _this.trigger('error', e);
+	            if (options.complete)
+	                options.complete(e, null);
+	        });
+	        return model;
+	    };
+	    RestCollection.prototype.query = function (term, options) {
+	        var _this = this;
+	        if (options === void 0) { options = {}; }
+	        var params = (_a = {}, _a[this.options.queryParameter] = term, _a);
+	        var url = this.getURL();
+	        if (url == null)
+	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
+	        options.url = url;
+	        if (!options.params)
+	            options.params = {};
+	        objects_1.extend(options.params, params);
+	        this.trigger('before:query');
+	        return this.sync(persistence_1.RestMethod.Read, this, options)
+	            .then(function (results) {
+	            _this.reset(results.content, options);
+	            _this.trigger('query');
+	            return _this.models;
+	        }).catch(function (e) {
+	            _this.trigger('error', e);
+	            throw e;
+	        });
+	        var _a;
+	    };
+	    RestCollection.prototype.sync = function (method, model, options) {
+	        return persistence_1.sync(method, model, options);
+	    };
+	    return RestCollection;
+	}(collection_1.Collection));
+	exports.RestCollection = RestCollection;
+
+
+/***/ },
+/* 45 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var objects_1 = __webpack_require__(39);
+	var promises_1 = __webpack_require__(46);
+	var nested_model_1 = __webpack_require__(43);
+	var persistence_1 = __webpack_require__(47);
+	function normalize_path(url, id) {
+	    var i, p = "";
+	    if ((i = url.indexOf('?')) >= 0) {
+	        p = url.substr(i);
+	        url = url.substr(0, i);
+	    }
+	    if (url[url.length - 1] !== '/')
+	        url += '/';
+	    return url + id + p;
+	}
+	exports.normalize_path = normalize_path;
+	var RestModel = (function (_super) {
+	    __extends(RestModel, _super);
+	    function RestModel(attr, options) {
+	        if (options === void 0) { options = {}; }
+	        _super.call(this, attr, options);
+	        this.idAttribute = 'id';
+	        if (options.url) {
+	            this.rootURL = options.url;
+	        }
+	    }
+	    Object.defineProperty(RestModel.prototype, "__classType", {
+	        get: function () { return 'RestModel'; },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    ;
+	    RestModel.prototype.getURL = function (id) {
+	        var url = this.rootURL;
+	        if (this.collection && this.collection.getURL()) {
+	            url = this.collection.getURL();
+	        }
+	        id = id || this.id;
+	        if (id && url) {
+	            url = normalize_path(url, this.id);
+	        }
+	        return url;
+	    };
+	    RestModel.prototype.fetch = function (options) {
+	        var _this = this;
+	        options = options ? objects_1.extend({}, options) : {};
+	        var url = this.getURL();
+	        if (url == null)
+	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
+	        options.url = url;
+	        this.trigger('before:fetch', this, options);
+	        return this.sync(persistence_1.RestMethod.Read, this, options)
+	            .then(function (result) {
+	            if (result)
+	                _this.set(_this.parse(result.content, options), options);
+	            _this.trigger('fetch', _this, result, options);
+	            return _this;
+	        }).catch(function (e) {
+	            _this.trigger('error', _this, e);
+	            if (e) {
+	                throw e;
+	            }
+	            return _this;
+	        });
+	    };
+	    RestModel.prototype.save = function (options) {
+	        var _this = this;
+	        options = options ? objects_1.extend({}, options) : {};
+	        this.trigger('before:save', this, options);
+	        var method = persistence_1.RestMethod[this.isNew ? 'Create' : options.changed ? 'Patch' : "Update"];
+	        var url = this.getURL(this.id);
+	        if (url == null)
+	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
+	        options.url = url;
+	        return this.sync(method, this, options)
+	            .then(function (result) {
+	            _this.set(result.content, options);
+	            _this.trigger('save', _this, result, options);
+	            return _this;
+	        }).catch(function (e) {
+	            _this.trigger('error', _this, e);
+	            throw e;
+	        });
+	    };
+	    RestModel.prototype.remove = function (options) {
+	        var _this = this;
+	        options = options ? objects_1.extend({}, options) : {};
+	        if (this.isNew) {
+	            _super.prototype.remove.call(this, options);
+	            return promises_1.Promise.resolve(this);
+	        }
+	        var url = this.getURL(this.id);
+	        if (url == null)
+	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
+	        this.trigger('before:remove', this, options);
+	        if (!options.wait)
+	            _super.prototype.remove.call(this, options);
+	        options.url = url;
+	        return this.sync(persistence_1.RestMethod.Delete, this, options)
+	            .then(function (result) {
+	            if (!options.wait)
+	                _super.prototype.remove.call(_this, options);
+	            return _this;
+	        }).catch(function (e) {
+	            _this.trigger('error', _this, e);
+	            throw e;
+	        });
+	    };
+	    RestModel.prototype.sync = function (method, model, options) {
+	        return persistence_1.sync(method, model, options);
+	    };
+	    return RestModel;
+	}(nested_model_1.NestedModel));
+	exports.RestModel = RestModel;
+
+
+/***/ },
+/* 46 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(global) {"use strict";
-	var objects_1 = __webpack_require__(27);
-	var arrays_1 = __webpack_require__(25);
-	var utils_1 = __webpack_require__(26);
+	var objects_1 = __webpack_require__(39);
+	var arrays_1 = __webpack_require__(40);
+	var utils_1 = __webpack_require__(38);
 	exports.Promise = (typeof window === 'undefined') ? global.Promise : window.Promise;
 	function isPromise(obj) {
 	    return obj && typeof obj.then === 'function';
@@ -3984,19 +6962,1664 @@ return /******/ (function(modules) { // webpackBootstrap
 	/* WEBPACK VAR INJECTION */}.call(exports, (function() { return this; }())))
 
 /***/ },
-/* 30 */
+/* 47 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var promises_1 = __webpack_require__(46);
+	var utils_1 = __webpack_require__(38);
+	var request_1 = __webpack_require__(48);
+	var HttpError = (function (_super) {
+	    __extends(HttpError, _super);
+	    function HttpError(status, message, body) {
+	        _super.call(this, message);
+	        this.message = message;
+	        this.status = status;
+	        this.body = body;
+	    }
+	    return HttpError;
+	}(Error));
+	exports.HttpError = HttpError;
+	(function (RestMethod) {
+	    RestMethod[RestMethod["Create"] = 0] = "Create";
+	    RestMethod[RestMethod["Update"] = 1] = "Update";
+	    RestMethod[RestMethod["Read"] = 2] = "Read";
+	    RestMethod[RestMethod["Patch"] = 3] = "Patch";
+	    RestMethod[RestMethod["Delete"] = 4] = "Delete";
+	})(exports.RestMethod || (exports.RestMethod = {}));
+	var RestMethod = exports.RestMethod;
+	;
+	var xmlRe = /^(?:application|text)\/xml/;
+	var jsonRe = /^application\/json/;
+	var getData = function (accepts, xhr) {
+	    if (accepts == null)
+	        accepts = xhr.getResponseHeader('content-type');
+	    if (xmlRe.test(accepts)) {
+	        return xhr.responseXML;
+	    }
+	    else if (jsonRe.test(accepts) && xhr.responseText !== '') {
+	        return JSON.parse(xhr.responseText);
+	    }
+	    else {
+	        return xhr.responseText;
+	    }
+	};
+	var isValid = function (xhr) {
+	    return (xhr.status >= 200 && xhr.status < 300) ||
+	        (xhr.status === 304) ||
+	        (xhr.status === 0 && window.location.protocol === 'file:');
+	};
+	function sync(method, model, options) {
+	    var http;
+	    switch (method) {
+	        case RestMethod.Create:
+	            http = 'POST';
+	            break;
+	        case RestMethod.Update:
+	            http = "PUT";
+	            break;
+	        case RestMethod.Patch:
+	            http = "PATCH";
+	            break;
+	        case RestMethod.Delete:
+	            http = "DELETE";
+	            break;
+	        case RestMethod.Read:
+	            http = "GET";
+	            break;
+	        default:
+	            return promises_1.Promise.reject(new Error("Sync: does not recognise method: " + method));
+	    }
+	    var xhr = utils_1.ajax();
+	    var query, url = options.url;
+	    if (options.params)
+	        query = request_1.queryParam(options.params);
+	    if (query) {
+	        var sep = (options.url.indexOf('?') === -1) ? '?' : '&';
+	        url += sep + query;
+	    }
+	    return new promises_1.Promise(function (resolve, reject) {
+	        xhr.onreadystatechange = function () {
+	            if (xhr.readyState !== 4)
+	                return;
+	            var data;
+	            try {
+	                data = getData(options.headers['Accept'], xhr);
+	            }
+	            catch (e) {
+	                return reject(new Error('Could not serialize response'));
+	            }
+	            var response = {
+	                method: method,
+	                status: xhr.status,
+	                content: data
+	            };
+	            utils_1.proxy(response, xhr, ['getAllResponseHeaders', 'getResponseHeader']);
+	            if (isValid(xhr)) {
+	                return resolve(response);
+	            }
+	            else {
+	                var error = new HttpError(xhr.status, xhr.statusText, data);
+	                return reject(error);
+	            }
+	        };
+	        xhr.open(http, url, true);
+	        if (!(options.headers && options.headers['Accept'])) {
+	            options.headers = {
+	                Accept: "application/json"
+	            };
+	        }
+	        xhr.setRequestHeader('Content-Type', "application/json");
+	        if (options.headers)
+	            for (var key in options.headers) {
+	                xhr.setRequestHeader(key, options.headers[key]);
+	            }
+	        if (options.beforeSend)
+	            options.beforeSend(xhr);
+	        xhr.send(JSON.stringify(model.toJSON()));
+	    });
+	}
+	exports.sync = sync;
+
+
+/***/ },
+/* 48 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var strings_1 = __webpack_require__(41);
+	var objects_1 = __webpack_require__(39);
+	var promises_1 = __webpack_require__(46);
+	var utils_1 = __webpack_require__(38);
+	(function (HttpMethod) {
+	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
+	    HttpMethod[HttpMethod["PUT"] = 1] = "PUT";
+	    HttpMethod[HttpMethod["POST"] = 2] = "POST";
+	    HttpMethod[HttpMethod["DELETE"] = 3] = "DELETE";
+	    HttpMethod[HttpMethod["HEAD"] = 4] = "HEAD";
+	})(exports.HttpMethod || (exports.HttpMethod = {}));
+	var HttpMethod = exports.HttpMethod;
+	function isResponse(a) {
+	    return objects_1.isObject(status) && objects_1.has(a, 'status') && objects_1.has(a, 'statusText') && objects_1.has(a, 'body');
+	}
+	exports.isResponse = isResponse;
+	var HttpError = (function (_super) {
+	    __extends(HttpError, _super);
+	    function HttpError(status, message, body) {
+	        _super.call(this, message);
+	        if (arguments.length === 1) {
+	            if (isResponse(status)) {
+	                this.status = status.status;
+	                this.message = status.statusText;
+	                this.body = status.body;
+	            }
+	            else {
+	                this.status = status;
+	            }
+	        }
+	        else {
+	            this.status = status;
+	            this.message = message;
+	            this.body = body;
+	        }
+	    }
+	    return HttpError;
+	}(Error));
+	exports.HttpError = HttpError;
+	var ResponseError = (function (_super) {
+	    __extends(ResponseError, _super);
+	    function ResponseError(message) {
+	        _super.call(this, message);
+	    }
+	    return ResponseError;
+	}(Error));
+	exports.ResponseError = ResponseError;
+	function queryStringToParams(qs) {
+	    var kvp, k, v, ls, params = {}, decode = decodeURIComponent;
+	    var kvps = qs.split('&');
+	    for (var i = 0, l = kvps.length; i < l; i++) {
+	        var param = kvps[i];
+	        kvp = param.split('='), k = kvp[0], v = kvp[1];
+	        if (v == null)
+	            v = true;
+	        k = decode(k), v = decode(v), ls = params[k];
+	        if (Array.isArray(ls))
+	            ls.push(v);
+	        else if (ls)
+	            params[k] = [ls, v];
+	        else
+	            params[k] = v;
+	    }
+	    return params;
+	}
+	exports.queryStringToParams = queryStringToParams;
+	function queryParam(obj) {
+	    return Object.keys(obj).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(obj[k])); return a; }, []).join('&');
+	}
+	exports.queryParam = queryParam;
+	var jsonRe = /^application\/json/, fileProto = /^file:/;
+	var isValid = function (xhr, url) {
+	    return (xhr.status >= 200 && xhr.status < 300) ||
+	        (xhr.status === 304) ||
+	        (xhr.status === 0 && fileProto.test(url)) ||
+	        (xhr.status === 0 && window.location.protocol === 'file:');
+	};
+	var Request = (function () {
+	    function Request(_method, _url) {
+	        this._method = _method;
+	        this._url = _url;
+	        this._params = {};
+	        this._headers = { 'X-Requested-With': 'XMLHttpRequest' };
+	        this._xhr = utils_1.ajax();
+	    }
+	    Request.prototype.uploadProgress = function (fn) {
+	        this._xhr.upload.addEventListener('progress', fn);
+	        return this;
+	    };
+	    Request.prototype.downloadProgress = function (fn) {
+	        this._xhr.addEventListener('progress', fn);
+	        return this;
+	    };
+	    Request.prototype.header = function (field, value) {
+	        if (strings_1.isString(field) && strings_1.isString(value)) {
+	            this._headers[field] = value;
+	        }
+	        else if (objects_1.isObject(field)) {
+	            objects_1.extend(this._headers, field);
+	        }
+	        return this;
+	    };
+	    Request.prototype.params = function (key, value) {
+	        if (arguments.length === 1 && objects_1.isObject(key)) {
+	            objects_1.extend(this._params, key);
+	        }
+	        else if (arguments.length === 2) {
+	            this._params[key] = value;
+	        }
+	        return this;
+	    };
+	    Request.prototype.withCredentials = function (ret) {
+	        this._xhr.withCredentials = ret;
+	        return this;
+	    };
+	    Request.prototype.json = function (data, throwOnInvalid) {
+	        var _this = this;
+	        if (throwOnInvalid === void 0) { throwOnInvalid = false; }
+	        this.header('content-type', 'application/json; charset=utf-8');
+	        if (!strings_1.isString(data)) {
+	            data = JSON.stringify(data);
+	        }
+	        return this.end(data, throwOnInvalid)
+	            .then(function (resp) {
+	            var accepts = _this._xhr.getResponseHeader('content-type');
+	            if (jsonRe.test(accepts) && resp.body != "") {
+	                var json = JSON.parse(resp.body);
+	                var jResp = resp;
+	                jResp.body = json;
+	                return jResp;
+	            }
+	            else {
+	                throw new ResponseError("type error");
+	            }
+	        });
+	    };
+	    Request.prototype.end = function (data, throwOnInvalid) {
+	        var _this = this;
+	        if (throwOnInvalid === void 0) { throwOnInvalid = false; }
+	        data = data || this._data;
+	        var defer = promises_1.deferred();
+	        this._xhr.addEventListener('readystatechange', function () {
+	            if (_this._xhr.readyState !== XMLHttpRequest.DONE)
+	                return;
+	            var resp = {
+	                status: _this._xhr.status,
+	                statusText: _this._xhr.statusText,
+	                body: null,
+	                headers: {},
+	                isValid: false,
+	                contentLength: 0,
+	                contentType: null
+	            };
+	            var headers = _this._xhr.getAllResponseHeaders().split('\r\n');
+	            if (headers.length) {
+	                for (var i = 0, ii = headers.length; i < ii; i++) {
+	                    if (headers[i] === '')
+	                        continue;
+	                    var split = headers[i].split(':');
+	                    resp.headers[split[0].trim()] = split[1].trim();
+	                }
+	            }
+	            resp.contentType = resp.headers['Content-Type'];
+	            resp.contentLength = parseInt(resp.headers['Content-Length']);
+	            if (isNaN(resp.contentLength))
+	                resp.contentLength = 0;
+	            resp.body = _this._xhr.response;
+	            resp.isValid = isValid(_this._xhr, _this._url);
+	            if (!resp.isValid && throwOnInvalid) {
+	                return defer.reject(new HttpError(resp));
+	            }
+	            defer.resolve(resp);
+	        });
+	        var method = HttpMethod[this._method];
+	        var url = this._url;
+	        if (data && data === Object(data) && this._method == HttpMethod.GET) {
+	            var sep = (url.indexOf('?') === -1) ? '?' : '&';
+	            var d = sep + queryParam(data);
+	            url += d;
+	        }
+	        url = this._apply_params(url);
+	        this._xhr.open(method, url, true);
+	        for (var key in this._headers) {
+	            this._xhr.setRequestHeader(key, this._headers[key]);
+	        }
+	        this._xhr.send(data);
+	        return defer.promise;
+	    };
+	    Request.prototype._apply_params = function (url) {
+	        var params = {};
+	        var idx = url.indexOf('?');
+	        if (idx > -1) {
+	            params = objects_1.extend(params, queryStringToParams(url.substr(idx + 1)));
+	            url = url.substr(0, idx);
+	        }
+	        objects_1.extend(params, this._params);
+	        if (!objects_1.isEmpty(params)) {
+	            var sep = (url.indexOf('?') === -1) ? '?' : '&';
+	            url += sep + queryParam(params);
+	        }
+	        return url;
+	    };
+	    return Request;
+	}());
+	exports.Request = Request;
+	exports.request = {};
+	['get', 'post', 'put', 'delete', 'patch', 'head']
+	    .forEach(function (m) {
+	    exports.request[m === 'delete' ? 'del' : m] = function (url) {
+	        var mm = HttpMethod[m.toUpperCase()];
+	        return new Request(mm, url);
+	    };
+	});
+
+
+/***/ },
+/* 49 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	var __extends = (this && this.__extends) || function (d, b) {
+	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+	    function __() { this.constructor = d; }
+	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+	};
+	var collection_1 = __webpack_require__(36);
+	var rest_collection_1 = __webpack_require__(44);
+	var promises_1 = __webpack_require__(46);
+	var persistence_1 = __webpack_require__(47);
+	var objects_1 = __webpack_require__(39);
+	var request_1 = __webpack_require__(48);
+	var PARAM_TRIM_RE = /[\s'"]/g;
+	var URL_TRIM_RE = /[<>\s'"]/g;
+	function queryStringToParams(qs) {
+	    var kvp, k, v, ls, params = {}, decode = decodeURIComponent;
+	    var kvps = qs.split('&');
+	    for (var i = 0, l = kvps.length; i < l; i++) {
+	        var param = kvps[i];
+	        kvp = param.split('='), k = kvp[0], v = kvp[1];
+	        if (v == null)
+	            v = true;
+	        k = decode(k), v = decode(v), ls = params[k];
+	        if (Array.isArray(ls))
+	            ls.push(v);
+	        else if (ls)
+	            params[k] = [ls, v];
+	        else
+	            params[k] = v;
+	    }
+	    return params;
+	}
+	var PaginatedCollection = (function (_super) {
+	    __extends(PaginatedCollection, _super);
+	    function PaginatedCollection(models, options) {
+	        if (options === void 0) { options = {}; }
+	        _super.call(this, models, options);
+	        this._state = { first: 1, last: -1, current: 1, size: 10 };
+	        this._link = {};
+	        this.queryParams = {
+	            page: 'page',
+	            size: 'pageSize'
+	        };
+	        if (options.queryParams) {
+	            objects_1.extend(this.queryParams, options.queryParams);
+	        }
+	        if (options.firstPage)
+	            this._state.first = options.firstPage;
+	        if (options.pageSize)
+	            this._state.size = options.pageSize;
+	        this._state.current = this._state.first;
+	        this._page = new collection_1.Collection();
+	        this._page.Model = this.Model;
+	    }
+	    Object.defineProperty(PaginatedCollection.prototype, "page", {
+	        get: function () {
+	            return this._page;
+	        },
+	        enumerable: true,
+	        configurable: true
+	    });
+	    PaginatedCollection.prototype.hasNext = function () {
+	        return this.hasPage(this._state.current + 1);
+	    };
+	    PaginatedCollection.prototype.hasPrevious = function () {
+	        return this.hasPage(this._state.current - 1);
+	    };
+	    PaginatedCollection.prototype.hasPage = function (page) {
+	        if (this._state.last > -1) {
+	            return page <= this._state.last;
+	        }
+	        return false;
+	    };
+	    PaginatedCollection.prototype.getPreviousPage = function (options) {
+	        options = options ? objects_1.extend({}, options) : {};
+	        options.page = this._state.current - 1;
+	        return this.getPage(options);
+	    };
+	    PaginatedCollection.prototype.getNextPage = function (options) {
+	        options = options ? objects_1.extend({}, options) : {};
+	        options.page = this._state.current + 1;
+	        return this.getPage(options);
+	    };
+	    PaginatedCollection.prototype.getPage = function (options) {
+	        options = options ? objects_1.extend({}, options) : {};
+	        if (options.page === void 0)
+	            return promises_1.Promise.reject(new Error("No page"));
+	        if (this._state.last < options.page && this._state.last != -1) {
+	            options.page = this._state.last;
+	        }
+	        else if (options.page < this._state.first) {
+	            options.page = this._state.first;
+	        }
+	        return this.fetch(options);
+	    };
+	    PaginatedCollection.prototype.fetch = function (options) {
+	        var _this = this;
+	        if (options === void 0) { options = {}; }
+	        options = options ? objects_1.extend({}, options) : {};
+	        var url;
+	        if (!objects_1.has(options, 'page')) {
+	            options.page = this._state.current;
+	        }
+	        var params = options.params ? objects_1.extend({}, options.params) : {};
+	        if (objects_1.has(params, this.queryParams.page))
+	            delete params[this.queryParams.page];
+	        url = this._link[options.page];
+	        if (!url) {
+	            url = this.getURL();
+	        }
+	        if (!url)
+	            return promises_1.Promise.reject(new Error("no url specified"));
+	        var idx = url.indexOf('?');
+	        if (idx > -1) {
+	            params = objects_1.extend(params, queryStringToParams(url.substr(idx + 1)));
+	            url = url.substr(0, idx);
+	        }
+	        if (!objects_1.has(params, this.queryParams.page)) {
+	            params[this.queryParams.page] = options.page;
+	        }
+	        options.params = params;
+	        options.url = url;
+	        this.trigger('before:fetch', this, options);
+	        params[this.queryParams.size] = this._state.size;
+	        if (!this._link[options.page + '']) {
+	            this._link[options.page] = url + '?' + request_1.queryParam({ page: options.page });
+	        }
+	        return this.sync(persistence_1.RestMethod.Read, this, options)
+	            .then(function (resp) {
+	            _this._processResponse(resp, options);
+	            _this.trigger('fetch', _this, resp, options);
+	            return _this;
+	        }).catch(function (e) {
+	            _this.trigger('error', e);
+	            throw e;
+	        });
+	    };
+	    PaginatedCollection.prototype._processResponse = function (resp, options) {
+	        var currentPage = options.page;
+	        var links = this._parseLinkHeaders(resp);
+	        if (links.first)
+	            this._link[this._state.first] = links.first;
+	        if (links.prev)
+	            this._link[currentPage - 1] = links.prev;
+	        if (links.next)
+	            this._link[currentPage + 1] = links.next;
+	        if (links.last) {
+	            var last = links.last;
+	            var idx = last.indexOf('?');
+	            if (idx > -1) {
+	                var params = queryStringToParams(last.substr(idx + 1));
+	                if (objects_1.has(params, this.queryParams.page)) {
+	                    this._link[params[this.queryParams.page]] = last;
+	                    this._state.last = parseInt(params[this.queryParams.page]);
+	                }
+	            }
+	        }
+	        this._state.current = currentPage;
+	        var data = resp.content;
+	        if (data && !Array.isArray(data))
+	            data = [data];
+	        if (!data)
+	            return this;
+	        data = this.parse(data);
+	        for (var i = 0, ii = data.length; i < ii; i++) {
+	            data[i] = this._prepareModel(data[i]);
+	        }
+	        this.add(data);
+	        return this;
+	    };
+	    PaginatedCollection.prototype._parseLinkHeaders = function (resp) {
+	        var link = {};
+	        if (typeof resp['getResponseHeader'] !== 'function') {
+	            return link;
+	        }
+	        var linkHeader = resp['getResponseHeader']('Link');
+	        if (!linkHeader)
+	            return link;
+	        linkHeader = linkHeader.split(',');
+	        var relations = ['first', 'prev', 'next', 'last'];
+	        for (var i = 0, ii = linkHeader.length; i < ii; i++) {
+	            var linkParts = linkHeader[i].split(';'), url = linkParts[0].replace(URL_TRIM_RE, ''), params = linkParts.slice(1);
+	            for (var x = 0, xx = params.length; x < xx; x++) {
+	                var paramParts = params[x].split('='), key = paramParts[0].replace(PARAM_TRIM_RE, ''), value = paramParts[1].replace(PARAM_TRIM_RE, '');
+	                if (key == 'rel' && !!~relations.indexOf(value))
+	                    link[value] = url;
+	            }
+	        }
+	        return link;
+	    };
+	    return PaginatedCollection;
+	}(rest_collection_1.RestCollection));
+	exports.PaginatedCollection = PaginatedCollection;
+
+
+/***/ },
+/* 50 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	function ajax() {
+	    var e;
+	    if (window.hasOwnProperty('XMLHttpRequest')) {
+	        return new XMLHttpRequest();
+	    }
+	    try {
+	        return new ActiveXObject('msxml2.xmlhttp.6.0');
+	    } catch (_error) {
+	        e = _error;
+	    }
+	    try {
+	        return new ActiveXObject('msxml2.xmlhttp.3.0');
+	    } catch (_error) {
+	        e = _error;
+	    }
+	    try {
+	        return new ActiveXObject('msxml2.xmlhttp');
+	    } catch (_error) {
+	        e = _error;
+	    }
+	    return e;
+	}
+	exports.ajax = ajax;
+	;
+	function truncate(str, length) {
+	    var n = str.substring(0, Math.min(length, str.length));
+	    return n + (n.length == str.length ? '' : '...');
+	}
+	exports.truncate = truncate;
+	function humanFileSize(bytes) {
+	    var si = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
+
+	    var thresh = si ? 1000 : 1024;
+	    if (Math.abs(bytes) < thresh) {
+	        return bytes + ' B';
+	    }
+	    var units = si ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+	    var u = -1;
+	    do {
+	        bytes /= thresh;
+	        ++u;
+	    } while (Math.abs(bytes) >= thresh && u < units.length - 1);
+	    return bytes.toFixed(1) + ' ' + units[u];
+	}
+	exports.humanFileSize = humanFileSize;
+	function normalizeURL(url) {
+	    var i = void 0,
+	        p = "";
+	    if ((i = url.indexOf('?')) >= 0) {
+	        p = url.substr(i);
+	        url = url.substr(0, i);
+	    }
+	    if (url[url.length - 1] !== '/') url += '/';
+
+	    for (var _len = arguments.length, segments = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+	        segments[_key - 1] = arguments[_key];
+	    }
+
+	    for (var _i = 0, ii = segments.length; _i < ii; _i++) {
+	        var s = segments[_i];
+	        if (s === '/') continue;
+	        if (s[0] === '/') s = s.substr(1);
+	        if (s[s.length - 1] !== '/') s += '/';
+	        url += s;
+	    }
+	    if (url[url.length - 1] === '/') url = url.substr(0, url.length - 1);
+	    return url + p;
+	}
+	exports.normalizeURL = normalizeURL;
+
+/***/ },
+/* 51 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function __export(m) {
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
+	}
+	__webpack_require__(52);
+	__export(__webpack_require__(57));
+	__export(__webpack_require__(58));
+	__export(__webpack_require__(70));
+	__export(__webpack_require__(72));
+	__export(__webpack_require__(74));
+
+/***/ },
+/* 52 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function __export(m) {
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
+	}
+	__export(__webpack_require__(53));
+	__export(__webpack_require__(55));
+	__export(__webpack_require__(56));
+
+/***/ },
+/* 53 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+	};
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	};
+	var views_1 = __webpack_require__(2);
+	var interfaces_1 = __webpack_require__(54);
+	var AudioPreview = function (_views_1$View) {
+	    _inherits(AudioPreview, _views_1$View);
+
+	    function AudioPreview() {
+	        var _ref;
+
+	        _classCallCheck(this, AudioPreview);
+
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (_ref = AudioPreview.__proto__ || Object.getPrototypeOf(AudioPreview)).call.apply(_ref, [this].concat(args)));
+
+	        _this.template = function (data) {
+	            return "\n\t\t\t<audio controls>\n\t\t\t\t<source src=\"" + this.model.getURL() + "\" type=\"" + data.mime + "\" />\n\t\t\t</audio>\n\t\t";
+	        };
+	        return _this;
+	    }
+
+	    return AudioPreview;
+	}(views_1.View);
+	AudioPreview = __decorate([interfaces_1.preview('audio/mpeg', 'audio/wav', 'audio/ogg'), __metadata('design:paramtypes', [])], AudioPreview);
+	exports.AudioPreview = AudioPreview;
+
+/***/ },
+/* 54 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var previewHandlers = {};
+	function setPreviewHandler(mime, view) {
+	    if (!Array.isArray(mime)) {
+	        mime = [mime];
+	    }
+	    mime.forEach(function (m) {
+	        previewHandlers[m] = view;
+	    });
+	}
+	function getPreviewHandler(mime) {
+	    var reg = void 0,
+	        k = void 0;
+	    for (k in previewHandlers) {
+	        if (new RegExp(k).test(mime)) return previewHandlers[k];
+	    }
+	    return null;
+	}
+	exports.getPreviewHandler = getPreviewHandler;
+	function preview() {
+	    for (var _len = arguments.length, mimetypes = Array(_len), _key = 0; _key < _len; _key++) {
+	        mimetypes[_key] = arguments[_key];
+	    }
+
+	    return function (target) {
+	        setPreviewHandler(mimetypes, target);
+	    };
+	}
+	exports.preview = preview;
+
+/***/ },
+/* 55 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var views_1 = __webpack_require__(2);
+	var interfaces_1 = __webpack_require__(54);
+	interfaces_1.preview('video/mp4', 'video/ogg', 'video/webm', 'video/x-m4v');
+
+	var VideoPreview = function (_views_1$View) {
+	    _inherits(VideoPreview, _views_1$View);
+
+	    function VideoPreview() {
+	        var _ref;
+
+	        _classCallCheck(this, VideoPreview);
+
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (_ref = VideoPreview.__proto__ || Object.getPrototypeOf(VideoPreview)).call.apply(_ref, [this].concat(args)));
+
+	        _this.template = function (data) {
+	            return '\n\t\t\t<video controls>\n\t\t\t\t<source src="' + this.model.getURL() + '" type="' + data.mime + '" />\n\t\t\t</video>\n\t\t';
+	        };
+	        return _this;
+	    }
+
+	    return VideoPreview;
+	}(views_1.View);
+
+	exports.VideoPreview = VideoPreview;
+
+/***/ },
+/* 56 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var views_1 = __webpack_require__(2);
+	var interfaces_1 = __webpack_require__(54);
+	interfaces_1.preview('image/*');
+
+	var ImagePreview = function (_views_1$View) {
+	    _inherits(ImagePreview, _views_1$View);
+
+	    function ImagePreview() {
+	        var _ref;
+
+	        _classCallCheck(this, ImagePreview);
+
+	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
+	            args[_key] = arguments[_key];
+	        }
+
+	        var _this = _possibleConstructorReturn(this, (_ref = ImagePreview.__proto__ || Object.getPrototypeOf(ImagePreview)).call.apply(_ref, [this].concat(args)));
+
+	        _this.template = function (data) {
+	            return '<img src="' + this.model.getURL() + '"/>';
+	        };
+	        return _this;
+	    }
+
+	    return ImagePreview;
+	}(views_1.View);
+
+	exports.ImagePreview = ImagePreview;
+
+/***/ },
+/* 57 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+	};
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	};
+	var fileuploader_1 = __webpack_require__(27);
+	var views_1 = __webpack_require__(2);
+	var utils = __webpack_require__(9);
+	var defaults = { maxSize: 2048, mimeType: '*', autoUpload: false };
+
+	var MessageView = function (_views_1$View) {
+	    _inherits(MessageView, _views_1$View);
+
+	    function MessageView() {
+	        _classCallCheck(this, MessageView);
+
+	        return _possibleConstructorReturn(this, (MessageView.__proto__ || Object.getPrototypeOf(MessageView)).apply(this, arguments));
+	    }
+
+	    _createClass(MessageView, [{
+	        key: "show",
+	        value: function show() {
+	            this.el.style.display = 'block';
+	        }
+	    }, {
+	        key: "hide",
+	        value: function hide() {
+	            this.el.style.display = 'none';
+	        }
+	    }, {
+	        key: "setMessage",
+	        value: function setMessage(msg) {
+	            this.el.textContent = msg;
+	        }
+	    }]);
+
+	    return MessageView;
+	}(views_1.View);
+
+	var ProgressView = function (_views_1$View2) {
+	    _inherits(ProgressView, _views_1$View2);
+
+	    function ProgressView() {
+	        _classCallCheck(this, ProgressView);
+
+	        return _possibleConstructorReturn(this, (ProgressView.__proto__ || Object.getPrototypeOf(ProgressView)).apply(this, arguments));
+	    }
+
+	    _createClass(ProgressView, [{
+	        key: "show",
+	        value: function show() {
+	            this.el.style.display = 'block';
+	        }
+	    }, {
+	        key: "hide",
+	        value: function hide() {
+	            this.el.style.display = 'none';
+	        }
+	    }, {
+	        key: "setProgress",
+	        value: function setProgress(progress, total, percent) {
+	            percent = Math.floor(percent * 100) / 100;
+	            this.el.textContent = percent + "/100";
+	        }
+	    }]);
+
+	    return ProgressView;
+	}(views_1.View);
+
+	function createButton(options) {
+	    var progressView = new ProgressView();
+	    var errorView = new MessageView();
+	    options.progressView = progressView;
+	    options.errorView = errorView;
+	    var uploadButton = new UploadButton(options);
+	    var div = document.createElement('div');
+	    div.appendChild(uploadButton.el);
+	    progressView.appendTo(div);
+	    errorView.appendTo(div);
+	    return div;
+	}
+	exports.createButton = createButton;
+	var UploadButton = function (_views_1$View3) {
+	    _inherits(UploadButton, _views_1$View3);
+
+	    function UploadButton(options) {
+	        _classCallCheck(this, UploadButton);
+
+	        options = utils.extend({}, defaults, options);
+
+	        var _this3 = _possibleConstructorReturn(this, (UploadButton.__proto__ || Object.getPrototypeOf(UploadButton)).call(this, options));
+
+	        utils.extend(_this3, utils.pick(options, ['errorView', 'progressView']));
+	        _this3.uploader = options.uploader || new fileuploader_1.FileUploader(options);
+	        _this3.options = options;
+	        return _this3;
+	    }
+
+	    _createClass(UploadButton, [{
+	        key: "onRender",
+	        value: function onRender() {
+	            if (this.options.mimeType) {
+	                var mime = void 0;
+	                if (Array.isArray(this.options.mimeType)) {
+	                    mime = this.options.mimeType.join(',');
+	                } else {
+	                    mime = this.options.mimeType;
+	                }
+	                this.el.setAttribute('accept', mime);
+	            }
+	        }
+	    }, {
+	        key: "_onChange",
+	        value: function _onChange(e) {
+	            this.hideErrorView();
+	            var files = this.el.files;
+	            if (files.length === 0) return;
+	            var file = files[0];
+	            this.trigger('change', file);
+	            if (this.options.autoUpload === true) {
+	                this.upload(file);
+	            } else {
+	                try {
+	                    this.uploader.validateFile(file);
+	                } catch (e) {
+	                    this.trigger('error', e);
+	                }
+	            }
+	        }
+	    }, {
+	        key: "upload",
+	        value: function upload(file) {
+	            var _this4 = this;
+
+	            var pv = this.progressView;
+	            if (pv != null) {
+	                pv.show();
+	            }
+	            return this.uploader.upload(file, function (progress, total) {
+	                _this4.trigger('progress', { progress: progress, total: total });
+	                _this4.showProgress(progress, total);
+	            }).then(function (result) {
+	                _this4.trigger('upload', result);
+	                if (pv != null) pv.hide();
+	                _this4.clear();
+	            }).catch(function (e) {
+	                _this4.trigger('error', e);
+	                _this4.showErrorMessage(e);
+	                _this4.clear();
+	                if (pv != null) pv.hide();
+	            });
+	        }
+	    }, {
+	        key: "clear",
+	        value: function clear() {
+	            try {
+	                this.el.value = '';
+	                if (this.el.value) {
+	                    this.el.type = 'text';
+	                    this.el.type = 'file';
+	                }
+	            } catch (e) {
+	                console.error('could not clear file-input');
+	            }
+	        }
+	    }, {
+	        key: "showErrorMessage",
+	        value: function showErrorMessage(error) {
+	            if (this.errorView != null) {
+	                this.errorView.setMessage(error.message);
+	                this.errorView.show();
+	            }
+	        }
+	    }, {
+	        key: "hideErrorView",
+	        value: function hideErrorView() {
+	            if (this.errorView) {
+	                this.errorView.hide();
+	            }
+	        }
+	    }, {
+	        key: "showProgress",
+	        value: function showProgress(progress, total) {
+	            if (this.progressView != null) {
+	                var percent = progress / total * 100;
+	                this.progressView.setProgress(progress, total, percent);
+	            }
+	        }
+	    }, {
+	        key: "url",
+	        set: function set(url) {
+	            this.uploader.options.url = url;
+	        },
+	        get: function get() {
+	            return this.uploader.options.url;
+	        }
+	    }]);
+
+	    return UploadButton;
+	}(views_1.View);
+	UploadButton = __decorate([views_1.attributes({
+	    tagName: 'input',
+	    attributes: { type: 'file' },
+	    events: {
+	        change: '_onChange'
+	    }
+	}), __metadata('design:paramtypes', [Object])], UploadButton);
+	exports.UploadButton = UploadButton;
+
+/***/ },
+/* 58 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	function __export(m) {
+	    for (var p in m) {
+	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	    }
+	}
+	__export(__webpack_require__(59));
+	__export(__webpack_require__(63));
+
+/***/ },
+/* 59 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+	};
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	};
+	var views_1 = __webpack_require__(2);
+	var utils_1 = __webpack_require__(60);
+	var mime_types_1 = __webpack_require__(62);
+	var orange_1 = __webpack_require__(9);
+	var orange_dom_1 = __webpack_require__(17);
+	var AssetsListItemView = function (_views_1$View) {
+	    _inherits(AssetsListItemView, _views_1$View);
+
+	    function AssetsListItemView() {
+	        _classCallCheck(this, AssetsListItemView);
+
+	        return _possibleConstructorReturn(this, (AssetsListItemView.__proto__ || Object.getPrototypeOf(AssetsListItemView)).apply(this, arguments));
+	    }
+
+	    _createClass(AssetsListItemView, [{
+	        key: "onRender",
+	        value: function onRender() {
+	            var model = this.model;
+	            var mime = model.get('mime');
+	            orange_dom_1.removeClass(this.ui['mime'], 'mime-unknown');
+	            mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
+	            orange_dom_1.addClass(this.ui['mime'], mime);
+	            this.ui['name'].textContent = orange_1.truncate(model.get('name') || model.get('filename'), 25);
+	            var url = model.getURL();
+	            var img = new Image();
+	            img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
+	            img.setAttribute('data-src', url + "?thumbnail=true");
+	            this.ui['mime'].parentNode.insertBefore(img, this.ui['mime']);
+	            this.ui['mime'].style.display = 'none';
+	            this.trigger('image');
+	        }
+	    }, {
+	        key: "_onClick",
+	        value: function _onClick(e) {
+	            e.preventDefault();
+	            var target = e.target;
+	            if (target === this.ui['remove']) return;
+	            this.triggerMethod('click', this.model);
+	        }
+	    }, {
+	        key: "_onDblClick",
+	        value: function _onDblClick(e) {
+	            this.triggerMethod('dblclick', this.model);
+	        }
+	    }]);
+
+	    return AssetsListItemView;
+	}(views_1.View);
+	AssetsListItemView = __decorate([utils_1.template('list-item'), views_1.attributes({
+	    tagName: 'div',
+	    className: 'assets-list-item',
+	    ui: {
+	        remove: '.assets-list-item-close-button',
+	        name: '.name',
+	        mime: '.mime'
+	    },
+	    triggers: {
+	        'click @ui.remove': 'remove'
+	    },
+	    events: {
+	        'click': '_onClick',
+	        'dblclick': '_onDblClick'
+	    }
+	}), __metadata('design:paramtypes', [])], AssetsListItemView);
+	exports.AssetsListItemView = AssetsListItemView;
+
+/***/ },
+/* 60 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var templates_1 = __webpack_require__(61);
+	function template(name) {
+	    return function (target) {
+	        var t = void 0;
+	        if (!(t = templates_1.default[name])) {
+	            throw new Error('could not find template: ' + name);
+	        }
+	        target.prototype.template = t;
+	    };
+	}
+	exports.template = template;
+	function getImageSize(image) {
+	    var load = function load() {
+	        return new Promise(function (resolve, reject) {
+	            var i = new Image();
+	            i.onload = function () {
+	                resolve({
+	                    width: i.naturalWidth || i.width,
+	                    height: i.naturalHeight || i.height
+	                });
+	            };
+	            i.onerror = reject;
+	            i.src = image.src;
+	        });
+	    };
+	    if (image.naturalHeight === undefined) {
+	        return load();
+	    } else if (image.naturalHeight === 0) {
+	        return new Promise(function (resolve, reject) {
+	            var time = setTimeout(function () {
+	                time = null;
+	                load().then(resolve, reject);
+	            }, 200);
+	            image.onload = function () {
+	                if (time !== null) {
+	                    clearTimeout(time);
+	                }
+	                resolve({
+	                    width: image.naturalWidth,
+	                    height: image.naturalHeight
+	                });
+	            };
+	        });
+	    } else {
+	        return Promise.resolve({
+	            width: image.naturalWidth,
+	            height: image.naturalHeight
+	        });
+	    }
+	}
+	exports.getImageSize = getImageSize;
+	function getCropping(size, ratio) {
+	    var width = size.width,
+	        height = size.height;
+	    var nh = height,
+	        nw = width;
+	    if (width > height) {
+	        nh = width / ratio;
+	    } else {
+	        nw = height * ratio;
+	    }
+	    return {
+	        x: 0,
+	        y: 0,
+	        width: nw,
+	        height: nh,
+	        rotate: 0,
+	        scaleX: 1,
+	        scaleY: 1
+	    };
+	}
+	exports.getCropping = getCropping;
+
+/***/ },
+/* 61 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	Object.defineProperty(exports, "__esModule", { value: true });
+	exports.default = {
+	    "gallery": "<div class=\"gallery-area\">  <div class=\"gallery-list\">  </div>  <div class=\"gallery-preview\"></div>  </div>\n<div class=\"upload-progress-container\">  <div class=\"upload-progress\"></div>\n</div>\n<!--div class=\"gallery-toolbar\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div-->",
+	    "list-item": "<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">  <i class=\"mime mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>",
+	    "preview-info": "<table>  <tr>  <td>Name</td>  <td class=\"name\"></td>  </tr>  <tr>  <td>Mime</td>  <td class=\"mimetype\"></td>  </tr>  <tr>  <td>Size</td>  <td class=\"size\"></td>  </tr>  <tr>  <td>Download</td>  <td class=\"download\">  <a></a>  </td>  </tr>\n</table>",
+	    "preview": "<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>"
+	};
+
+/***/ },
+/* 62 */
+/***/ function(module, exports) {
+
+	"use strict";
+
+	var MimeTypes = {
+	    "application-x-7zip": "mime-application-x-7zip",
+	    "application-rss+xml": "mime-application-rss+xml",
+	    "x-office-drawing": "mime-x-office-drawing",
+	    "text-javascript": "mime-text-x-javascript",
+	    "text-x-javascript": "mime-text-x-javascript",
+	    "message": "mime-message",
+	    "application-msword": "mime-application-msword",
+	    "multipart-encrypted": "mime-multipart-encrypted",
+	    "audio-x-vorbis+ogg": "mime-audio-x-vorbis+ogg",
+	    "application-pdf": "mime-application-pdf",
+	    "encrypted": "mime-encrypted",
+	    "application-pgp-keys": "mime-application-pgp-keys",
+	    "text-richtext": "mime-text-richtext",
+	    "text-plain": "mime-text-plain",
+	    "text-sql": "mime-text-x-sql",
+	    "text-x-sql": "mime-text-x-sql",
+	    "application-vnd.ms-excel": "mime-application-vnd.ms-excel",
+	    "application-vnd.ms-powerpoint": "mime-application-vnd.ms-powerpoint",
+	    "application-vnd.oasis.opendocument.formula": "mime-application-vnd.oasis.opendocument.formula",
+	    "x-office-spreadsheet": "mime-x-office-spreadsheet",
+	    "text-html": "mime-text-html",
+	    "x-office-document": "mime-x-office-document",
+	    "video-generic": "mime-video-x-generic",
+	    "video-x-generic": "mime-video-x-generic",
+	    "application-vnd.scribus": "mime-application-vnd.scribus",
+	    "application-ace": "mime-application-x-ace",
+	    "application-x-ace": "mime-application-x-ace",
+	    "application-tar": "mime-application-x-tar",
+	    "application-x-tar": "mime-application-x-tar",
+	    "application-bittorrent": "mime-application-x-bittorrent",
+	    "application-x-bittorrent": "mime-application-x-bittorrent",
+	    "application-x-cd-image": "mime-application-x-cd-image",
+	    "text-java": "mime-text-x-java",
+	    "text-x-java": "mime-text-x-java",
+	    "application-gzip": "mime-application-x-gzip",
+	    "application-x-gzip": "mime-application-x-gzip",
+	    "application-sln": "mime-application-x-sln",
+	    "application-x-sln": "mime-application-x-sln",
+	    "application-cue": "mime-application-x-cue",
+	    "application-x-cue": "mime-application-x-cue",
+	    "deb": "mime-deb",
+	    "application-glade": "mime-application-x-glade",
+	    "application-x-glade": "mime-application-x-glade",
+	    "application-theme": "mime-application-x-theme",
+	    "application-x-theme": "mime-application-x-theme",
+	    "application-executable": "mime-application-x-executable",
+	    "application-x-executable": "mime-application-x-executable",
+	    "application-x-flash-video": "mime-application-x-flash-video",
+	    "application-jar": "mime-application-x-jar",
+	    "application-x-jar": "mime-application-x-jar",
+	    "application-x-ms-dos-executable": "mime-application-x-ms-dos-executable",
+	    "application-msdownload": "mime-application-x-msdownload",
+	    "application-x-msdownload": "mime-application-x-msdownload",
+	    "package-generic": "mime-package-x-generic",
+	    "package-x-generic": "mime-package-x-generic",
+	    "application-php": "mime-application-x-php",
+	    "application-x-php": "mime-application-x-php",
+	    "text-python": "mime-text-x-python",
+	    "text-x-python": "mime-text-x-python",
+	    "application-rar": "mime-application-x-rar",
+	    "application-x-rar": "mime-application-x-rar",
+	    "rpm": "mime-rpm",
+	    "application-ruby": "mime-application-x-ruby",
+	    "application-x-ruby": "mime-application-x-ruby",
+	    "text-script": "mime-text-x-script",
+	    "text-x-script": "mime-text-x-script",
+	    "text-bak": "mime-text-x-bak",
+	    "text-x-bak": "mime-text-x-bak",
+	    "application-zip": "mime-application-x-zip",
+	    "application-x-zip": "mime-application-x-zip",
+	    "text-xml": "mime-text-xml",
+	    "audio-mpeg": "mime-audio-x-mpeg",
+	    "audio-x-mpeg": "mime-audio-x-mpeg",
+	    "audio-wav": "mime-audio-x-wav",
+	    "audio-x-wav": "mime-audio-x-wav",
+	    "audio-generic": "mime-audio-x-generic",
+	    "audio-x-generic": "mime-audio-x-generic",
+	    "audio-x-mp3-playlist": "mime-audio-x-mp3-playlist",
+	    "audio-x-ms-wma": "mime-audio-x-ms-wma",
+	    "authors": "mime-authors",
+	    "empty": "mime-empty",
+	    "extension": "mime-extension",
+	    "font-generic": "mime-font-x-generic",
+	    "font-x-generic": "mime-font-x-generic",
+	    "image-bmp": "mime-image-bmp",
+	    "image-gif": "mime-image-gif",
+	    "image-jpeg": "mime-image-jpeg",
+	    "image-png": "mime-image-png",
+	    "image-tiff": "mime-image-tiff",
+	    "image-ico": "mime-image-x-ico",
+	    "image-x-ico": "mime-image-x-ico",
+	    "image-eps": "mime-image-x-eps",
+	    "image-x-eps": "mime-image-x-eps",
+	    "image-generic": "mime-image-x-generic",
+	    "image-x-generic": "mime-image-x-generic",
+	    "image-psd": "mime-image-x-psd",
+	    "image-x-psd": "mime-image-x-psd",
+	    "image-xcf": "mime-image-x-xcf",
+	    "image-x-xcf": "mime-image-x-xcf",
+	    "x-office-presentation": "mime-x-office-presentation",
+	    "unknown": "mime-unknown",
+	    "opera-extension": "mime-opera-extension",
+	    "opera-unite-application": "mime-opera-unite-application",
+	    "opera-widget": "mime-opera-widget",
+	    "phatch-actionlist": "mime-phatch-actionlist",
+	    "text-makefile": "mime-text-x-makefile",
+	    "text-x-makefile": "mime-text-x-makefile",
+	    "x-office-address-book": "mime-x-office-address-book",
+	    "vcalendar": "mime-vcalendar",
+	    "text-source": "mime-text-x-source",
+	    "text-x-source": "mime-text-x-source",
+	    "text-x-generic-template": "mime-text-x-generic-template",
+	    "text-css": "mime-text-css",
+	    "text-bibtex": "mime-text-x-bibtex",
+	    "text-x-bibtex": "mime-text-x-bibtex",
+	    "text-x-c++": "mime-text-x-c++",
+	    "text-x-c++hdr": "mime-text-x-c++hdr",
+	    "text-c": "mime-text-x-c",
+	    "text-x-c": "mime-text-x-c",
+	    "text-changelog": "mime-text-x-changelog",
+	    "text-x-changelog": "mime-text-x-changelog",
+	    "text-chdr": "mime-text-x-chdr",
+	    "text-x-chdr": "mime-text-x-chdr",
+	    "text-copying": "mime-text-x-copying",
+	    "text-x-copying": "mime-text-x-copying",
+	    "text-install": "mime-text-x-install",
+	    "text-x-install": "mime-text-x-install",
+	    "text-preview": "mime-text-x-preview",
+	    "text-x-preview": "mime-text-x-preview",
+	    "text-readme": "mime-text-x-readme",
+	    "text-x-readme": "mime-text-x-readme",
+	    "text-tex": "mime-text-x-tex",
+	    "text-x-tex": "mime-text-x-tex",
+	    "text-xhtml+xml": "mime-text-xhtml+xml",
+	    "x-dia-diagram": "mime-x-dia-diagram"
+	};
+	function getMimeIcon(mime) {
+	    if (MimeTypes[mime]) {
+	        return MimeTypes[mime];
+	    }
+	    return MimeTypes['unknown'];
+	}
+	exports.getMimeIcon = getMimeIcon;
+	;
+
+/***/ },
+/* 63 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+
+	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
+
+	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
+	    var c = arguments.length,
+	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+	        d;
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
+	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
+	};
+	var __metadata = undefined && undefined.__metadata || function (k, v) {
+	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
+	};
+	var views_1 = __webpack_require__(2);
+	var orange_dom_1 = __webpack_require__(17);
+	var utilities_1 = __webpack_require__(64);
+	var list_item_1 = __webpack_require__(59);
+	var Blazy = __webpack_require__(69);
+	exports.AssetsEmptyView = views_1.View.extend({
+	    className: 'assets-list-empty-view',
+	    template: 'No files uploaded yet.'
+	});
+	var AssetsListView = function (_views_1$CollectionVi) {
+	    _inherits(AssetsListView, _views_1$CollectionVi);
+
+	    function AssetsListView(options) {
+	        _classCallCheck(this, AssetsListView);
+
+	        var _this = _possibleConstructorReturn(this, (AssetsListView.__proto__ || Object.getPrototypeOf(AssetsListView)).call(this, options));
+
+	        _this.options = options || {};
+	        _this.sort = false;
+	        _this._onSroll = throttle(utilities_1.bind(_this._onSroll, _this), 0);
+	        _this._initEvents();
+	        _this._initBlazy();
+	        return _this;
+	    }
+
+	    _createClass(AssetsListView, [{
+	        key: "_initEvents",
+	        value: function _initEvents() {
+	            var _this3 = this;
+
+	            this.listenTo(this, 'childview:click', function (view, model) {
+	                if (this._current) orange_dom_1.removeClass(this._current.el, 'active');
+	                this._current = view;
+	                orange_dom_1.addClass(view.el, 'active');
+	                this.trigger('selected', view, model);
+	            });
+	            this.listenTo(this, 'childview:dblclick', function (view, model) {
+	                if (this._current) orange_dom_1.removeClass(this._current.el, 'active');
+	                this._current = view;
+	                orange_dom_1.addClass(view.el, 'active');
+	                this.trigger('selected', view, model);
+	                this.trigger('dblclick', view, model);
+	            });
+	            this.listenTo(this, 'childview:remove', function (view, _ref) {
+	                var model = _ref.model;
+
+	                if (this.options.deleteable === true) {
+	                    var remove = true;
+	                    if (model.has('deleteable')) {
+	                        remove = !!model.get('deleteable');
+	                    }
+	                    if (remove) model.remove();
+	                } else {}
+	            });
+	            this.listenTo(this, 'childview:image', function (view) {
+	                var _this2 = this;
+
+	                var img = view.$('img')[0];
+	                if (img.src === img.getAttribute('data-src')) {
+	                    return;
+	                }
+	                setTimeout(function () {
+	                    if (elementInView(view.el, _this2.el)) {
+	                        _this2._blazy.load(view.$('img')[0]);
+	                    }
+	                }, 100);
+	            });
+	            this.listenTo(this.collection, 'before:fetch', function () {
+	                var loader = _this3.el.querySelector('.loader');
+	                if (loader) return;
+	                loader = document.createElement('div');
+	                orange_dom_1.addClass(loader, 'loader');
+	                _this3.el.appendChild(loader);
+	            });
+	            this.listenTo(this.collection, 'fetch', function () {
+	                var loader = _this3.el.querySelector('.loader');
+	                if (loader) {
+	                    _this3.el.removeChild(loader);
+	                }
+	            });
+	        }
+	    }, {
+	        key: "onRenderCollection",
+	        value: function onRenderCollection() {
+	            if (this._blazy) {
+	                this._blazy.revalidate();
+	            } else {
+	                this._initBlazy();
+	            }
+	        }
+	    }, {
+	        key: "_onSroll",
+	        value: function _onSroll(e) {
+	            var index = this.index ? this.index : this.index = 0,
+	                len = this.children.length;
+	            for (var i = index; i < len; i++) {
+	                var view = this.children[i],
+	                    img = view.$('img')[0];
+	                if (img == null) continue;
+	                if (img.src === img.getAttribute('data-src')) {
+	                    index = i;
+	                } else if (elementInView(img, this.el)) {
+	                    index = i;
+	                    this._blazy.load(img, true);
+	                }
+	            }
+	            this.index = index;
+	            var el = this.el;
+	            if (el.scrollTop < el.scrollHeight - el.clientHeight - el.clientHeight) {} else if (this.collection.hasNext()) {
+	                this.collection.getNextPage();
+	            }
+	        }
+	    }, {
+	        key: "_initBlazy",
+	        value: function _initBlazy() {
+	            this._blazy = new Blazy({
+	                container: '.assets-list',
+	                selector: 'img',
+	                error: function error(img) {
+	                    if (!img || !img.parentNode) return;
+	                    var m = img.parentNode.querySelector('.mime');
+	                    if (m) {
+	                        m.style.display = 'block';
+	                        img.style.display = 'none';
+	                    }
+	                }
+	            });
+	        }
+	    }, {
+	        key: "_initHeight",
+	        value: function _initHeight() {
+	            var _this4 = this;
+
+	            var parent = this.el.parentElement;
+	            if (!parent || parent.clientHeight === 0) {
+	                if (!this._timer) {
+	                    this._timer = setInterval(function () {
+	                        return _this4._initHeight();
+	                    }, 200);
+	                }
+	                return;
+	            }
+	            if (this._timer) {
+	                clearInterval(this._timer);
+	                this._timer = void 0;
+	            }
+	            this.el.style.height = parent.clientHeight + 'px';
+	        }
+	    }, {
+	        key: "onShow",
+	        value: function onShow() {
+	            this._initHeight();
+	        }
+	    }]);
+
+	    return AssetsListView;
+	}(views_1.CollectionView);
+	AssetsListView = __decorate([views_1.attributes({
+	    className: 'assets-list collection-mode',
+	    childView: list_item_1.AssetsListItemView,
+	    emptyView: exports.AssetsEmptyView,
+	    events: {
+	        scroll: '_onSroll'
+	    }
+	}), __metadata('design:paramtypes', [Object])], AssetsListView);
+	exports.AssetsListView = AssetsListView;
+	function elementInView(ele, container) {
+	    var viewport = {
+	        top: 0,
+	        left: 0,
+	        bottom: 0,
+	        right: 0
+	    };
+	    viewport.bottom = container.innerHeight || document.documentElement.clientHeight;
+	    viewport.right = container.innerWidth || document.documentElement.clientWidth;
+	    var rect = ele.getBoundingClientRect();
+	    return rect.right >= viewport.left && rect.bottom >= viewport.top && rect.left <= viewport.right && rect.top <= viewport.bottom && !ele.classList.contains('b-error');
+	}
+	function throttle(fn, minDelay) {
+	    var lastCall = 0;
+	    return function () {
+	        var now = +new Date();
+	        if (now - lastCall < minDelay) {
+	            return;
+	        }
+	        lastCall = now;
+	        fn.apply(this, arguments);
+	    };
+	}
+
+/***/ },
+/* 64 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
 	function __export(m) {
 	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	}
-	__export(__webpack_require__(31));
-	__export(__webpack_require__(33));
+	__export(__webpack_require__(40));
+	__export(__webpack_require__(39));
+	__export(__webpack_require__(46));
+	__export(__webpack_require__(38));
+	__export(__webpack_require__(41));
+	__export(__webpack_require__(65));
+	__export(__webpack_require__(48));
 
 
 /***/ },
-/* 31 */
+/* 65 */
+/***/ function(module, exports, __webpack_require__) {
+
+	"use strict";
+	function __export(m) {
+	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
+	}
+	__export(__webpack_require__(66));
+	__export(__webpack_require__(68));
+
+
+/***/ },
+/* 66 */
 /***/ function(module, exports, __webpack_require__) {
 
 	/* WEBPACK VAR INJECTION */(function(process) {"use strict";
@@ -4041,10 +8664,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	}
 	exports.isChrome = isChrome;
 
-	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(32)))
+	/* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(67)))
 
 /***/ },
-/* 32 */
+/* 67 */
 /***/ function(module, exports) {
 
 	// shim for using process in browser
@@ -4141,13 +8764,13 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 33 */
+/* 68 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
-	var arrays_1 = __webpack_require__(25);
-	var objects_1 = __webpack_require__(27);
-	var utils_1 = __webpack_require__(31);
+	var arrays_1 = __webpack_require__(40);
+	var objects_1 = __webpack_require__(39);
+	var utils_1 = __webpack_require__(66);
 	var ElementProto = (typeof Element !== 'undefined' && Element.prototype) || {};
 	var matchesSelector = ElementProto.matches ||
 	    ElementProto.webkitMatchesSelector ||
@@ -4539,3434 +9162,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 
 /***/ },
-/* 34 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var strings_1 = __webpack_require__(28);
-	var objects_1 = __webpack_require__(27);
-	var promises_1 = __webpack_require__(29);
-	var utils_1 = __webpack_require__(26);
-	(function (HttpMethod) {
-	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
-	    HttpMethod[HttpMethod["PUT"] = 1] = "PUT";
-	    HttpMethod[HttpMethod["POST"] = 2] = "POST";
-	    HttpMethod[HttpMethod["DELETE"] = 3] = "DELETE";
-	    HttpMethod[HttpMethod["HEAD"] = 4] = "HEAD";
-	})(exports.HttpMethod || (exports.HttpMethod = {}));
-	var HttpMethod = exports.HttpMethod;
-	function isResponse(a) {
-	    return objects_1.isObject(status) && objects_1.has(a, 'status') && objects_1.has(a, 'statusText') && objects_1.has(a, 'body');
-	}
-	exports.isResponse = isResponse;
-	var HttpError = (function (_super) {
-	    __extends(HttpError, _super);
-	    function HttpError(status, message, body) {
-	        _super.call(this, message);
-	        if (arguments.length === 1) {
-	            if (isResponse(status)) {
-	                this.status = status.status;
-	                this.message = status.statusText;
-	                this.body = status.body;
-	            }
-	            else {
-	                this.status = status;
-	            }
-	        }
-	        else {
-	            this.status = status;
-	            this.message = message;
-	            this.body = body;
-	        }
-	    }
-	    return HttpError;
-	}(Error));
-	exports.HttpError = HttpError;
-	var ResponseError = (function (_super) {
-	    __extends(ResponseError, _super);
-	    function ResponseError(message) {
-	        _super.call(this, message);
-	    }
-	    return ResponseError;
-	}(Error));
-	exports.ResponseError = ResponseError;
-	function queryStringToParams(qs) {
-	    var kvp, k, v, ls, params = {}, decode = decodeURIComponent;
-	    var kvps = qs.split('&');
-	    for (var i = 0, l = kvps.length; i < l; i++) {
-	        var param = kvps[i];
-	        kvp = param.split('='), k = kvp[0], v = kvp[1];
-	        if (v == null)
-	            v = true;
-	        k = decode(k), v = decode(v), ls = params[k];
-	        if (Array.isArray(ls))
-	            ls.push(v);
-	        else if (ls)
-	            params[k] = [ls, v];
-	        else
-	            params[k] = v;
-	    }
-	    return params;
-	}
-	exports.queryStringToParams = queryStringToParams;
-	function queryParam(obj) {
-	    return Object.keys(obj).reduce(function (a, k) { a.push(k + '=' + encodeURIComponent(obj[k])); return a; }, []).join('&');
-	}
-	exports.queryParam = queryParam;
-	var jsonRe = /^application\/json/, fileProto = /^file:/;
-	var isValid = function (xhr, url) {
-	    return (xhr.status >= 200 && xhr.status < 300) ||
-	        (xhr.status === 304) ||
-	        (xhr.status === 0 && fileProto.test(url)) ||
-	        (xhr.status === 0 && window.location.protocol === 'file:');
-	};
-	var Request = (function () {
-	    function Request(_method, _url) {
-	        this._method = _method;
-	        this._url = _url;
-	        this._params = {};
-	        this._headers = { 'X-Requested-With': 'XMLHttpRequest' };
-	        this._xhr = utils_1.ajax();
-	    }
-	    Request.prototype.uploadProgress = function (fn) {
-	        this._xhr.upload.addEventListener('progress', fn);
-	        return this;
-	    };
-	    Request.prototype.downloadProgress = function (fn) {
-	        this._xhr.addEventListener('progress', fn);
-	        return this;
-	    };
-	    Request.prototype.header = function (field, value) {
-	        if (strings_1.isString(field) && strings_1.isString(value)) {
-	            this._headers[field] = value;
-	        }
-	        else if (objects_1.isObject(field)) {
-	            objects_1.extend(this._headers, field);
-	        }
-	        return this;
-	    };
-	    Request.prototype.params = function (key, value) {
-	        if (arguments.length === 1 && objects_1.isObject(key)) {
-	            objects_1.extend(this._params, key);
-	        }
-	        else if (arguments.length === 2) {
-	            this._params[key] = value;
-	        }
-	        return this;
-	    };
-	    Request.prototype.withCredentials = function (ret) {
-	        this._xhr.withCredentials = ret;
-	        return this;
-	    };
-	    Request.prototype.json = function (data, throwOnInvalid) {
-	        var _this = this;
-	        if (throwOnInvalid === void 0) { throwOnInvalid = false; }
-	        this.header('content-type', 'application/json; charset=utf-8');
-	        if (!strings_1.isString(data)) {
-	            data = JSON.stringify(data);
-	        }
-	        return this.end(data, throwOnInvalid)
-	            .then(function (resp) {
-	            var accepts = _this._xhr.getResponseHeader('content-type');
-	            if (jsonRe.test(accepts) && resp.body != "") {
-	                var json = JSON.parse(resp.body);
-	                var jResp = resp;
-	                jResp.body = json;
-	                return jResp;
-	            }
-	            else {
-	                throw new ResponseError("type error");
-	            }
-	        });
-	    };
-	    Request.prototype.end = function (data, throwOnInvalid) {
-	        var _this = this;
-	        if (throwOnInvalid === void 0) { throwOnInvalid = false; }
-	        data = data || this._data;
-	        var defer = promises_1.deferred();
-	        this._xhr.addEventListener('readystatechange', function () {
-	            if (_this._xhr.readyState !== XMLHttpRequest.DONE)
-	                return;
-	            var resp = {
-	                status: _this._xhr.status,
-	                statusText: _this._xhr.statusText,
-	                body: null,
-	                headers: {},
-	                isValid: false,
-	                contentLength: 0,
-	                contentType: null
-	            };
-	            var headers = _this._xhr.getAllResponseHeaders().split('\r\n');
-	            if (headers.length) {
-	                for (var i = 0, ii = headers.length; i < ii; i++) {
-	                    if (headers[i] === '')
-	                        continue;
-	                    var split = headers[i].split(':');
-	                    resp.headers[split[0].trim()] = split[1].trim();
-	                }
-	            }
-	            resp.contentType = resp.headers['Content-Type'];
-	            resp.contentLength = parseInt(resp.headers['Content-Length']);
-	            if (isNaN(resp.contentLength))
-	                resp.contentLength = 0;
-	            resp.body = _this._xhr.response;
-	            resp.isValid = isValid(_this._xhr, _this._url);
-	            if (!resp.isValid && throwOnInvalid) {
-	                return defer.reject(new HttpError(resp));
-	            }
-	            defer.resolve(resp);
-	        });
-	        var method = HttpMethod[this._method];
-	        var url = this._url;
-	        if (data && data === Object(data) && this._method == HttpMethod.GET) {
-	            var sep = (url.indexOf('?') === -1) ? '?' : '&';
-	            var d = sep + queryParam(data);
-	            url += d;
-	        }
-	        url = this._apply_params(url);
-	        this._xhr.open(method, url, true);
-	        for (var key in this._headers) {
-	            this._xhr.setRequestHeader(key, this._headers[key]);
-	        }
-	        this._xhr.send(data);
-	        return defer.promise;
-	    };
-	    Request.prototype._apply_params = function (url) {
-	        var params = {};
-	        var idx = url.indexOf('?');
-	        if (idx > -1) {
-	            params = objects_1.extend(params, queryStringToParams(url.substr(idx + 1)));
-	            url = url.substr(0, idx);
-	        }
-	        objects_1.extend(params, this._params);
-	        if (!objects_1.isEmpty(params)) {
-	            var sep = (url.indexOf('?') === -1) ? '?' : '&';
-	            url += sep + queryParam(params);
-	        }
-	        return url;
-	    };
-	    return Request;
-	}());
-	exports.Request = Request;
-	exports.request = {};
-	['get', 'post', 'put', 'delete', 'patch', 'head']
-	    .forEach(function (m) {
-	    exports.request[m === 'delete' ? 'del' : m] = function (url) {
-	        var mm = HttpMethod[m.toUpperCase()];
-	        return new Request(mm, url);
-	    };
-	});
-
-
-/***/ },
-/* 35 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var utilities_1 = __webpack_require__(24);
-	(function (HttpMethod) {
-	    HttpMethod[HttpMethod["GET"] = 0] = "GET";
-	    HttpMethod[HttpMethod["POST"] = 1] = "POST";
-	    HttpMethod[HttpMethod["PUT"] = 2] = "PUT";
-	    HttpMethod[HttpMethod["DELETE"] = 3] = "DELETE";
-	})(exports.HttpMethod || (exports.HttpMethod = {}));
-	var HttpMethod = exports.HttpMethod;
-
-	var AssetsError = function (_Error) {
-	    _inherits(AssetsError, _Error);
-
-	    function AssetsError(status, message) {
-	        _classCallCheck(this, AssetsError);
-
-	        if (utilities_1.isString(status)) {
-	            message = status;
-	            status = 200;
-	        } else if (arguments.length === 1) {
-	            message = "";
-	        }
-
-	        var _this = _possibleConstructorReturn(this, (AssetsError.__proto__ || Object.getPrototypeOf(AssetsError)).call(this, message));
-
-	        _this.message = message;
-	        _this.status = status;
-	        return _this;
-	    }
-
-	    _createClass(AssetsError, [{
-	        key: "toJSON",
-	        value: function toJSON() {
-	            var out = {
-	                status: this.status,
-	                message: this.message
-	            };
-	            if (this.name) out.name = this.name;
-	            return out;
-	        }
-	    }]);
-
-	    return AssetsError;
-	}(Error);
-
-	exports.AssetsError = AssetsError;
-
-	var HttpError = function (_AssetsError) {
-	    _inherits(HttpError, _AssetsError);
-
-	    function HttpError() {
-	        _classCallCheck(this, HttpError);
-
-	        return _possibleConstructorReturn(this, (HttpError.__proto__ || Object.getPrototypeOf(HttpError)).apply(this, arguments));
-	    }
-
-	    return HttpError;
-	}(AssetsError);
-
-	exports.HttpError = HttpError;
-
-/***/ },
-/* 36 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function __export(m) {
-	    for (var p in m) {
-	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-	    }
-	}
-	__export(__webpack_require__(37));
-
-/***/ },
-/* 37 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _get = function get(object, property, receiver) { if (object === null) object = Function.prototype; var desc = Object.getOwnPropertyDescriptor(object, property); if (desc === undefined) { var parent = Object.getPrototypeOf(object); if (parent === null) { return undefined; } else { return get(parent, property, receiver); } } else if ("value" in desc) { return desc.value; } else { var getter = desc.get; if (getter === undefined) { return undefined; } return getter.call(receiver); } };
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var collection_1 = __webpack_require__(38);
-	var utilities_1 = __webpack_require__(47);
-	var utils = __webpack_require__(24);
-
-	var AssetsModel = function (_collection_1$RestMod) {
-	    _inherits(AssetsModel, _collection_1$RestMod);
-
-	    function AssetsModel(data, options) {
-	        _classCallCheck(this, AssetsModel);
-
-	        var _this = _possibleConstructorReturn(this, (AssetsModel.__proto__ || Object.getPrototypeOf(AssetsModel)).call(this, data, options));
-
-	        _this.idAttribute = "id";
-	        return _this;
-	    }
-
-	    _createClass(AssetsModel, [{
-	        key: 'getURL',
-	        value: function getURL() {
-	            var baseURL = utils.result(this, 'rootURL');
-	            if (this.collection) {
-	                baseURL = this.collection.getURL();
-	            }
-	            if (baseURL == null) throw new Error("no url");
-	            var path = this.get('path');
-	            path = utilities_1.normalizeURL(baseURL, path, encodeURIComponent(this.get('filename')));
-	            return path;
-	        }
-	    }, {
-	        key: 'toJSON',
-	        value: function toJSON() {
-	            return _get(AssetsModel.prototype.__proto__ || Object.getPrototypeOf(AssetsModel.prototype), 'toJSON', this).call(this);
-	        }
-	    }, {
-	        key: 'fullPath',
-	        get: function get() {
-	            var path = this.get('path');
-	            if (path !== '/') {
-	                if (path[path.length - 1] !== '/') path += '/';
-	            }
-	            path = path + this.get('filename');
-	            return path;
-	        }
-	    }]);
-
-	    return AssetsModel;
-	}(collection_1.RestModel);
-
-	exports.AssetsModel = AssetsModel;
-
-	var AssetsCollection = function (_collection_1$Paginat) {
-	    _inherits(AssetsCollection, _collection_1$Paginat);
-
-	    function AssetsCollection(client, options) {
-	        _classCallCheck(this, AssetsCollection);
-
-	        var _this2 = _possibleConstructorReturn(this, (AssetsCollection.__proto__ || Object.getPrototypeOf(AssetsCollection)).call(this, null, {
-	            url: client.url
-	        }));
-
-	        _this2.Model = AssetsModel;
-	        _this2.comparator = 'name';
-	        options = options || { fetchOnUrl: true };
-	        _this2._state.size = 30;
-	        _this2.listenTo(client, 'change:url', function () {
-	            _this2.url = client.url;
-	            if (options.fetchOnUrl) _this2.fetch();
-	        });
-	        return _this2;
-	    }
-
-	    return AssetsCollection;
-	}(collection_1.PaginatedCollection);
-
-	exports.AssetsCollection = AssetsCollection;
-
-/***/ },
-/* 38 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	function __export(m) {
-	    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-	}
-	__export(__webpack_require__(39));
-	__export(__webpack_require__(41));
-	__export(__webpack_require__(42));
-	__export(__webpack_require__(43));
-	__export(__webpack_require__(44));
-	__export(__webpack_require__(46));
-	var collection_2 = __webpack_require__(39);
-	var rest_collection_2 = __webpack_require__(43);
-	var model_2 = __webpack_require__(41);
-	function isCollection(a) {
-	    if (a == null)
-	        return false;
-	    return (a instanceof collection_2.Collection) || a.__classType == 'Collection' || a.__classType == 'RestCollection';
-	}
-	exports.isCollection = isCollection;
-	function isRestCollection(a) {
-	    if (a == null)
-	        return false;
-	    return (a instanceof rest_collection_2.RestCollection) || a.__classType == 'RestCollection';
-	}
-	exports.isRestCollection = isRestCollection;
-	function isModel(a) {
-	    if (a == null)
-	        return false;
-	    return (a instanceof model_2.Model) || a.__classType === 'Model' || a.__classType === 'RestModel';
-	}
-	exports.isModel = isModel;
-	function isRestModel(a) {
-	    if (a == null)
-	        return false;
-	    return (a instanceof model_2.Model) || a.__classType === 'RestModel';
-	}
-	exports.isRestModel = isRestModel;
-
-
-/***/ },
-/* 39 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var object_1 = __webpack_require__(40);
-	var model_1 = __webpack_require__(41);
-	var objects_1 = __webpack_require__(27);
-	var arrays_1 = __webpack_require__(25);
-	var utils_1 = __webpack_require__(26);
-	var setOptions = { add: true, remove: true, merge: true };
-	var addOptions = { add: true, remove: false };
-	var Collection = (function (_super) {
-	    __extends(Collection, _super);
-	    function Collection(models, options) {
-	        if (options === void 0) { options = {}; }
-	        _super.call(this);
-	        this.options = options;
-	        if (this.options.model) {
-	            this.Model = this.options.model;
-	        }
-	        if (models) {
-	            this.add(models);
-	        }
-	    }
-	    Object.defineProperty(Collection.prototype, "__classType", {
-	        get: function () { return 'Collection'; },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    ;
-	    Object.defineProperty(Collection.prototype, "length", {
-	        get: function () {
-	            return this.models.length;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(Collection.prototype, "Model", {
-	        get: function () {
-	            if (!this._model) {
-	                this._model = model_1.Model;
-	            }
-	            return this._model;
-	        },
-	        set: function (con) {
-	            this._model = con;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(Collection.prototype, "models", {
-	        get: function () {
-	            return this._models || (this._models = []);
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Collection.prototype.add = function (models, options) {
-	        var _this = this;
-	        if (options === void 0) { options = {}; }
-	        if (!Array.isArray(models)) {
-	            if (!(models instanceof this.Model)) {
-	                models = this._prepareModel(models);
-	            }
-	        }
-	        else {
-	            models = models.map(function (item) {
-	                return (item instanceof _this.Model) ? item : (_this._prepareModel(item));
-	            });
-	        }
-	        this.set(models, objects_1.extend({ merge: false }, options, addOptions));
-	    };
-	    Collection.prototype.set = function (items, options) {
-	        if (options === void 0) { options = {}; }
-	        options = objects_1.extend({}, setOptions, options);
-	        if (options.parse)
-	            items = this.parse(items, options);
-	        var singular = !Array.isArray(items);
-	        var models = (singular ? (items ? [items] : []) : items.slice());
-	        var i, l, id, model, attrs, existing, sort;
-	        var at = options.at;
-	        var sortable = this.comparator && (at == null) && options.sort !== false;
-	        var sortAttr = typeof this.comparator === 'string' ? this.comparator : null;
-	        var toAdd = [], toRemove = [], modelMap = {};
-	        var add = options.add, merge = options.merge, remove = options.remove;
-	        var order = !sortable && add && remove ? [] : null;
-	        for (i = 0, l = models.length; i < l; i++) {
-	            model = models[i];
-	            model = this._prepareModel(model);
-	            id = model.get(model.idAttribute) || model.uid;
-	            if (existing = this.get(id)) {
-	                if (remove)
-	                    modelMap[existing.uid] = true;
-	                if (merge) {
-	                    attrs = model.toJSON();
-	                    existing.set(attrs, options);
-	                    if (sortable && !sort && existing.hasChanged(sortAttr))
-	                        sort = true;
-	                }
-	                models[i] = existing;
-	            }
-	            else if (add) {
-	                models[i] = model;
-	                if (!model)
-	                    continue;
-	                toAdd.push(model);
-	                this._addReference(model, options);
-	            }
-	            model = existing || model;
-	            if (order && !modelMap[model.id])
-	                order.push(model);
-	            modelMap[model.uid] = true;
-	        }
-	        if (remove) {
-	            for (i = 0, l = this.length; i < l; ++i) {
-	                if (!modelMap[(model = this.models[i]).uid])
-	                    toRemove.push(model);
-	            }
-	            if (toRemove.length)
-	                this.remove(toRemove, options);
-	        }
-	        if (toAdd.length || (order && order.length)) {
-	            if (sortable)
-	                sort = true;
-	            if (at != null) {
-	                for (i = 0, l = toAdd.length; i < l; i++) {
-	                    this.models.splice(at + i, 0, toAdd[i]);
-	                }
-	            }
-	            else {
-	                if (order)
-	                    this.models.length = 0;
-	                var orderedModels = order || toAdd;
-	                for (i = 0, l = orderedModels.length; i < l; i++) {
-	                    this.models.push(orderedModels[i]);
-	                }
-	            }
-	        }
-	        if (sort)
-	            this.sort({ silent: true });
-	        if (!options.silent) {
-	            for (i = 0, l = toAdd.length; i < l; i++) {
-	                (model = toAdd[i]).trigger('add', model, this, options);
-	            }
-	            if (sort || (order && order.length))
-	                this.trigger('sort', this, options);
-	            if (toAdd.length || toRemove.length)
-	                this.trigger('update', this, options);
-	        }
-	        return singular ? models[0] : models;
-	    };
-	    Collection.prototype.remove = function (models, options) {
-	        if (options === void 0) { options = {}; }
-	        var singular = !Array.isArray(models);
-	        models = (singular ? [models] : models.slice());
-	        var i, l, index, model;
-	        for (i = 0, l = models.length; i < l; i++) {
-	            model = models[i] = this.get(models[i]);
-	            if (!model)
-	                continue;
-	            index = this.indexOf(model);
-	            this.models.splice(index, 1);
-	            if (!options.silent) {
-	                options.index = index;
-	                model.trigger('remove', model, this, options);
-	            }
-	            this._removeReference(model, options);
-	        }
-	        return singular ? models[0] : models;
-	    };
-	    Collection.prototype.get = function (id) {
-	        return this.find(id);
-	    };
-	    Collection.prototype.at = function (index) {
-	        return this.models[index];
-	    };
-	    Collection.prototype.clone = function (options) {
-	        options = options || this.options;
-	        return new this.constructor(this.models, options);
-	    };
-	    Collection.prototype.sort = function (options) {
-	        if (options === void 0) { options = {}; }
-	        if (!this.comparator)
-	            throw new Error('Cannot sort a set without a comparator');
-	        if (typeof this.comparator === 'string' || this.comparator.length === 1) {
-	            this._models = this.sortBy(this.comparator, this);
-	        }
-	        else {
-	            this.models.sort(this.comparator.bind(this));
-	        }
-	        if (!options.silent)
-	            this.trigger('sort', this, options);
-	        return this;
-	    };
-	    Collection.prototype.sortBy = function (key, context) {
-	        return arrays_1.sortBy(this._models, key, context);
-	    };
-	    Collection.prototype.push = function (model, options) {
-	        if (options === void 0) { options = {}; }
-	        return this.add(model, objects_1.extend({ at: this.length }, options));
-	    };
-	    Collection.prototype.reset = function (models, options) {
-	        var _this = this;
-	        if (options === void 0) { options = {}; }
-	        this.forEach(function (model) {
-	            _this._removeReference(model, options);
-	        });
-	        options.previousModels = this.models;
-	        this._reset();
-	        models = this.add(models, options);
-	        if (!options.silent)
-	            this.trigger('reset', this, options);
-	        return models;
-	    };
-	    Collection.prototype.create = function (values, options) {
-	        if (options === void 0) { options = { add: true }; }
-	        var model = new this.Model(values, options);
-	        if (options.add)
-	            this.add(model);
-	        return model;
-	    };
-	    Collection.prototype.parse = function (models, options) {
-	        if (options === void 0) { options = {}; }
-	        return models;
-	    };
-	    Collection.prototype.find = function (nidOrFn) {
-	        var model;
-	        if (typeof nidOrFn === 'function') {
-	            model = arrays_1.find(this.models, nidOrFn);
-	        }
-	        else {
-	            model = arrays_1.find(this.models, function (model) {
-	                return model.id == nidOrFn || model.uid == nidOrFn || nidOrFn === model;
-	            });
-	        }
-	        return model;
-	    };
-	    Collection.prototype.forEach = function (iterator, ctx) {
-	        for (var i = 0, l = this.models.length; i < l; i++) {
-	            iterator.call(ctx || this, this.models[i], i);
-	        }
-	        return this;
-	    };
-	    Collection.prototype.map = function (iterator, thisArgs) {
-	        var out = [];
-	        for (var i = 0, ii = this.length; i < ii; i++) {
-	            out.push(iterator.call(thisArgs, this.models[i], i, this));
-	        }
-	        return out;
-	    };
-	    Collection.prototype.filter = function (fn) {
-	        var out = [];
-	        this.forEach(function (m, i) {
-	            if (fn(m, i))
-	                out.push(m);
-	        });
-	        return out;
-	    };
-	    Collection.prototype.indexOf = function (model) {
-	        return this.models.indexOf(model);
-	    };
-	    Collection.prototype.toJSON = function () {
-	        return this.models.map(function (m) { return m.toJSON(); });
-	    };
-	    Collection.prototype._prepareModel = function (value) {
-	        if (value instanceof model_1.Model)
-	            return value;
-	        if (objects_1.isObject(value))
-	            return new this.Model(value, { parse: true });
-	        throw new Error('Value not an Object or an instance of a model, but was: ' + typeof value);
-	    };
-	    Collection.prototype._removeReference = function (model, options) {
-	        if (this === model.collection)
-	            delete model.collection;
-	        this.stopListening(model);
-	    };
-	    Collection.prototype._addReference = function (model, options) {
-	        if (!model.collection)
-	            model.collection = this;
-	        this.listenTo(model, 'all', this._onModelEvent);
-	    };
-	    Collection.prototype._reset = function () {
-	        this._models = [];
-	    };
-	    Collection.prototype._onModelEvent = function (event, model, collection, options) {
-	        if ((event === 'add' || event === 'remove') && collection !== this)
-	            return;
-	        if (event === 'destroy')
-	            this.remove(model, options);
-	        utils_1.callFunc(this.trigger, this, arrays_1.slice(arguments));
-	    };
-	    Collection.prototype.destroy = function () {
-	        var _this = this;
-	        this.models.forEach(function (m) {
-	            if (typeof m.destroy === 'function' &&
-	                m.collection == _this)
-	                m.destroy();
-	        });
-	        _super.prototype.destroy.call(this);
-	    };
-	    return Collection;
-	}(object_1.BaseObject));
-	exports.Collection = Collection;
-
-
-/***/ },
-/* 40 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var eventsjs_1 = __webpack_require__(7);
-	var utils_1 = __webpack_require__(26);
-	var BaseObject = (function (_super) {
-	    __extends(BaseObject, _super);
-	    function BaseObject() {
-	        _super.apply(this, arguments);
-	    }
-	    BaseObject.extend = function (proto, stat) {
-	        return utils_1.inherits(this, proto, stat);
-	    };
-	    return BaseObject;
-	}(eventsjs_1.EventEmitter));
-	exports.BaseObject = BaseObject;
-
-
-/***/ },
-/* 41 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var object_1 = __webpack_require__(40);
-	var utils_1 = __webpack_require__(26);
-	var objects_1 = __webpack_require__(27);
-	var Model = (function (_super) {
-	    __extends(Model, _super);
-	    function Model(attributes, options) {
-	        if (attributes === void 0) { attributes = {}; }
-	        if (options === void 0) { options = {}; }
-	        _super.call(this);
-	        options = options || {};
-	        this._attributes = {};
-	        this.options = options;
-	        if (options.parse)
-	            attributes = this.parse(attributes);
-	        this.set(attributes, { silent: true, array: false });
-	        this.uid = utils_1.uniqueId('uid');
-	        this._changed = {};
-	        this.collection = options.collection;
-	        this.idAttribute = options.idAttribute || this.idAttribute || 'id';
-	    }
-	    Object.defineProperty(Model.prototype, "__classType", {
-	        get: function () { return 'Model'; },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    ;
-	    Object.defineProperty(Model.prototype, "id", {
-	        get: function () {
-	            if (this.idAttribute in this._attributes)
-	                return this._attributes[this.idAttribute];
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(Model.prototype, "isNew", {
-	        get: function () {
-	            return this.id == null;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Object.defineProperty(Model.prototype, "isDirty", {
-	        get: function () {
-	            return this.hasChanged();
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Model.prototype.set = function (key, val, options) {
-	        if (options === void 0) { options = {}; }
-	        var attr, attrs = {}, unset, changes, silent, changing, prev, current;
-	        if (key == null)
-	            return this;
-	        if (typeof key === 'object') {
-	            attrs = key;
-	            options = val;
-	        }
-	        else {
-	            attrs[key] = val;
-	        }
-	        options || (options = {});
-	        unset = options.unset;
-	        silent = options.silent;
-	        changes = [];
-	        changing = this._changing;
-	        this._changing = true;
-	        if (!changing) {
-	            this._previousAttributes = objects_1.extend(Object.create(null), this._attributes);
-	            this._changed = {};
-	        }
-	        current = this._attributes, prev = this._previousAttributes;
-	        for (attr in attrs) {
-	            val = attrs[attr];
-	            if (!utils_1.equal(current[attr], val))
-	                changes.push(attr);
-	            if (!utils_1.equal(prev[attr], val)) {
-	                this._changed[attr] = val;
-	            }
-	            else {
-	                delete this._changed[attr];
-	            }
-	            unset ? delete current[attr] : current[attr] = val;
-	        }
-	        if (!silent) {
-	            if (changes.length)
-	                this._pending = !!options;
-	            for (var i = 0, l = changes.length; i < l; i++) {
-	                this.trigger('change:' + changes[i], this, current[changes[i]], options);
-	            }
-	        }
-	        if (changing)
-	            return this;
-	        if (!silent) {
-	            while (this._pending) {
-	                options = this._pending;
-	                this._pending = false;
-	                this.trigger('change', this, options);
-	            }
-	        }
-	        this._pending = false;
-	        this._changing = false;
-	        return this;
-	    };
-	    Model.prototype.get = function (key) {
-	        return this._attributes[key];
-	    };
-	    Model.prototype.unset = function (key, options) {
-	        this.set(key, void 0, objects_1.extend({}, options, { unset: true }));
-	    };
-	    Model.prototype.has = function (attr) {
-	        return this.get(attr) != null;
-	    };
-	    Model.prototype.hasChanged = function (attr) {
-	        if (attr == null)
-	            return !!Object.keys(this.changed).length;
-	        return objects_1.has(this.changed, attr);
-	    };
-	    Model.prototype.clear = function (options) {
-	        var attrs = {};
-	        for (var key in this._attributes)
-	            attrs[key] = void 0;
-	        return this.set(attrs, objects_1.extend({}, options, { unset: true }));
-	    };
-	    Object.defineProperty(Model.prototype, "changed", {
-	        get: function () {
-	            return objects_1.extend({}, this._changed);
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    Model.prototype.changedAttributes = function (diff) {
-	        if (!diff)
-	            return this.hasChanged() ? objects_1.extend(Object.create(null), this.changed) : false;
-	        var val, changed = {};
-	        var old = this._changing ? this._previousAttributes : this._attributes;
-	        for (var attr in diff) {
-	            if (utils_1.equal(old[attr], (val = diff[attr])))
-	                continue;
-	            (changed || (changed = {}))[attr] = val;
-	        }
-	        return changed;
-	    };
-	    Model.prototype.previous = function (attr) {
-	        if (attr == null || !this._previousAttributes)
-	            return null;
-	        return this._previousAttributes[attr];
-	    };
-	    Model.prototype.previousAttributes = function () {
-	        return objects_1.extend(Object.create(null), this._previousAttributes);
-	    };
-	    Model.prototype.toJSON = function () {
-	        return JSON.parse(JSON.stringify(this._attributes));
-	    };
-	    Model.prototype.clone = function () {
-	        return new (this.constructor)(this._attributes, this.options);
-	    };
-	    Model.prototype.parse = function (attr, options) {
-	        return attr;
-	    };
-	    Model.prototype.remove = function (options) {
-	        this.trigger('remove', this, this.collection, options);
-	    };
-	    Model.prototype.pick = function (attr) {
-	        var attrs = [];
-	        for (var _i = 1; _i < arguments.length; _i++) {
-	            attrs[_i - 1] = arguments[_i];
-	        }
-	        if (arguments.length === 1) {
-	            if (!Array.isArray(attr)) {
-	                attrs = [attr];
-	            }
-	            else {
-	                attrs = attr;
-	            }
-	        }
-	        else {
-	            attrs = [attr].concat(attrs);
-	        }
-	        var out = {};
-	        for (var i = 0, ii = attrs.length; i < ii; i++) {
-	            if (this.has(attrs[i]))
-	                out[attrs[i]] = this.get(attrs[i]);
-	        }
-	        return out;
-	    };
-	    return Model;
-	}(object_1.BaseObject));
-	exports.Model = Model;
-
-
-/***/ },
-/* 42 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var utils_1 = __webpack_require__(26);
-	var objects_1 = __webpack_require__(27);
-	var model_1 = __webpack_require__(41);
-	function objToPaths(obj, separator, array) {
-	    if (separator === void 0) { separator = "."; }
-	    if (array === void 0) { array = true; }
-	    var ret = {};
-	    if (!obj)
-	        return obj;
-	    for (var key in obj) {
-	        var val = obj[key];
-	        if (val && (val.constructor === Object || (array && val.constructor === Array)) && !objects_1.isEmpty(val)) {
-	            var obj2 = objToPaths(val);
-	            for (var key2 in obj2) {
-	                var val2 = obj2[key2];
-	                ret[key + separator + key2] = val2;
-	            }
-	        }
-	        else {
-	            ret[key] = val;
-	        }
-	    }
-	    return ret;
-	}
-	exports.objToPaths = objToPaths;
-	function isOnNestedModel(obj, path, separator) {
-	    if (separator === void 0) { separator = "."; }
-	    var fields = path ? path.split(separator) : [];
-	    if (!obj)
-	        return false;
-	    var result = obj;
-	    for (var i = 0, n = fields.length; i < n; i++) {
-	        if (result instanceof model_1.Model)
-	            return true;
-	        if (!result)
-	            return false;
-	        result = result[fields[i]];
-	    }
-	    return false;
-	}
-	function getNested(obj, path, return_exists, separator) {
-	    if (separator === void 0) { separator = "."; }
-	    if (!obj)
-	        return null;
-	    var fields = path ? path.split(separator) : [];
-	    var result = obj;
-	    return_exists || (return_exists === false);
-	    for (var i = 0, n = fields.length; i < n; i++) {
-	        if (return_exists && !objects_1.has(result, fields[i])) {
-	            return false;
-	        }
-	        result = result instanceof model_1.Model ? result.get(fields[i]) : result[fields[i]];
-	        if (result == null && i < n - 1) {
-	            result = {};
-	        }
-	        if (typeof result === 'undefined') {
-	            if (return_exists) {
-	                return true;
-	            }
-	            return result;
-	        }
-	    }
-	    if (return_exists) {
-	        return true;
-	    }
-	    return result;
-	}
-	exports.getNested = getNested;
-	function setNested(obj, path, val, options) {
-	    options = options || {};
-	    if (!obj)
-	        return null;
-	    var separator = options.separator || ".";
-	    var fields = path ? path.split(separator) : [];
-	    var result = obj;
-	    for (var i = 0, n = fields.length; i < n && result !== undefined; i++) {
-	        var field = fields[i];
-	        if (i === n - 1) {
-	            options.unset ? delete result[field] : result[field] = val;
-	        }
-	        else {
-	            if (typeof result[field] === 'undefined' || !objects_1.isObject(result[field])) {
-	                if (options.unset) {
-	                    delete result[field];
-	                    return;
-	                }
-	                var nextField = fields[i + 1];
-	                result[field] = /^\d+$/.test(nextField) ? [] : {};
-	            }
-	            result = result[field];
-	            if (result instanceof model_1.Model) {
-	                var rest = fields.slice(i + 1);
-	                return result.set(rest.join('.'), val, options);
-	            }
-	        }
-	    }
-	}
-	function deleteNested(obj, path) {
-	    setNested(obj, path, null, {
-	        unset: true
-	    });
-	}
-	var NestedModel = (function (_super) {
-	    __extends(NestedModel, _super);
-	    function NestedModel() {
-	        _super.apply(this, arguments);
-	    }
-	    NestedModel.prototype.get = function (attr) {
-	        return getNested(this._attributes, attr);
-	    };
-	    NestedModel.prototype.set = function (key, val, options) {
-	        var _this = this;
-	        var attr, attrs, unset, changes, silent, changing, prev, current;
-	        if (key == null)
-	            return this;
-	        if (typeof key === 'object') {
-	            attrs = key;
-	            options = val || {};
-	        }
-	        else {
-	            (attrs = {})[key] = val;
-	        }
-	        options || (options = {});
-	        unset = options.unset;
-	        silent = options.silent;
-	        changes = [];
-	        changing = this._changing;
-	        this._changing = true;
-	        if (!changing) {
-	            this._previousAttributes = objects_1.extend({}, this._attributes);
-	            this._changed = {};
-	        }
-	        current = this._attributes, prev = this._previousAttributes;
-	        var separator = NestedModel.keyPathSeparator;
-	        attrs = objToPaths(attrs, separator, options.array);
-	        var alreadyTriggered = {};
-	        if (!this._nestedListener)
-	            this._nestedListener = {};
-	        for (attr in attrs) {
-	            val = attrs[attr];
-	            var curVal = getNested(current, attr);
-	            if (!utils_1.equal(curVal, val)) {
-	                changes.push(attr);
-	                this._changed[attr] = val;
-	            }
-	            if (!utils_1.equal(getNested(prev, attr), val)) {
-	                setNested(this.changed, attr, val, options);
-	            }
-	            else {
-	                deleteNested(this.changed, attr);
-	            }
-	            if (curVal instanceof model_1.Model) {
-	                var fn = this._nestedListener[attr];
-	                if (fn) {
-	                    curVal.off('change', fn);
-	                    delete this._nestedListener[attr];
-	                }
-	            }
-	            if (unset) {
-	                deleteNested(current, attr);
-	            }
-	            else {
-	                if (!isOnNestedModel(current, attr, separator)) {
-	                    if (val instanceof model_1.Model) {
-	                        var fn = function (model) {
-	                            if (model.changed == undefined || objects_1.isEmpty(model.changed))
-	                                return;
-	                            for (var key_1 in model.changed) {
-	                                _this._changed[attr + separator + key_1] = model.changed[key_1];
-	                                _this.trigger('change:' + attr + separator + key_1, model.changed[key_1]);
-	                            }
-	                            _this.trigger('change', _this, options);
-	                        };
-	                        this._nestedListener[attr] = fn;
-	                        val.on('change', fn);
-	                    }
-	                }
-	                else {
-	                    alreadyTriggered[attr] = true;
-	                }
-	                setNested(current, attr, val, options);
-	            }
-	        }
-	        if (!silent) {
-	            if (changes.length)
-	                this._pending = true;
-	            for (var i = 0, l = changes.length; i < l; i++) {
-	                var key_2 = changes[i];
-	                if (!alreadyTriggered.hasOwnProperty(key_2) || !alreadyTriggered[key_2]) {
-	                    alreadyTriggered[key_2] = true;
-	                    this.trigger('change:' + key_2, this, getNested(current, key_2), options);
-	                }
-	                var fields = key_2.split(separator);
-	                for (var n = fields.length - 1; n > 0; n--) {
-	                    var parentKey = fields.slice(0, n).join(separator), wildcardKey = parentKey + separator + '*';
-	                    if (!alreadyTriggered.hasOwnProperty(wildcardKey) || !alreadyTriggered[wildcardKey]) {
-	                        alreadyTriggered[wildcardKey] = true;
-	                        this.trigger('change:' + wildcardKey, this, getNested(current, parentKey), options);
-	                    }
-	                    if (!alreadyTriggered.hasOwnProperty(parentKey) || !alreadyTriggered[parentKey]) {
-	                        alreadyTriggered[parentKey] = true;
-	                        this.trigger('change:' + parentKey, this, getNested(current, parentKey), options);
-	                    }
-	                }
-	            }
-	        }
-	        if (changing)
-	            return this;
-	        if (!silent) {
-	            while (this._pending) {
-	                this._pending = false;
-	                this.trigger('change', this, options);
-	            }
-	        }
-	        this._pending = false;
-	        this._changing = false;
-	        return this;
-	    };
-	    NestedModel.prototype.clear = function (options) {
-	        var attrs = {};
-	        var shallowAttributes = objToPaths(this._attributes);
-	        for (var key in shallowAttributes)
-	            attrs[key] = void 0;
-	        return this.set(attrs, objects_1.extend({}, options, {
-	            unset: true
-	        }));
-	    };
-	    NestedModel.prototype.hasChanged = function (attr) {
-	        if (attr == null) {
-	            return !Object.keys(this.changed).length;
-	        }
-	        return getNested(this.changed, attr) !== undefined;
-	    };
-	    NestedModel.prototype.changedAttributes = function (diff) {
-	        if (!diff)
-	            return this.hasChanged() ? objToPaths(this.changed) : false;
-	        var old = this._changing ? this._previousAttributes : this._attributes;
-	        diff = objToPaths(diff);
-	        old = objToPaths(old);
-	        var val, changed = false;
-	        for (var attr in diff) {
-	            if (utils_1.equal(old[attr], (val = diff[attr])))
-	                continue;
-	            (changed || (changed = {}))[attr] = val;
-	        }
-	        return changed;
-	    };
-	    NestedModel.prototype.previous = function (attr) {
-	        if (attr == null || !this._previousAttributes) {
-	            return null;
-	        }
-	        return getNested(this._previousAttributes, attr);
-	    };
-	    NestedModel.prototype.previousAttributes = function () {
-	        return objects_1.extend({}, this._previousAttributes);
-	    };
-	    NestedModel.prototype.pick = function (attr) {
-	        var attrs = [];
-	        for (var _i = 1; _i < arguments.length; _i++) {
-	            attrs[_i - 1] = arguments[_i];
-	        }
-	        if (arguments.length === 1) {
-	            attr = !Array.isArray(attr) ? [attr] : attr;
-	        }
-	        else {
-	            attrs = [attr].concat(attrs);
-	        }
-	        var out = {};
-	        for (var i = 0, ii = attrs.length; i < ii; i++) {
-	            if (this.has(attrs[i])) {
-	                setNested(out, attrs[i], this.get(attrs[i]));
-	            }
-	        }
-	        return out;
-	    };
-	    NestedModel.prototype.destroy = function () {
-	        for (var key in this._nestedListener) {
-	            var fn = this._nestedListener[key];
-	            if (fn) {
-	                var m = this.get(key);
-	                if (m)
-	                    m.off(key, fn);
-	            }
-	        }
-	        _super.prototype.destroy.call(this);
-	    };
-	    NestedModel.keyPathSeparator = '.';
-	    return NestedModel;
-	}(model_1.Model));
-	exports.NestedModel = NestedModel;
-
-
-/***/ },
-/* 43 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var objects_1 = __webpack_require__(27);
-	var collection_1 = __webpack_require__(39);
-	var rest_model_1 = __webpack_require__(44);
-	var promises_1 = __webpack_require__(29);
-	var persistence_1 = __webpack_require__(45);
-	var RestCollection = (function (_super) {
-	    __extends(RestCollection, _super);
-	    function RestCollection(models, options) {
-	        if (options === void 0) { options = {}; }
-	        _super.call(this, models, options);
-	        if (options.url)
-	            this.url = options.url;
-	        this.options.queryParameter = this.options.queryParameter || 'q';
-	    }
-	    Object.defineProperty(RestCollection.prototype, "__classType", {
-	        get: function () { return 'RestCollection'; },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    ;
-	    RestCollection.prototype.getURL = function () {
-	        return typeof this.url === 'function' ? this.url() : this.url;
-	    };
-	    RestCollection.prototype.fetch = function (options) {
-	        var _this = this;
-	        options = options ? objects_1.extend({}, options) : {};
-	        var url = this.getURL();
-	        if (url == null)
-	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
-	        options.url = url;
-	        this.trigger('before:fetch');
-	        return this.sync(persistence_1.RestMethod.Read, this, options)
-	            .then(function (results) {
-	            _this[options.reset ? 'reset' : 'set'](results.content, options);
-	            _this.trigger('fetch');
-	            return _this;
-	        }).catch(function (e) {
-	            _this.trigger('error', e);
-	            throw e;
-	        });
-	    };
-	    RestCollection.prototype.create = function (value, options) {
-	        var _this = this;
-	        options = options ? objects_1.extend({}, options) : {};
-	        var model;
-	        var url = this.getURL();
-	        if (url == null)
-	            throw new Error('Url or rootURL no specified');
-	        options.url = url;
-	        if (value instanceof rest_model_1.RestModel) {
-	            model = value;
-	        }
-	        else {
-	            model = new this.Model(value, { parse: true, url: this.getURL() });
-	        }
-	        if (options.wait === void 0)
-	            options.wait = true;
-	        if (!options.wait)
-	            this.add(model, options);
-	        this.trigger('before:create', this, model, value, options);
-	        model.save().then(function () {
-	            if (!options.wait)
-	                _this.add(model, options);
-	            _this.trigger('create', _this, model, value, options);
-	            if (options.complete)
-	                options.complete(null, model);
-	        }).catch(function (e) {
-	            _this.trigger('error', e);
-	            if (options.complete)
-	                options.complete(e, null);
-	        });
-	        return model;
-	    };
-	    RestCollection.prototype.query = function (term, options) {
-	        var _this = this;
-	        if (options === void 0) { options = {}; }
-	        var params = (_a = {}, _a[this.options.queryParameter] = term, _a);
-	        var url = this.getURL();
-	        if (url == null)
-	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
-	        options.url = url;
-	        if (!options.params)
-	            options.params = {};
-	        objects_1.extend(options.params, params);
-	        this.trigger('before:query');
-	        return this.sync(persistence_1.RestMethod.Read, this, options)
-	            .then(function (results) {
-	            _this.reset(results.content, options);
-	            _this.trigger('query');
-	            return _this.models;
-	        }).catch(function (e) {
-	            _this.trigger('error', e);
-	            throw e;
-	        });
-	        var _a;
-	    };
-	    RestCollection.prototype.sync = function (method, model, options) {
-	        return persistence_1.sync(method, model, options);
-	    };
-	    return RestCollection;
-	}(collection_1.Collection));
-	exports.RestCollection = RestCollection;
-
-
-/***/ },
-/* 44 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var objects_1 = __webpack_require__(27);
-	var promises_1 = __webpack_require__(29);
-	var nested_model_1 = __webpack_require__(42);
-	var persistence_1 = __webpack_require__(45);
-	function normalize_path(url, id) {
-	    var i, p = "";
-	    if ((i = url.indexOf('?')) >= 0) {
-	        p = url.substr(i);
-	        url = url.substr(0, i);
-	    }
-	    if (url[url.length - 1] !== '/')
-	        url += '/';
-	    return url + id + p;
-	}
-	exports.normalize_path = normalize_path;
-	var RestModel = (function (_super) {
-	    __extends(RestModel, _super);
-	    function RestModel(attr, options) {
-	        if (options === void 0) { options = {}; }
-	        _super.call(this, attr, options);
-	        this.idAttribute = 'id';
-	        if (options.url) {
-	            this.rootURL = options.url;
-	        }
-	    }
-	    Object.defineProperty(RestModel.prototype, "__classType", {
-	        get: function () { return 'RestModel'; },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    ;
-	    RestModel.prototype.getURL = function (id) {
-	        var url = this.rootURL;
-	        if (this.collection && this.collection.getURL()) {
-	            url = this.collection.getURL();
-	        }
-	        id = id || this.id;
-	        if (id && url) {
-	            url = normalize_path(url, this.id);
-	        }
-	        return url;
-	    };
-	    RestModel.prototype.fetch = function (options) {
-	        var _this = this;
-	        options = options ? objects_1.extend({}, options) : {};
-	        var url = this.getURL();
-	        if (url == null)
-	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
-	        options.url = url;
-	        this.trigger('before:fetch', this, options);
-	        return this.sync(persistence_1.RestMethod.Read, this, options)
-	            .then(function (result) {
-	            if (result)
-	                _this.set(_this.parse(result.content, options), options);
-	            _this.trigger('fetch', _this, result, options);
-	            return _this;
-	        }).catch(function (e) {
-	            _this.trigger('error', _this, e);
-	            if (e) {
-	                throw e;
-	            }
-	            return _this;
-	        });
-	    };
-	    RestModel.prototype.save = function (options) {
-	        var _this = this;
-	        options = options ? objects_1.extend({}, options) : {};
-	        this.trigger('before:save', this, options);
-	        var method = persistence_1.RestMethod[this.isNew ? 'Create' : options.changed ? 'Patch' : "Update"];
-	        var url = this.getURL(this.id);
-	        if (url == null)
-	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
-	        options.url = url;
-	        return this.sync(method, this, options)
-	            .then(function (result) {
-	            _this.set(result.content, options);
-	            _this.trigger('save', _this, result, options);
-	            return _this;
-	        }).catch(function (e) {
-	            _this.trigger('error', _this, e);
-	            throw e;
-	        });
-	    };
-	    RestModel.prototype.remove = function (options) {
-	        var _this = this;
-	        options = options ? objects_1.extend({}, options) : {};
-	        if (this.isNew) {
-	            _super.prototype.remove.call(this, options);
-	            return promises_1.Promise.resolve(this);
-	        }
-	        var url = this.getURL(this.id);
-	        if (url == null)
-	            return promises_1.Promise.reject(new Error('Url or rootURL no specified'));
-	        this.trigger('before:remove', this, options);
-	        if (!options.wait)
-	            _super.prototype.remove.call(this, options);
-	        options.url = url;
-	        return this.sync(persistence_1.RestMethod.Delete, this, options)
-	            .then(function (result) {
-	            if (!options.wait)
-	                _super.prototype.remove.call(_this, options);
-	            return _this;
-	        }).catch(function (e) {
-	            _this.trigger('error', _this, e);
-	            throw e;
-	        });
-	    };
-	    RestModel.prototype.sync = function (method, model, options) {
-	        return persistence_1.sync(method, model, options);
-	    };
-	    return RestModel;
-	}(nested_model_1.NestedModel));
-	exports.RestModel = RestModel;
-
-
-/***/ },
-/* 45 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var promises_1 = __webpack_require__(29);
-	var utils_1 = __webpack_require__(26);
-	var request_1 = __webpack_require__(34);
-	var HttpError = (function (_super) {
-	    __extends(HttpError, _super);
-	    function HttpError(status, message, body) {
-	        _super.call(this, message);
-	        this.message = message;
-	        this.status = status;
-	        this.body = body;
-	    }
-	    return HttpError;
-	}(Error));
-	exports.HttpError = HttpError;
-	(function (RestMethod) {
-	    RestMethod[RestMethod["Create"] = 0] = "Create";
-	    RestMethod[RestMethod["Update"] = 1] = "Update";
-	    RestMethod[RestMethod["Read"] = 2] = "Read";
-	    RestMethod[RestMethod["Patch"] = 3] = "Patch";
-	    RestMethod[RestMethod["Delete"] = 4] = "Delete";
-	})(exports.RestMethod || (exports.RestMethod = {}));
-	var RestMethod = exports.RestMethod;
-	;
-	var xmlRe = /^(?:application|text)\/xml/;
-	var jsonRe = /^application\/json/;
-	var getData = function (accepts, xhr) {
-	    if (accepts == null)
-	        accepts = xhr.getResponseHeader('content-type');
-	    if (xmlRe.test(accepts)) {
-	        return xhr.responseXML;
-	    }
-	    else if (jsonRe.test(accepts) && xhr.responseText !== '') {
-	        return JSON.parse(xhr.responseText);
-	    }
-	    else {
-	        return xhr.responseText;
-	    }
-	};
-	var isValid = function (xhr) {
-	    return (xhr.status >= 200 && xhr.status < 300) ||
-	        (xhr.status === 304) ||
-	        (xhr.status === 0 && window.location.protocol === 'file:');
-	};
-	function sync(method, model, options) {
-	    var http;
-	    switch (method) {
-	        case RestMethod.Create:
-	            http = 'POST';
-	            break;
-	        case RestMethod.Update:
-	            http = "PUT";
-	            break;
-	        case RestMethod.Patch:
-	            http = "PATCH";
-	            break;
-	        case RestMethod.Delete:
-	            http = "DELETE";
-	            break;
-	        case RestMethod.Read:
-	            http = "GET";
-	            break;
-	        default:
-	            return promises_1.Promise.reject(new Error("Sync: does not recognise method: " + method));
-	    }
-	    var xhr = utils_1.ajax();
-	    var query, url = options.url;
-	    if (options.params)
-	        query = request_1.queryParam(options.params);
-	    if (query) {
-	        var sep = (options.url.indexOf('?') === -1) ? '?' : '&';
-	        url += sep + query;
-	    }
-	    return new promises_1.Promise(function (resolve, reject) {
-	        xhr.onreadystatechange = function () {
-	            if (xhr.readyState !== 4)
-	                return;
-	            var data;
-	            try {
-	                data = getData(options.headers['Accept'], xhr);
-	            }
-	            catch (e) {
-	                return reject(new Error('Could not serialize response'));
-	            }
-	            var response = {
-	                method: method,
-	                status: xhr.status,
-	                content: data
-	            };
-	            utils_1.proxy(response, xhr, ['getAllResponseHeaders', 'getResponseHeader']);
-	            if (isValid(xhr)) {
-	                return resolve(response);
-	            }
-	            else {
-	                var error = new HttpError(xhr.status, xhr.statusText, data);
-	                return reject(error);
-	            }
-	        };
-	        xhr.open(http, url, true);
-	        if (!(options.headers && options.headers['Accept'])) {
-	            options.headers = {
-	                Accept: "application/json"
-	            };
-	        }
-	        xhr.setRequestHeader('Content-Type', "application/json");
-	        if (options.headers)
-	            for (var key in options.headers) {
-	                xhr.setRequestHeader(key, options.headers[key]);
-	            }
-	        if (options.beforeSend)
-	            options.beforeSend(xhr);
-	        xhr.send(JSON.stringify(model.toJSON()));
-	    });
-	}
-	exports.sync = sync;
-
-
-/***/ },
-/* 46 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	var __extends = (this && this.__extends) || function (d, b) {
-	    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-	    function __() { this.constructor = d; }
-	    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-	};
-	var collection_1 = __webpack_require__(39);
-	var rest_collection_1 = __webpack_require__(43);
-	var promises_1 = __webpack_require__(29);
-	var persistence_1 = __webpack_require__(45);
-	var objects_1 = __webpack_require__(27);
-	var request_1 = __webpack_require__(34);
-	var PARAM_TRIM_RE = /[\s'"]/g;
-	var URL_TRIM_RE = /[<>\s'"]/g;
-	function queryStringToParams(qs) {
-	    var kvp, k, v, ls, params = {}, decode = decodeURIComponent;
-	    var kvps = qs.split('&');
-	    for (var i = 0, l = kvps.length; i < l; i++) {
-	        var param = kvps[i];
-	        kvp = param.split('='), k = kvp[0], v = kvp[1];
-	        if (v == null)
-	            v = true;
-	        k = decode(k), v = decode(v), ls = params[k];
-	        if (Array.isArray(ls))
-	            ls.push(v);
-	        else if (ls)
-	            params[k] = [ls, v];
-	        else
-	            params[k] = v;
-	    }
-	    return params;
-	}
-	var PaginatedCollection = (function (_super) {
-	    __extends(PaginatedCollection, _super);
-	    function PaginatedCollection(models, options) {
-	        if (options === void 0) { options = {}; }
-	        _super.call(this, models, options);
-	        this._state = { first: 1, last: -1, current: 1, size: 10 };
-	        this._link = {};
-	        this.queryParams = {
-	            page: 'page',
-	            size: 'pageSize'
-	        };
-	        if (options.queryParams) {
-	            objects_1.extend(this.queryParams, options.queryParams);
-	        }
-	        if (options.firstPage)
-	            this._state.first = options.firstPage;
-	        if (options.pageSize)
-	            this._state.size = options.pageSize;
-	        this._state.current = this._state.first;
-	        this._page = new collection_1.Collection();
-	        this._page.Model = this.Model;
-	    }
-	    Object.defineProperty(PaginatedCollection.prototype, "page", {
-	        get: function () {
-	            return this._page;
-	        },
-	        enumerable: true,
-	        configurable: true
-	    });
-	    PaginatedCollection.prototype.hasNext = function () {
-	        return this.hasPage(this._state.current + 1);
-	    };
-	    PaginatedCollection.prototype.hasPrevious = function () {
-	        return this.hasPage(this._state.current - 1);
-	    };
-	    PaginatedCollection.prototype.hasPage = function (page) {
-	        if (this._state.last > -1) {
-	            return page <= this._state.last;
-	        }
-	        return false;
-	    };
-	    PaginatedCollection.prototype.getPreviousPage = function (options) {
-	        options = options ? objects_1.extend({}, options) : {};
-	        options.page = this._state.current - 1;
-	        return this.getPage(options);
-	    };
-	    PaginatedCollection.prototype.getNextPage = function (options) {
-	        options = options ? objects_1.extend({}, options) : {};
-	        options.page = this._state.current + 1;
-	        return this.getPage(options);
-	    };
-	    PaginatedCollection.prototype.getPage = function (options) {
-	        options = options ? objects_1.extend({}, options) : {};
-	        if (options.page === void 0)
-	            return promises_1.Promise.reject(new Error("No page"));
-	        if (this._state.last < options.page && this._state.last != -1) {
-	            options.page = this._state.last;
-	        }
-	        else if (options.page < this._state.first) {
-	            options.page = this._state.first;
-	        }
-	        return this.fetch(options);
-	    };
-	    PaginatedCollection.prototype.fetch = function (options) {
-	        var _this = this;
-	        if (options === void 0) { options = {}; }
-	        options = options ? objects_1.extend({}, options) : {};
-	        var url;
-	        if (!objects_1.has(options, 'page')) {
-	            options.page = this._state.current;
-	        }
-	        var params = options.params ? objects_1.extend({}, options.params) : {};
-	        if (objects_1.has(params, this.queryParams.page))
-	            delete params[this.queryParams.page];
-	        url = this._link[options.page];
-	        if (!url) {
-	            url = this.getURL();
-	        }
-	        if (!url)
-	            return promises_1.Promise.reject(new Error("no url specified"));
-	        var idx = url.indexOf('?');
-	        if (idx > -1) {
-	            params = objects_1.extend(params, queryStringToParams(url.substr(idx + 1)));
-	            url = url.substr(0, idx);
-	        }
-	        if (!objects_1.has(params, this.queryParams.page)) {
-	            params[this.queryParams.page] = options.page;
-	        }
-	        options.params = params;
-	        options.url = url;
-	        this.trigger('before:fetch', this, options);
-	        params[this.queryParams.size] = this._state.size;
-	        if (!this._link[options.page + '']) {
-	            this._link[options.page] = url + '?' + request_1.queryParam({ page: options.page });
-	        }
-	        return this.sync(persistence_1.RestMethod.Read, this, options)
-	            .then(function (resp) {
-	            _this._processResponse(resp, options);
-	            _this.trigger('fetch', _this, resp, options);
-	            return _this;
-	        }).catch(function (e) {
-	            _this.trigger('error', e);
-	            throw e;
-	        });
-	    };
-	    PaginatedCollection.prototype._processResponse = function (resp, options) {
-	        var currentPage = options.page;
-	        var links = this._parseLinkHeaders(resp);
-	        if (links.first)
-	            this._link[this._state.first] = links.first;
-	        if (links.prev)
-	            this._link[currentPage - 1] = links.prev;
-	        if (links.next)
-	            this._link[currentPage + 1] = links.next;
-	        if (links.last) {
-	            var last = links.last;
-	            var idx = last.indexOf('?');
-	            if (idx > -1) {
-	                var params = queryStringToParams(last.substr(idx + 1));
-	                if (objects_1.has(params, this.queryParams.page)) {
-	                    this._link[params[this.queryParams.page]] = last;
-	                    this._state.last = parseInt(params[this.queryParams.page]);
-	                }
-	            }
-	        }
-	        this._state.current = currentPage;
-	        var data = resp.content;
-	        if (data && !Array.isArray(data))
-	            data = [data];
-	        if (!data)
-	            return this;
-	        data = this.parse(data);
-	        for (var i = 0, ii = data.length; i < ii; i++) {
-	            data[i] = this._prepareModel(data[i]);
-	        }
-	        this.add(data);
-	        return this;
-	    };
-	    PaginatedCollection.prototype._parseLinkHeaders = function (resp) {
-	        var link = {};
-	        if (typeof resp['getResponseHeader'] !== 'function') {
-	            return link;
-	        }
-	        var linkHeader = resp['getResponseHeader']('Link');
-	        if (!linkHeader)
-	            return link;
-	        linkHeader = linkHeader.split(',');
-	        var relations = ['first', 'prev', 'next', 'last'];
-	        for (var i = 0, ii = linkHeader.length; i < ii; i++) {
-	            var linkParts = linkHeader[i].split(';'), url = linkParts[0].replace(URL_TRIM_RE, ''), params = linkParts.slice(1);
-	            for (var x = 0, xx = params.length; x < xx; x++) {
-	                var paramParts = params[x].split('='), key = paramParts[0].replace(PARAM_TRIM_RE, ''), value = paramParts[1].replace(PARAM_TRIM_RE, '');
-	                if (key == 'rel' && !!~relations.indexOf(value))
-	                    link[value] = url;
-	            }
-	        }
-	        return link;
-	    };
-	    return PaginatedCollection;
-	}(rest_collection_1.RestCollection));
-	exports.PaginatedCollection = PaginatedCollection;
-
-
-/***/ },
-/* 47 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	function ajax() {
-	    var e;
-	    if (window.hasOwnProperty('XMLHttpRequest')) {
-	        return new XMLHttpRequest();
-	    }
-	    try {
-	        return new ActiveXObject('msxml2.xmlhttp.6.0');
-	    } catch (_error) {
-	        e = _error;
-	    }
-	    try {
-	        return new ActiveXObject('msxml2.xmlhttp.3.0');
-	    } catch (_error) {
-	        e = _error;
-	    }
-	    try {
-	        return new ActiveXObject('msxml2.xmlhttp');
-	    } catch (_error) {
-	        e = _error;
-	    }
-	    return e;
-	}
-	exports.ajax = ajax;
-	;
-	function truncate(str, length) {
-	    var n = str.substring(0, Math.min(length, str.length));
-	    return n + (n.length == str.length ? '' : '...');
-	}
-	exports.truncate = truncate;
-	function humanFileSize(bytes) {
-	    var si = arguments.length <= 1 || arguments[1] === undefined ? false : arguments[1];
-
-	    var thresh = si ? 1000 : 1024;
-	    if (Math.abs(bytes) < thresh) {
-	        return bytes + ' B';
-	    }
-	    var units = si ? ['kB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'] : ['KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
-	    var u = -1;
-	    do {
-	        bytes /= thresh;
-	        ++u;
-	    } while (Math.abs(bytes) >= thresh && u < units.length - 1);
-	    return bytes.toFixed(1) + ' ' + units[u];
-	}
-	exports.humanFileSize = humanFileSize;
-	function normalizeURL(url) {
-	    var i = void 0,
-	        p = "";
-	    if ((i = url.indexOf('?')) >= 0) {
-	        p = url.substr(i);
-	        url = url.substr(0, i);
-	    }
-	    if (url[url.length - 1] !== '/') url += '/';
-
-	    for (var _len = arguments.length, segments = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-	        segments[_key - 1] = arguments[_key];
-	    }
-
-	    for (var _i = 0, ii = segments.length; _i < ii; _i++) {
-	        var s = segments[_i];
-	        if (s === '/') continue;
-	        if (s[0] === '/') s = s.substr(1);
-	        if (s[s.length - 1] !== '/') s += '/';
-	        url += s;
-	    }
-	    if (url[url.length - 1] === '/') url = url.substr(0, url.length - 1);
-	    return url + p;
-	}
-	exports.normalizeURL = normalizeURL;
-
-/***/ },
-/* 48 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function __export(m) {
-	    for (var p in m) {
-	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-	    }
-	}
-	__webpack_require__(49);
-	__export(__webpack_require__(54));
-	__export(__webpack_require__(55));
-	__export(__webpack_require__(65));
-	__export(__webpack_require__(67));
-	__export(__webpack_require__(69));
-
-/***/ },
-/* 49 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function __export(m) {
-	    for (var p in m) {
-	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-	    }
-	}
-	__export(__webpack_require__(50));
-	__export(__webpack_require__(52));
-	__export(__webpack_require__(53));
-
-/***/ },
-/* 50 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
-	    var c = arguments.length,
-	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
-	        d;
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
-	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = undefined && undefined.__metadata || function (k, v) {
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-	};
-	var views_1 = __webpack_require__(1);
-	var interfaces_1 = __webpack_require__(51);
-	var AudioPreview = function (_views_1$View) {
-	    _inherits(AudioPreview, _views_1$View);
-
-	    function AudioPreview() {
-	        var _ref;
-
-	        _classCallCheck(this, AudioPreview);
-
-	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-	            args[_key] = arguments[_key];
-	        }
-
-	        var _this = _possibleConstructorReturn(this, (_ref = AudioPreview.__proto__ || Object.getPrototypeOf(AudioPreview)).call.apply(_ref, [this].concat(args)));
-
-	        _this.template = function (data) {
-	            return "\n\t\t\t<audio controls>\n\t\t\t\t<source src=\"" + this.model.getURL() + "\" type=\"" + data.mime + "\" />\n\t\t\t</audio>\n\t\t";
-	        };
-	        return _this;
-	    }
-
-	    return AudioPreview;
-	}(views_1.View);
-	AudioPreview = __decorate([interfaces_1.preview('audio/mpeg', 'audio/wav', 'audio/ogg'), __metadata('design:paramtypes', [])], AudioPreview);
-	exports.AudioPreview = AudioPreview;
-
-/***/ },
-/* 51 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	var previewHandlers = {};
-	function setPreviewHandler(mime, view) {
-	    if (!Array.isArray(mime)) {
-	        mime = [mime];
-	    }
-	    mime.forEach(function (m) {
-	        previewHandlers[m] = view;
-	    });
-	}
-	function getPreviewHandler(mime) {
-	    var reg = void 0,
-	        k = void 0;
-	    for (k in previewHandlers) {
-	        if (new RegExp(k).test(mime)) return previewHandlers[k];
-	    }
-	    return null;
-	}
-	exports.getPreviewHandler = getPreviewHandler;
-	function preview() {
-	    for (var _len = arguments.length, mimetypes = Array(_len), _key = 0; _key < _len; _key++) {
-	        mimetypes[_key] = arguments[_key];
-	    }
-
-	    return function (target) {
-	        setPreviewHandler(mimetypes, target);
-	    };
-	}
-	exports.preview = preview;
-
-/***/ },
-/* 52 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var views_1 = __webpack_require__(1);
-	var interfaces_1 = __webpack_require__(51);
-	interfaces_1.preview('video/mp4', 'video/ogg', 'video/webm', 'video/x-m4v');
-
-	var VideoPreview = function (_views_1$View) {
-	    _inherits(VideoPreview, _views_1$View);
-
-	    function VideoPreview() {
-	        var _ref;
-
-	        _classCallCheck(this, VideoPreview);
-
-	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-	            args[_key] = arguments[_key];
-	        }
-
-	        var _this = _possibleConstructorReturn(this, (_ref = VideoPreview.__proto__ || Object.getPrototypeOf(VideoPreview)).call.apply(_ref, [this].concat(args)));
-
-	        _this.template = function (data) {
-	            return '\n\t\t\t<video controls>\n\t\t\t\t<source src="' + this.model.getURL() + '" type="' + data.mime + '" />\n\t\t\t</video>\n\t\t';
-	        };
-	        return _this;
-	    }
-
-	    return VideoPreview;
-	}(views_1.View);
-
-	exports.VideoPreview = VideoPreview;
-
-/***/ },
-/* 53 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var views_1 = __webpack_require__(1);
-	var interfaces_1 = __webpack_require__(51);
-	interfaces_1.preview('image/*');
-
-	var ImagePreview = function (_views_1$View) {
-	    _inherits(ImagePreview, _views_1$View);
-
-	    function ImagePreview() {
-	        var _ref;
-
-	        _classCallCheck(this, ImagePreview);
-
-	        for (var _len = arguments.length, args = Array(_len), _key = 0; _key < _len; _key++) {
-	            args[_key] = arguments[_key];
-	        }
-
-	        var _this = _possibleConstructorReturn(this, (_ref = ImagePreview.__proto__ || Object.getPrototypeOf(ImagePreview)).call.apply(_ref, [this].concat(args)));
-
-	        _this.template = function (data) {
-	            return '<img src="' + this.model.getURL() + '"/>';
-	        };
-	        return _this;
-	    }
-
-	    return ImagePreview;
-	}(views_1.View);
-
-	exports.ImagePreview = ImagePreview;
-
-/***/ },
-/* 54 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
-	    var c = arguments.length,
-	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
-	        d;
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
-	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = undefined && undefined.__metadata || function (k, v) {
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-	};
-	var fileuploader_1 = __webpack_require__(23);
-	var views_1 = __webpack_require__(1);
-	var utils = __webpack_require__(8);
-	var defaults = { maxSize: 2048, mimeType: '*', autoUpload: false };
-
-	var MessageView = function (_views_1$View) {
-	    _inherits(MessageView, _views_1$View);
-
-	    function MessageView() {
-	        _classCallCheck(this, MessageView);
-
-	        return _possibleConstructorReturn(this, (MessageView.__proto__ || Object.getPrototypeOf(MessageView)).apply(this, arguments));
-	    }
-
-	    _createClass(MessageView, [{
-	        key: "show",
-	        value: function show() {
-	            this.el.style.display = 'block';
-	        }
-	    }, {
-	        key: "hide",
-	        value: function hide() {
-	            this.el.style.display = 'none';
-	        }
-	    }, {
-	        key: "setMessage",
-	        value: function setMessage(msg) {
-	            this.el.textContent = msg;
-	        }
-	    }]);
-
-	    return MessageView;
-	}(views_1.View);
-
-	var ProgressView = function (_views_1$View2) {
-	    _inherits(ProgressView, _views_1$View2);
-
-	    function ProgressView() {
-	        _classCallCheck(this, ProgressView);
-
-	        return _possibleConstructorReturn(this, (ProgressView.__proto__ || Object.getPrototypeOf(ProgressView)).apply(this, arguments));
-	    }
-
-	    _createClass(ProgressView, [{
-	        key: "show",
-	        value: function show() {
-	            this.el.style.display = 'block';
-	        }
-	    }, {
-	        key: "hide",
-	        value: function hide() {
-	            this.el.style.display = 'none';
-	        }
-	    }, {
-	        key: "setProgress",
-	        value: function setProgress(progress, total, percent) {
-	            percent = Math.floor(percent * 100) / 100;
-	            this.el.textContent = percent + "/100";
-	        }
-	    }]);
-
-	    return ProgressView;
-	}(views_1.View);
-
-	function createButton(options) {
-	    var progressView = new ProgressView();
-	    var errorView = new MessageView();
-	    options.progressView = progressView;
-	    options.errorView = errorView;
-	    var uploadButton = new UploadButton(options);
-	    var div = document.createElement('div');
-	    div.appendChild(uploadButton.el);
-	    progressView.appendTo(div);
-	    errorView.appendTo(div);
-	    return div;
-	}
-	exports.createButton = createButton;
-	var UploadButton = function (_views_1$View3) {
-	    _inherits(UploadButton, _views_1$View3);
-
-	    function UploadButton(options) {
-	        _classCallCheck(this, UploadButton);
-
-	        options = utils.extend({}, defaults, options);
-
-	        var _this3 = _possibleConstructorReturn(this, (UploadButton.__proto__ || Object.getPrototypeOf(UploadButton)).call(this, options));
-
-	        utils.extend(_this3, utils.pick(options, ['errorView', 'progressView']));
-	        _this3.uploader = options.uploader || new fileuploader_1.FileUploader(options);
-	        _this3.options = options;
-	        return _this3;
-	    }
-
-	    _createClass(UploadButton, [{
-	        key: "onRender",
-	        value: function onRender() {
-	            if (this.options.mimeType) {
-	                var mime = void 0;
-	                if (Array.isArray(this.options.mimeType)) {
-	                    mime = this.options.mimeType.join(',');
-	                } else {
-	                    mime = this.options.mimeType;
-	                }
-	                this.el.setAttribute('accept', mime);
-	            }
-	        }
-	    }, {
-	        key: "_onChange",
-	        value: function _onChange(e) {
-	            this.hideErrorView();
-	            var files = this.el.files;
-	            if (files.length === 0) return;
-	            var file = files[0];
-	            this.trigger('change', file);
-	            if (this.options.autoUpload === true) {
-	                this.upload(file);
-	            } else {
-	                try {
-	                    this.uploader.validateFile(file);
-	                } catch (e) {
-	                    this.trigger('error', e);
-	                }
-	            }
-	        }
-	    }, {
-	        key: "upload",
-	        value: function upload(file) {
-	            var _this4 = this;
-
-	            var pv = this.progressView;
-	            if (pv != null) {
-	                pv.show();
-	            }
-	            return this.uploader.upload(file, function (progress, total) {
-	                _this4.trigger('progress', { progress: progress, total: total });
-	                _this4.showProgress(progress, total);
-	            }).then(function (result) {
-	                _this4.trigger('upload', result);
-	                if (pv != null) pv.hide();
-	                _this4.clear();
-	            }).catch(function (e) {
-	                _this4.trigger('error', e);
-	                _this4.showErrorMessage(e);
-	                _this4.clear();
-	                if (pv != null) pv.hide();
-	            });
-	        }
-	    }, {
-	        key: "clear",
-	        value: function clear() {
-	            try {
-	                this.el.value = '';
-	                if (this.el.value) {
-	                    this.el.type = 'text';
-	                    this.el.type = 'file';
-	                }
-	            } catch (e) {
-	                console.error('could not clear file-input');
-	            }
-	        }
-	    }, {
-	        key: "showErrorMessage",
-	        value: function showErrorMessage(error) {
-	            if (this.errorView != null) {
-	                this.errorView.setMessage(error.message);
-	                this.errorView.show();
-	            }
-	        }
-	    }, {
-	        key: "hideErrorView",
-	        value: function hideErrorView() {
-	            if (this.errorView) {
-	                this.errorView.hide();
-	            }
-	        }
-	    }, {
-	        key: "showProgress",
-	        value: function showProgress(progress, total) {
-	            if (this.progressView != null) {
-	                var percent = progress / total * 100;
-	                this.progressView.setProgress(progress, total, percent);
-	            }
-	        }
-	    }, {
-	        key: "url",
-	        set: function set(url) {
-	            this.uploader.options.url = url;
-	        },
-	        get: function get() {
-	            return this.uploader.options.url;
-	        }
-	    }]);
-
-	    return UploadButton;
-	}(views_1.View);
-	UploadButton = __decorate([views_1.attributes({
-	    tagName: 'input',
-	    attributes: { type: 'file' },
-	    events: {
-	        change: '_onChange'
-	    }
-	}), __metadata('design:paramtypes', [Object])], UploadButton);
-	exports.UploadButton = UploadButton;
-
-/***/ },
-/* 55 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function __export(m) {
-	    for (var p in m) {
-	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-	    }
-	}
-	__export(__webpack_require__(56));
-	__export(__webpack_require__(63));
-
-/***/ },
-/* 56 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
-	    var c = arguments.length,
-	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
-	        d;
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
-	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = undefined && undefined.__metadata || function (k, v) {
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-	};
-	var views_1 = __webpack_require__(1);
-	var utils_1 = __webpack_require__(57);
-	var mime_types_1 = __webpack_require__(59);
-	var orange_1 = __webpack_require__(8);
-	var orange_dom_1 = __webpack_require__(60);
-	var AssetsListItemView = function (_views_1$View) {
-	    _inherits(AssetsListItemView, _views_1$View);
-
-	    function AssetsListItemView() {
-	        _classCallCheck(this, AssetsListItemView);
-
-	        return _possibleConstructorReturn(this, (AssetsListItemView.__proto__ || Object.getPrototypeOf(AssetsListItemView)).apply(this, arguments));
-	    }
-
-	    _createClass(AssetsListItemView, [{
-	        key: "onRender",
-	        value: function onRender() {
-	            var model = this.model;
-	            var mime = model.get('mime');
-	            orange_dom_1.removeClass(this.ui['mime'], 'mime-unknown');
-	            mime = mime_types_1.getMimeIcon(mime.replace(/\//, '-'));
-	            orange_dom_1.addClass(this.ui['mime'], mime);
-	            this.ui['name'].textContent = orange_1.truncate(model.get('name') || model.get('filename'), 25);
-	            var url = model.getURL();
-	            var img = new Image();
-	            img.src = "data:image/png;base64,R0lGODlhAQABAAAAACH5BAEAAAAALAAAAAABAAEAAAI=";
-	            img.setAttribute('data-src', url + "?thumbnail=true");
-	            this.ui['mime'].parentNode.insertBefore(img, this.ui['mime']);
-	            this.ui['mime'].style.display = 'none';
-	            this.trigger('image');
-	        }
-	    }, {
-	        key: "_onClick",
-	        value: function _onClick(e) {
-	            e.preventDefault();
-	            var target = e.target;
-	            if (target === this.ui['remove']) return;
-	            this.triggerMethod('click', this.model);
-	        }
-	    }, {
-	        key: "_onDblClick",
-	        value: function _onDblClick(e) {
-	            this.triggerMethod('dblclick', this.model);
-	        }
-	    }]);
-
-	    return AssetsListItemView;
-	}(views_1.View);
-	AssetsListItemView = __decorate([utils_1.template('list-item'), views_1.attributes({
-	    tagName: 'div',
-	    className: 'assets-list-item',
-	    ui: {
-	        remove: '.assets-list-item-close-button',
-	        name: '.name',
-	        mime: '.mime'
-	    },
-	    triggers: {
-	        'click @ui.remove': 'remove'
-	    },
-	    events: {
-	        'click': '_onClick',
-	        'dblclick': '_onDblClick'
-	    }
-	}), __metadata('design:paramtypes', [])], AssetsListItemView);
-	exports.AssetsListItemView = AssetsListItemView;
-
-/***/ },
-/* 57 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var templates_1 = __webpack_require__(58);
-	function template(name) {
-	    return function (target) {
-	        var t = void 0;
-	        if (!(t = templates_1.default[name])) {
-	            throw new Error('could not find template: ' + name);
-	        }
-	        target.prototype.template = t;
-	    };
-	}
-	exports.template = template;
-	function getImageSize(image) {
-	    var load = function load() {
-	        return new Promise(function (resolve, reject) {
-	            var i = new Image();
-	            i.onload = function () {
-	                resolve({
-	                    width: i.naturalWidth || i.width,
-	                    height: i.naturalHeight || i.height
-	                });
-	            };
-	            i.onerror = reject;
-	            i.src = image.src;
-	        });
-	    };
-	    if (image.naturalHeight === undefined) {
-	        return load();
-	    } else if (image.naturalHeight === 0) {
-	        return new Promise(function (resolve, reject) {
-	            var time = setTimeout(function () {
-	                time = null;
-	                load().then(resolve, reject);
-	            }, 200);
-	            image.onload = function () {
-	                if (time !== null) {
-	                    clearTimeout(time);
-	                }
-	                resolve({
-	                    width: image.naturalWidth,
-	                    height: image.naturalHeight
-	                });
-	            };
-	        });
-	    } else {
-	        return Promise.resolve({
-	            width: image.naturalWidth,
-	            height: image.naturalHeight
-	        });
-	    }
-	}
-	exports.getImageSize = getImageSize;
-	function getCropping(size, ratio) {
-	    var width = size.width,
-	        height = size.height;
-	    var nh = height,
-	        nw = width;
-	    if (width > height) {
-	        nh = width / ratio;
-	    } else {
-	        nw = height * ratio;
-	    }
-	    return {
-	        x: 0,
-	        y: 0,
-	        width: nw,
-	        height: nh,
-	        rotate: 0,
-	        scaleX: 1,
-	        scaleY: 1
-	    };
-	}
-	exports.getCropping = getCropping;
-
-/***/ },
-/* 58 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	Object.defineProperty(exports, "__esModule", { value: true });
-	exports.default = {
-	    "gallery": "<div class=\"gallery-area\">  <div class=\"gallery-list\">  </div>  <div class=\"gallery-preview\"></div>  </div>\n<div class=\"upload-progress-container\">  <div class=\"upload-progress\"></div>\n</div>\n<!--div class=\"gallery-toolbar\">  <label class=\"assets-button\">  <span>Upload</span>  <input class=\"upload-button\" style=\"display:none;\" type=\"file\" />  </label>  <input class=\"assets-button assets-search-input\" type=\"text\" />\n</div-->",
-	    "list-item": "<a class=\"assets-list-item-close-button\"></a>\n<div class=\"thumbnail-container\">  <i class=\"mime mime-unknown\"></i>\n</div>\n<div class=\"name\"></div>",
-	    "preview-info": "<table>  <tr>  <td>Name</td>  <td class=\"name\"></td>  </tr>  <tr>  <td>Mime</td>  <td class=\"mimetype\"></td>  </tr>  <tr>  <td>Size</td>  <td class=\"size\"></td>  </tr>  <tr>  <td>Download</td>  <td class=\"download\">  <a></a>  </td>  </tr>\n</table>",
-	    "preview": "<div class=\"preview-region\">\n</div>\n<div class=\"info-region\">\n</div>"
-	};
-
-/***/ },
-/* 59 */
-/***/ function(module, exports) {
-
-	"use strict";
-
-	var MimeTypes = {
-	    "application-x-7zip": "mime-application-x-7zip",
-	    "application-rss+xml": "mime-application-rss+xml",
-	    "x-office-drawing": "mime-x-office-drawing",
-	    "text-javascript": "mime-text-x-javascript",
-	    "text-x-javascript": "mime-text-x-javascript",
-	    "message": "mime-message",
-	    "application-msword": "mime-application-msword",
-	    "multipart-encrypted": "mime-multipart-encrypted",
-	    "audio-x-vorbis+ogg": "mime-audio-x-vorbis+ogg",
-	    "application-pdf": "mime-application-pdf",
-	    "encrypted": "mime-encrypted",
-	    "application-pgp-keys": "mime-application-pgp-keys",
-	    "text-richtext": "mime-text-richtext",
-	    "text-plain": "mime-text-plain",
-	    "text-sql": "mime-text-x-sql",
-	    "text-x-sql": "mime-text-x-sql",
-	    "application-vnd.ms-excel": "mime-application-vnd.ms-excel",
-	    "application-vnd.ms-powerpoint": "mime-application-vnd.ms-powerpoint",
-	    "application-vnd.oasis.opendocument.formula": "mime-application-vnd.oasis.opendocument.formula",
-	    "x-office-spreadsheet": "mime-x-office-spreadsheet",
-	    "text-html": "mime-text-html",
-	    "x-office-document": "mime-x-office-document",
-	    "video-generic": "mime-video-x-generic",
-	    "video-x-generic": "mime-video-x-generic",
-	    "application-vnd.scribus": "mime-application-vnd.scribus",
-	    "application-ace": "mime-application-x-ace",
-	    "application-x-ace": "mime-application-x-ace",
-	    "application-tar": "mime-application-x-tar",
-	    "application-x-tar": "mime-application-x-tar",
-	    "application-bittorrent": "mime-application-x-bittorrent",
-	    "application-x-bittorrent": "mime-application-x-bittorrent",
-	    "application-x-cd-image": "mime-application-x-cd-image",
-	    "text-java": "mime-text-x-java",
-	    "text-x-java": "mime-text-x-java",
-	    "application-gzip": "mime-application-x-gzip",
-	    "application-x-gzip": "mime-application-x-gzip",
-	    "application-sln": "mime-application-x-sln",
-	    "application-x-sln": "mime-application-x-sln",
-	    "application-cue": "mime-application-x-cue",
-	    "application-x-cue": "mime-application-x-cue",
-	    "deb": "mime-deb",
-	    "application-glade": "mime-application-x-glade",
-	    "application-x-glade": "mime-application-x-glade",
-	    "application-theme": "mime-application-x-theme",
-	    "application-x-theme": "mime-application-x-theme",
-	    "application-executable": "mime-application-x-executable",
-	    "application-x-executable": "mime-application-x-executable",
-	    "application-x-flash-video": "mime-application-x-flash-video",
-	    "application-jar": "mime-application-x-jar",
-	    "application-x-jar": "mime-application-x-jar",
-	    "application-x-ms-dos-executable": "mime-application-x-ms-dos-executable",
-	    "application-msdownload": "mime-application-x-msdownload",
-	    "application-x-msdownload": "mime-application-x-msdownload",
-	    "package-generic": "mime-package-x-generic",
-	    "package-x-generic": "mime-package-x-generic",
-	    "application-php": "mime-application-x-php",
-	    "application-x-php": "mime-application-x-php",
-	    "text-python": "mime-text-x-python",
-	    "text-x-python": "mime-text-x-python",
-	    "application-rar": "mime-application-x-rar",
-	    "application-x-rar": "mime-application-x-rar",
-	    "rpm": "mime-rpm",
-	    "application-ruby": "mime-application-x-ruby",
-	    "application-x-ruby": "mime-application-x-ruby",
-	    "text-script": "mime-text-x-script",
-	    "text-x-script": "mime-text-x-script",
-	    "text-bak": "mime-text-x-bak",
-	    "text-x-bak": "mime-text-x-bak",
-	    "application-zip": "mime-application-x-zip",
-	    "application-x-zip": "mime-application-x-zip",
-	    "text-xml": "mime-text-xml",
-	    "audio-mpeg": "mime-audio-x-mpeg",
-	    "audio-x-mpeg": "mime-audio-x-mpeg",
-	    "audio-wav": "mime-audio-x-wav",
-	    "audio-x-wav": "mime-audio-x-wav",
-	    "audio-generic": "mime-audio-x-generic",
-	    "audio-x-generic": "mime-audio-x-generic",
-	    "audio-x-mp3-playlist": "mime-audio-x-mp3-playlist",
-	    "audio-x-ms-wma": "mime-audio-x-ms-wma",
-	    "authors": "mime-authors",
-	    "empty": "mime-empty",
-	    "extension": "mime-extension",
-	    "font-generic": "mime-font-x-generic",
-	    "font-x-generic": "mime-font-x-generic",
-	    "image-bmp": "mime-image-bmp",
-	    "image-gif": "mime-image-gif",
-	    "image-jpeg": "mime-image-jpeg",
-	    "image-png": "mime-image-png",
-	    "image-tiff": "mime-image-tiff",
-	    "image-ico": "mime-image-x-ico",
-	    "image-x-ico": "mime-image-x-ico",
-	    "image-eps": "mime-image-x-eps",
-	    "image-x-eps": "mime-image-x-eps",
-	    "image-generic": "mime-image-x-generic",
-	    "image-x-generic": "mime-image-x-generic",
-	    "image-psd": "mime-image-x-psd",
-	    "image-x-psd": "mime-image-x-psd",
-	    "image-xcf": "mime-image-x-xcf",
-	    "image-x-xcf": "mime-image-x-xcf",
-	    "x-office-presentation": "mime-x-office-presentation",
-	    "unknown": "mime-unknown",
-	    "opera-extension": "mime-opera-extension",
-	    "opera-unite-application": "mime-opera-unite-application",
-	    "opera-widget": "mime-opera-widget",
-	    "phatch-actionlist": "mime-phatch-actionlist",
-	    "text-makefile": "mime-text-x-makefile",
-	    "text-x-makefile": "mime-text-x-makefile",
-	    "x-office-address-book": "mime-x-office-address-book",
-	    "vcalendar": "mime-vcalendar",
-	    "text-source": "mime-text-x-source",
-	    "text-x-source": "mime-text-x-source",
-	    "text-x-generic-template": "mime-text-x-generic-template",
-	    "text-css": "mime-text-css",
-	    "text-bibtex": "mime-text-x-bibtex",
-	    "text-x-bibtex": "mime-text-x-bibtex",
-	    "text-x-c++": "mime-text-x-c++",
-	    "text-x-c++hdr": "mime-text-x-c++hdr",
-	    "text-c": "mime-text-x-c",
-	    "text-x-c": "mime-text-x-c",
-	    "text-changelog": "mime-text-x-changelog",
-	    "text-x-changelog": "mime-text-x-changelog",
-	    "text-chdr": "mime-text-x-chdr",
-	    "text-x-chdr": "mime-text-x-chdr",
-	    "text-copying": "mime-text-x-copying",
-	    "text-x-copying": "mime-text-x-copying",
-	    "text-install": "mime-text-x-install",
-	    "text-x-install": "mime-text-x-install",
-	    "text-preview": "mime-text-x-preview",
-	    "text-x-preview": "mime-text-x-preview",
-	    "text-readme": "mime-text-x-readme",
-	    "text-x-readme": "mime-text-x-readme",
-	    "text-tex": "mime-text-x-tex",
-	    "text-x-tex": "mime-text-x-tex",
-	    "text-xhtml+xml": "mime-text-xhtml+xml",
-	    "x-dia-diagram": "mime-x-dia-diagram"
-	};
-	function getMimeIcon(mime) {
-	    if (MimeTypes[mime]) {
-	        return MimeTypes[mime];
-	    }
-	    return MimeTypes['unknown'];
-	}
-	exports.getMimeIcon = getMimeIcon;
-	;
-
-/***/ },
-/* 60 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	function __export(m) {
-	    for (var p in m) {
-	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-	    }
-	}
-	__export(__webpack_require__(61));
-	__export(__webpack_require__(62));
-
-/***/ },
-/* 61 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-	// TODO: CreateHTML
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var orange_1 = __webpack_require__(8);
-	var ElementProto = typeof Element !== 'undefined' && Element.prototype || {};
-	var matchesSelector = ElementProto.matches || ElementProto.webkitMatchesSelector || ElementProto.mozMatchesSelector || ElementProto.msMatchesSelector || ElementProto.oMatchesSelector || function (selector) {
-	    var nodeList = (this.parentNode || document).querySelectorAll(selector) || [];
-	    return !!~orange_1.indexOf(nodeList, this);
-	};
-	var elementAddEventListener = ElementProto.addEventListener || function (eventName, listener) {
-	    return this.attachEvent('on' + eventName, listener);
-	};
-	var elementRemoveEventListener = ElementProto.removeEventListener || function (eventName, listener) {
-	    return this.detachEvent('on' + eventName, listener);
-	};
-	var transitionEndEvent = function transitionEnd() {
-	    var el = document.createElement('bootstrap');
-	    var transEndEventNames = {
-	        'WebkitTransition': 'webkitTransitionEnd',
-	        'MozTransition': 'transitionend',
-	        'OTransition': 'oTransitionEnd otransitionend',
-	        'transition': 'transitionend'
-	    };
-	    for (var name in transEndEventNames) {
-	        if (el.style[name] !== undefined) {
-	            return transEndEventNames[name];
-	        }
-	    }
-	    return null;
-	};
-	var animationEndEvent = function animationEnd() {
-	    var el = document.createElement('bootstrap');
-	    var transEndEventNames = {
-	        'WebkitAnimation': 'webkitAnimationEnd',
-	        'MozAnimation': 'animationend',
-	        'OAnimation': 'oAnimationEnd oanimationend',
-	        'animation': 'animationend'
-	    };
-	    for (var name in transEndEventNames) {
-	        if (el.style[name] !== undefined) {
-	            return transEndEventNames[name];
-	        }
-	    }
-	    return null;
-	};
-	function matches(elm, selector) {
-	    return matchesSelector.call(elm, selector);
-	}
-	exports.matches = matches;
-	function addEventListener(elm, eventName, listener) {
-	    var useCap = arguments.length <= 3 || arguments[3] === undefined ? false : arguments[3];
-
-	    elementAddEventListener.call(elm, eventName, listener, useCap);
-	}
-	exports.addEventListener = addEventListener;
-	function removeEventListener(elm, eventName, listener) {
-	    elementRemoveEventListener.call(elm, eventName, listener);
-	}
-	exports.removeEventListener = removeEventListener;
-	var unbubblebles = 'focus blur change load error'.split(' ');
-	var domEvents = [];
-	function delegate(elm, selector, eventName, callback, ctx) {
-	    var root = elm;
-	    var handler = function handler(e) {
-	        var node = e.target || e.srcElement;
-	        // Already handled
-	        if (e.delegateTarget) return;
-	        for (; node && node != root; node = node.parentNode) {
-	            if (matches(node, selector)) {
-	                e.delegateTarget = node;
-	                callback(e);
-	            }
-	        }
-	    };
-	    var useCap = !!~unbubblebles.indexOf(eventName);
-	    addEventListener(elm, eventName, handler, useCap);
-	    domEvents.push({ eventName: eventName, handler: handler, listener: callback, selector: selector });
-	    return handler;
-	}
-	exports.delegate = delegate;
-	function undelegate(elm, selector, eventName, callback) {
-	    /*if (typeof selector === 'function') {
-	        listener = <Function>selector;
-	        selector = null;
-	      }*/
-	    var handlers = domEvents.slice();
-	    for (var i = 0, len = handlers.length; i < len; i++) {
-	        var item = handlers[i];
-	        var match = item.eventName === eventName && (callback ? item.listener === callback : true) && (selector ? item.selector === selector : true);
-	        if (!match) continue;
-	        removeEventListener(elm, item.eventName, item.handler);
-	        domEvents.splice(orange_1.indexOf(handlers, item), 1);
-	    }
-	}
-	exports.undelegate = undelegate;
-	function addClass(elm, className) {
-	    if (elm.classList) {
-	        var split = className.split(' ');
-	        for (var i = 0, ii = split.length; i < ii; i++) {
-	            if (elm.classList.contains(split[i].trim())) continue;
-	            elm.classList.add(split[i].trim());
-	        }
-	    } else {
-	        elm.className = orange_1.unique(elm.className.split(' ').concat(className.split(' '))).join(' ');
-	    }
-	}
-	exports.addClass = addClass;
-	function removeClass(elm, className) {
-	    if (elm.classList) {
-	        var split = className.split(' ');
-	        for (var i = 0, ii = split.length; i < ii; i++) {
-	            elm.classList.remove(split[i].trim());
-	        }
-	    } else {
-	        var _split = elm.className.split(' '),
-	            classNames = className.split(' '),
-	            tmp = _split,
-	            index = void 0;
-	        for (var _i = 0, _ii = classNames.length; _i < _ii; _i++) {
-	            index = _split.indexOf(classNames[_i]);
-	            if (!!~index) _split = _split.splice(index, 1);
-	        }
-	    }
-	}
-	exports.removeClass = removeClass;
-	function hasClass(elm, className) {
-	    if (elm.classList) {
-	        return elm.classList.contains(className);
-	    }
-	    var reg = new RegExp('\b' + className);
-	    return reg.test(elm.className);
-	}
-	exports.hasClass = hasClass;
-	function selectionStart(elm) {
-	    if ('selectionStart' in elm) {
-	        // Standard-compliant browsers
-	        return elm.selectionStart;
-	    } else if (document.selection) {
-	        // IE
-	        elm.focus();
-	        var sel = document.selection.createRange();
-	        var selLen = document.selection.createRange().text.length;
-	        sel.moveStart('character', -elm.value.length);
-	        return sel.text.length - selLen;
-	    }
-	}
-	exports.selectionStart = selectionStart;
-	var _events = {
-	    animationEnd: null,
-	    transitionEnd: null
-	};
-	function transitionEnd(elm, fn, ctx, duration) {
-	    var event = _events.transitionEnd || (_events.transitionEnd = transitionEndEvent());
-	    var callback = function callback(e) {
-	        removeEventListener(elm, event, callback);
-	        fn.call(ctx, e);
-	    };
-	    addEventListener(elm, event, callback);
-	}
-	exports.transitionEnd = transitionEnd;
-	function animationEnd(elm, fn, ctx, duration) {
-	    var event = _events.animationEnd || (_events.animationEnd = animationEndEvent());
-	    var callback = function callback(e) {
-	        removeEventListener(elm, event, callback);
-	        fn.call(ctx, e);
-	    };
-	    addEventListener(elm, event, callback);
-	}
-	exports.animationEnd = animationEnd;
-	exports.domReady = function () {
-	    var fns = [],
-	        _listener,
-	        doc = document,
-	        hack = doc.documentElement.doScroll,
-	        domContentLoaded = 'DOMContentLoaded',
-	        loaded = (hack ? /^loaded|^c/ : /^loaded|^i|^c/).test(doc.readyState);
-	    if (!loaded) {
-	        doc.addEventListener(domContentLoaded, _listener = function listener() {
-	            doc.removeEventListener(domContentLoaded, _listener);
-	            loaded = true;
-	            while (_listener = fns.shift()) {
-	                _listener();
-	            }
-	        });
-	    }
-	    return function (fn) {
-	        loaded ? setTimeout(fn, 0) : fns.push(fn);
-	    };
-	}();
-	function createElement(tag, attr) {
-	    var elm = document.createElement(tag);
-	    if (attr) {
-	        for (var key in attr) {
-	            elm.setAttribute(key, attr[key]);
-	        }
-	    }
-	    return elm;
-	}
-	exports.createElement = createElement;
-
-	var LoadedImage = function () {
-	    function LoadedImage(img) {
-	        _classCallCheck(this, LoadedImage);
-
-	        this.img = img;
-	    }
-
-	    _createClass(LoadedImage, [{
-	        key: 'check',
-	        value: function check(fn) {
-	            this.fn = fn;
-	            var isComplete = this.getIsImageComplete();
-	            if (isComplete) {
-	                // report based on naturalWidth
-	                this.confirm(this.img.naturalWidth !== 0, 'naturalWidth');
-	                return;
-	            }
-	            this.img.addEventListener('load', this);
-	            this.img.addEventListener('error', this);
-	        }
-	    }, {
-	        key: 'confirm',
-	        value: function confirm(loaded, msg, err) {
-	            this.isLoaded = loaded;
-	            if (this.fn) this.fn(err);
-	        }
-	    }, {
-	        key: 'getIsImageComplete',
-	        value: function getIsImageComplete() {
-	            return this.img.complete && this.img.naturalWidth !== undefined && this.img.naturalWidth !== 0;
-	        }
-	    }, {
-	        key: 'handleEvent',
-	        value: function handleEvent(e) {
-	            var method = 'on' + event.type;
-	            if (this[method]) {
-	                this[method](event);
-	            }
-	        }
-	    }, {
-	        key: 'onload',
-	        value: function onload(e) {
-	            this.confirm(true, 'onload');
-	            this.unbindEvents();
-	        }
-	    }, {
-	        key: 'onerror',
-	        value: function onerror(e) {
-	            this.confirm(false, 'onerror', new Error(e.error));
-	            this.unbindEvents();
-	        }
-	    }, {
-	        key: 'unbindEvents',
-	        value: function unbindEvents() {
-	            this.img.removeEventListener('load', this);
-	            this.img.removeEventListener('error', this);
-	            this.fn = void 0;
-	        }
-	    }]);
-
-	    return LoadedImage;
-	}();
-
-	function imageLoaded(img) {
-	    return new orange_1.Promise(function (resolve, reject) {
-	        var i = new LoadedImage(img);
-	        i.check(function (err) {
-	            if (err) return reject(err);
-	            resolve(i.isLoaded);
-	        });
-	    });
-	}
-	exports.imageLoaded = imageLoaded;
-
-/***/ },
-/* 62 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	var orange_1 = __webpack_require__(8);
-	var dom = __webpack_require__(61);
-	var domEvents;
-	var singleTag = /^<([a-z][^\/\0>:\x20\t\r\n\f]*)[\x20\t\r\n\f]*\/?>(?:<\/\1>|)$/i;
-	function parseHTML(html) {
-	    var parsed = singleTag.exec(html);
-	    if (parsed) {
-	        return document.createElement(parsed[0]);
-	    }
-	    var div = document.createElement('div');
-	    div.innerHTML = html;
-	    var element = div.firstChild;
-	    return element;
-	}
-
-	var Html = function () {
-	    function Html(el) {
-	        _classCallCheck(this, Html);
-
-	        if (!Array.isArray(el)) el = [el];
-	        this._elements = el || [];
-	    }
-
-	    _createClass(Html, [{
-	        key: 'get',
-	        value: function get(n) {
-	            n = n === undefined ? 0 : n;
-	            return n >= this.length ? undefined : this._elements[n];
-	        }
-	    }, {
-	        key: 'addClass',
-	        value: function addClass(str) {
-	            return this.forEach(function (e) {
-	                dom.addClass(e, str);
-	            });
-	        }
-	    }, {
-	        key: 'removeClass',
-	        value: function removeClass(str) {
-	            return this.forEach(function (e) {
-	                dom.removeClass(e, str);
-	            });
-	        }
-	    }, {
-	        key: 'hasClass',
-	        value: function hasClass(str) {
-	            return this._elements.reduce(function (p, c) {
-	                return dom.hasClass(c, str);
-	            }, false);
-	        }
-	    }, {
-	        key: 'attr',
-	        value: function attr(key, value) {
-	            var attr = void 0;
-	            if (typeof key === 'string' && value) {
-	                attr = _defineProperty({}, key, value);
-	            } else if (typeof key == 'string') {
-	                if (this.length) return this.get(0).getAttribute(key);
-	            } else if (orange_1.isObject(key)) {
-	                attr = key;
-	            }
-	            return this.forEach(function (e) {
-	                for (var k in attr) {
-	                    e.setAttribute(k, attr[k]);
-	                }
-	            });
-	        }
-	    }, {
-	        key: 'text',
-	        value: function text(str) {
-	            if (arguments.length === 0) {
-	                return this.length > 0 ? this.get(0).textContent : null;
-	            }
-	            return this.forEach(function (e) {
-	                return e.textContent = str;
-	            });
-	        }
-	    }, {
-	        key: 'html',
-	        value: function html(_html) {
-	            if (arguments.length === 0) {
-	                return this.length > 0 ? this.get(0).innerHTML : null;
-	            }
-	            return this.forEach(function (e) {
-	                return e.innerHTML = _html;
-	            });
-	        }
-	    }, {
-	        key: 'css',
-	        value: function css(attr, value) {
-	            if (arguments.length === 2) {
-	                return this.forEach(function (e) {
-	                    if (attr in e.style) e.style[attr] = String(value);
-	                });
-	            } else {
-	                return this.forEach(function (e) {
-	                    for (var k in attr) {
-	                        if (k in e.style) e.style[k] = String(attr[k]);
-	                    }
-	                });
-	            }
-	        }
-	    }, {
-	        key: 'parent',
-	        value: function parent() {
-	            var out = [];
-	            this.forEach(function (e) {
-	                if (e.parentElement) {
-	                    out.push(e.parentElement);
-	                }
-	            });
-	            return new Html(out);
-	        }
-	    }, {
-	        key: 'remove',
-	        value: function remove() {
-	            return this.forEach(function (e) {
-	                if (e.parentElement) e.parentElement.removeChild(e);
-	            });
-	        }
-	    }, {
-	        key: 'clone',
-	        value: function clone() {
-	            return new Html(this.map(function (m) {
-	                return m.cloneNode();
-	            }));
-	        }
-	    }, {
-	        key: 'find',
-	        value: function find(str) {
-	            var out = [];
-	            this.forEach(function (e) {
-	                out = out.concat(orange_1.slice(e.querySelectorAll(str)));
-	            });
-	            return new Html(out);
-	        }
-	    }, {
-	        key: 'map',
-	        value: function map(fn) {
-	            var out = new Array(this.length);
-	            this.forEach(function (e, i) {
-	                out[i] = fn(e, i);
-	            });
-	            return out;
-	        }
-	    }, {
-	        key: 'forEach',
-	        value: function forEach(fn) {
-	            this._elements.forEach(fn);
-	            return this;
-	        }
-	    }, {
-	        key: 'length',
-	        get: function get() {
-	            return this._elements.length;
-	        }
-	    }], [{
-	        key: 'query',
-	        value: function query(_query, context) {
-	            if (typeof context === 'string') {
-	                context = document.querySelectorAll(context);
-	            }
-	            var html = void 0;
-	            var els = void 0;
-	            if (typeof _query === 'string') {
-	                if (_query.length > 0 && _query[0] === '<' && _query[_query.length - 1] === ">" && _query.length >= 3) {
-	                    return new Html([parseHTML(_query)]);
-	                }
-	                if (context) {
-	                    if (context instanceof HTMLElement) {
-	                        els = orange_1.slice(context.querySelectorAll(_query));
-	                    } else {
-	                        html = new Html(orange_1.slice(context));
-	                        return html.find(_query);
-	                    }
-	                } else {
-	                    els = orange_1.slice(document.querySelectorAll(_query));
-	                }
-	            } else if (_query && _query instanceof Element) {
-	                els = [_query];
-	            } else if (_query && _query instanceof NodeList) {
-	                els = orange_1.slice(_query);
-	            }
-	            return new Html(els);
-	        }
-	    }]);
-
-	    return Html;
-	}();
-
-	exports.Html = Html;
-
-/***/ },
-/* 63 */
-/***/ function(module, exports, __webpack_require__) {
-
-	"use strict";
-
-	var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-	var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
-
-	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-	function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-	var __decorate = undefined && undefined.__decorate || function (decorators, target, key, desc) {
-	    var c = arguments.length,
-	        r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
-	        d;
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) {
-	        if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-	    }return c > 3 && r && Object.defineProperty(target, key, r), r;
-	};
-	var __metadata = undefined && undefined.__metadata || function (k, v) {
-	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
-	};
-	var views_1 = __webpack_require__(1);
-	var orange_dom_1 = __webpack_require__(60);
-	var utilities_1 = __webpack_require__(24);
-	var list_item_1 = __webpack_require__(56);
-	var Blazy = __webpack_require__(64);
-	exports.AssetsEmptyView = views_1.View.extend({
-	    className: 'assets-list-empty-view',
-	    template: 'No files uploaded yet.'
-	});
-	var AssetsListView = function (_views_1$CollectionVi) {
-	    _inherits(AssetsListView, _views_1$CollectionVi);
-
-	    function AssetsListView(options) {
-	        _classCallCheck(this, AssetsListView);
-
-	        var _this = _possibleConstructorReturn(this, (AssetsListView.__proto__ || Object.getPrototypeOf(AssetsListView)).call(this, options));
-
-	        _this.options = options || {};
-	        _this.sort = false;
-	        _this._onSroll = throttle(utilities_1.bind(_this._onSroll, _this), 0);
-	        _this._initEvents();
-	        _this._initBlazy();
-	        return _this;
-	    }
-
-	    _createClass(AssetsListView, [{
-	        key: "_initEvents",
-	        value: function _initEvents() {
-	            var _this3 = this;
-
-	            this.listenTo(this, 'childview:click', function (view, model) {
-	                if (this._current) orange_dom_1.removeClass(this._current.el, 'active');
-	                this._current = view;
-	                orange_dom_1.addClass(view.el, 'active');
-	                this.trigger('selected', view, model);
-	            });
-	            this.listenTo(this, 'childview:dblclick', function (view, model) {
-	                if (this._current) orange_dom_1.removeClass(this._current.el, 'active');
-	                this._current = view;
-	                orange_dom_1.addClass(view.el, 'active');
-	                this.trigger('selected', view, model);
-	                this.trigger('dblclick', view, model);
-	            });
-	            this.listenTo(this, 'childview:remove', function (view, _ref) {
-	                var model = _ref.model;
-
-	                if (this.options.deleteable === true) {
-	                    var remove = true;
-	                    if (model.has('deleteable')) {
-	                        remove = !!model.get('deleteable');
-	                    }
-	                    if (remove) model.remove();
-	                } else {}
-	            });
-	            this.listenTo(this, 'childview:image', function (view) {
-	                var _this2 = this;
-
-	                var img = view.$('img')[0];
-	                if (img.src === img.getAttribute('data-src')) {
-	                    return;
-	                }
-	                setTimeout(function () {
-	                    if (elementInView(view.el, _this2.el)) {
-	                        _this2._blazy.load(view.$('img')[0]);
-	                    }
-	                }, 100);
-	            });
-	            this.listenTo(this.collection, 'before:fetch', function () {
-	                var loader = _this3.el.querySelector('.loader');
-	                if (loader) return;
-	                loader = document.createElement('div');
-	                orange_dom_1.addClass(loader, 'loader');
-	                _this3.el.appendChild(loader);
-	            });
-	            this.listenTo(this.collection, 'fetch', function () {
-	                var loader = _this3.el.querySelector('.loader');
-	                if (loader) {
-	                    _this3.el.removeChild(loader);
-	                }
-	            });
-	        }
-	    }, {
-	        key: "onRenderCollection",
-	        value: function onRenderCollection() {
-	            if (this._blazy) {
-	                this._blazy.revalidate();
-	            } else {
-	                this._initBlazy();
-	            }
-	        }
-	    }, {
-	        key: "_onSroll",
-	        value: function _onSroll(e) {
-	            var index = this.index ? this.index : this.index = 0,
-	                len = this.children.length;
-	            for (var i = index; i < len; i++) {
-	                var view = this.children[i],
-	                    img = view.$('img')[0];
-	                if (img == null) continue;
-	                if (img.src === img.getAttribute('data-src')) {
-	                    index = i;
-	                } else if (elementInView(img, this.el)) {
-	                    index = i;
-	                    this._blazy.load(img, true);
-	                }
-	            }
-	            this.index = index;
-	            var el = this.el;
-	            if (el.scrollTop < el.scrollHeight - el.clientHeight - el.clientHeight) {} else if (this.collection.hasNext()) {
-	                this.collection.getNextPage();
-	            }
-	        }
-	    }, {
-	        key: "_initBlazy",
-	        value: function _initBlazy() {
-	            this._blazy = new Blazy({
-	                container: '.assets-list',
-	                selector: 'img',
-	                error: function error(img) {
-	                    if (!img || !img.parentNode) return;
-	                    var m = img.parentNode.querySelector('.mime');
-	                    if (m) {
-	                        m.style.display = 'block';
-	                        img.style.display = 'none';
-	                    }
-	                }
-	            });
-	        }
-	    }, {
-	        key: "_initHeight",
-	        value: function _initHeight() {
-	            var _this4 = this;
-
-	            var parent = this.el.parentElement;
-	            if (!parent || parent.clientHeight === 0) {
-	                if (!this._timer) {
-	                    this._timer = setInterval(function () {
-	                        return _this4._initHeight();
-	                    }, 200);
-	                }
-	                return;
-	            }
-	            if (this._timer) {
-	                clearInterval(this._timer);
-	                this._timer = void 0;
-	            }
-	            this.el.style.height = parent.clientHeight + 'px';
-	        }
-	    }, {
-	        key: "onShow",
-	        value: function onShow() {
-	            this._initHeight();
-	        }
-	    }]);
-
-	    return AssetsListView;
-	}(views_1.CollectionView);
-	AssetsListView = __decorate([views_1.attributes({
-	    className: 'assets-list collection-mode',
-	    childView: list_item_1.AssetsListItemView,
-	    emptyView: exports.AssetsEmptyView,
-	    events: {
-	        scroll: '_onSroll'
-	    }
-	}), __metadata('design:paramtypes', [Object])], AssetsListView);
-	exports.AssetsListView = AssetsListView;
-	function elementInView(ele, container) {
-	    var viewport = {
-	        top: 0,
-	        left: 0,
-	        bottom: 0,
-	        right: 0
-	    };
-	    viewport.bottom = container.innerHeight || document.documentElement.clientHeight;
-	    viewport.right = container.innerWidth || document.documentElement.clientWidth;
-	    var rect = ele.getBoundingClientRect();
-	    return rect.right >= viewport.left && rect.bottom >= viewport.top && rect.left <= viewport.right && rect.top <= viewport.bottom && !ele.classList.contains('b-error');
-	}
-	function throttle(fn, minDelay) {
-	    var lastCall = 0;
-	    return function () {
-	        var now = +new Date();
-	        if (now - lastCall < minDelay) {
-	            return;
-	        }
-	        lastCall = now;
-	        fn.apply(this, arguments);
-	    };
-	}
-
-/***/ },
-/* 64 */
+/* 69 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_FACTORY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
@@ -8288,7 +9484,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	});
 
 /***/ },
-/* 65 */
+/* 70 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8316,12 +9512,12 @@ return /******/ (function(modules) { // webpackBootstrap
 	var __metadata = undefined && undefined.__metadata || function (k, v) {
 	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
-	var views_1 = __webpack_require__(1);
-	var utilities_1 = __webpack_require__(47);
-	var orange_dom_1 = __webpack_require__(60);
-	var thumbnailer_1 = __webpack_require__(66);
-	var templates_1 = __webpack_require__(58);
-	var interfaces_1 = __webpack_require__(51);
+	var views_1 = __webpack_require__(2);
+	var utilities_1 = __webpack_require__(50);
+	var orange_dom_1 = __webpack_require__(17);
+	var thumbnailer_1 = __webpack_require__(71);
+	var templates_1 = __webpack_require__(61);
+	var interfaces_1 = __webpack_require__(54);
 	var AssetsInfoPreview = function (_views_1$View) {
 	    _inherits(AssetsInfoPreview, _views_1$View);
 
@@ -8479,7 +9675,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.AssetsPreview = AssetsPreview;
 
 /***/ },
-/* 66 */
+/* 71 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8488,7 +9684,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-	var utilities_1 = __webpack_require__(24);
+	var utilities_1 = __webpack_require__(64);
 	exports.MimeList = {
 	    'audio/mpeg': 'audio-generic',
 	    'audio/ogg': 'audio-generic',
@@ -8535,7 +9731,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.Thumbnailer = Thumbnailer;
 
 /***/ },
-/* 67 */
+/* 72 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8561,13 +9757,13 @@ return /******/ (function(modules) { // webpackBootstrap
 	var __metadata = undefined && undefined.__metadata || function (k, v) {
 	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
-	var views_1 = __webpack_require__(1);
-	var index_1 = __webpack_require__(55);
-	var assets_preview_1 = __webpack_require__(65);
-	var filebutton_1 = __webpack_require__(54);
-	var utils = __webpack_require__(8);
-	var client_1 = __webpack_require__(68);
-	var utils_1 = __webpack_require__(57);
+	var views_1 = __webpack_require__(2);
+	var index_1 = __webpack_require__(58);
+	var assets_preview_1 = __webpack_require__(70);
+	var filebutton_1 = __webpack_require__(57);
+	var orange_dom_1 = __webpack_require__(17);
+	var client_1 = __webpack_require__(73);
+	var utils_1 = __webpack_require__(60);
 	var GalleryView = function (_views_1$LayoutView) {
 	    _inherits(GalleryView, _views_1$LayoutView);
 
@@ -8635,9 +9831,9 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	            setTimeout(function () {
 	                var elm = _this3.$('.upload-progress')[0];
-	                utils.transitionEnd(elm, function (e) {
+	                orange_dom_1.transitionEnd(elm, function (e) {
 	                    elm.style.width = '0';
-	                    utils.transitionEnd(elm, function (e) {
+	                    orange_dom_1.transitionEnd(elm, function (e) {
 	                        elm.style.opacity = '1';
 	                    }, 1000);
 	                }, 600);
@@ -8719,7 +9915,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.GalleryView = GalleryView;
 
 /***/ },
-/* 68 */
+/* 73 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8732,11 +9928,12 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
 
-	var eventsjs_1 = __webpack_require__(7);
-	var utilities_1 = __webpack_require__(24);
-	var index_1 = __webpack_require__(36);
-	var utilities_2 = __webpack_require__(47);
-	var interface_1 = __webpack_require__(35);
+	var eventsjs_1 = __webpack_require__(8);
+	var orange_1 = __webpack_require__(9);
+	var request = __webpack_require__(28);
+	var index_1 = __webpack_require__(33);
+	var utilities_1 = __webpack_require__(50);
+	var interface_1 = __webpack_require__(32);
 
 	var AssetsClient = function (_eventsjs_1$EventEmit) {
 	    _inherits(AssetsClient, _eventsjs_1$EventEmit);
@@ -8748,7 +9945,7 @@ return /******/ (function(modules) { // webpackBootstrap
 
 	        var _this = _possibleConstructorReturn(this, (AssetsClient.__proto__ || Object.getPrototypeOf(AssetsClient)).call(this));
 
-	        _this.__options = utilities_1.extend({}, options);
+	        _this.__options = orange_1.extend({}, options);
 	        if (!options.url || options.url === '') {
 	            _this.__options.url = '/';
 	        }
@@ -8772,11 +9969,10 @@ return /******/ (function(modules) { // webpackBootstrap
 	        value: function getById(id) {
 	            var _this2 = this;
 
-	            return utilities_1.request.get(this.url).params({
+	            return request.get(this.url).params({
 	                id: id
-	            }).json().then(function (value) {
-	                if (!value.isValid) return null;
-	                return new index_1.AssetsModel(value.body, {
+	            }).json(null, true).then(function (value) {
+	                return new index_1.AssetsModel(value, {
 	                    url: _this2.url
 	                });
 	            });
@@ -8787,12 +9983,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	            var _this3 = this;
 
 	            if (path == null || path === '' || path === '/') {
-	                return utilities_1.Promise.reject(new interface_1.HttpError(500, ""));
+	                return orange_1.Promise.reject(new interface_1.HttpError(500, ""));
 	            }
-	            var url = utilities_2.normalizeURL(this.url, path);
-	            return utilities_1.request.get(url).json().then(function (value) {
-	                if (!value.isValid) return null;
-	                return new index_1.AssetsModel(value.body, {
+	            var url = utilities_1.normalizeURL(this.url, path);
+	            return request.get(url).json(null, true).then(function (value) {
+	                return new index_1.AssetsModel(value, {
 	                    url: _this3.url
 	                });
 	            });
@@ -8800,7 +9995,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	    }, {
 	        key: 'options',
 	        get: function get() {
-	            return utilities_1.extend({}, this.__options);
+	            return orange_1.extend({}, this.__options);
 	        }
 	    }, {
 	        key: 'url',
@@ -8820,7 +10015,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.AssetsClient = AssetsClient;
 
 /***/ },
-/* 69 */
+/* 74 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8830,11 +10025,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	        if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 	    }
 	}
-	__export(__webpack_require__(70));
-	__export(__webpack_require__(71));
+	__export(__webpack_require__(75));
+	__export(__webpack_require__(76));
 
 /***/ },
-/* 70 */
+/* 75 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8860,8 +10055,8 @@ return /******/ (function(modules) { // webpackBootstrap
 	var __metadata = undefined && undefined.__metadata || function (k, v) {
 	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
-	var views_1 = __webpack_require__(1);
-	var utils_1 = __webpack_require__(57);
+	var views_1 = __webpack_require__(2);
+	var utils_1 = __webpack_require__(60);
 	var CropPreView = function (_views_1$View) {
 	    _inherits(CropPreView, _views_1$View);
 
@@ -8950,7 +10145,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.CropPreView = CropPreView;
 
 /***/ },
-/* 71 */
+/* 76 */
 /***/ function(module, exports, __webpack_require__) {
 
 	"use strict";
@@ -8978,11 +10173,11 @@ return /******/ (function(modules) { // webpackBootstrap
 	var __metadata = undefined && undefined.__metadata || function (k, v) {
 	    if ((typeof Reflect === "undefined" ? "undefined" : _typeof(Reflect)) === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 	};
-	var views_1 = __webpack_require__(1);
-	var Cropper = __webpack_require__(72);
-	var utils_1 = __webpack_require__(57);
-	var orange_dom_1 = __webpack_require__(60);
-	var orange_1 = __webpack_require__(8);
+	var views_1 = __webpack_require__(2);
+	var Cropper = __webpack_require__(77);
+	var utils_1 = __webpack_require__(60);
+	var orange_dom_1 = __webpack_require__(17);
+	var orange_1 = __webpack_require__(9);
 	var emptyImage = "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
 	function isFunction(a) {
 	    return typeof a === 'function';
@@ -9162,7 +10357,7 @@ return /******/ (function(modules) { // webpackBootstrap
 	exports.CropView = CropView;
 
 /***/ },
-/* 72 */
+/* 77 */
 /***/ function(module, exports, __webpack_require__) {
 
 	var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
